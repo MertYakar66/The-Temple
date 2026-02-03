@@ -20,6 +20,11 @@ import {
 } from 'date-fns';
 import { useStore } from '../store/useStore';
 import type { WorkoutSession } from '../types';
+import {
+  getCompletedSetCount,
+  getSessionDurationMinutes,
+  getTotalVolume,
+} from '../utils/workoutMetrics';
 
 export function History() {
   const workoutSessions = useStore((state) => state.workoutSessions);
@@ -165,26 +170,9 @@ export function History() {
 function WorkoutCard({ workout }: { workout: WorkoutSession }) {
   const [expanded, setExpanded] = useState(false);
 
-  const totalSets = workout.exercises.reduce(
-    (total, ex) => total + ex.sets.filter((s) => s.completed).length,
-    0
-  );
-
-  const totalVolume = workout.exercises.reduce((total, ex) => {
-    return (
-      total +
-      ex.sets.reduce((setTotal, set) => {
-        return setTotal + (set.completed ? set.weight * set.reps : 0);
-      }, 0)
-    );
-  }, 0);
-
-  const duration = workout.startTime && workout.endTime
-    ? Math.round(
-        (new Date(workout.endTime).getTime() - new Date(workout.startTime).getTime()) /
-          60000
-      )
-    : null;
+  const totalSets = getCompletedSetCount(workout.exercises);
+  const totalVolume = getTotalVolume(workout.exercises);
+  const duration = getSessionDurationMinutes(workout);
 
   return (
     <div className="card">

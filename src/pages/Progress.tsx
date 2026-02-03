@@ -17,6 +17,8 @@ import {
 } from 'recharts';
 import { useStore } from '../store/useStore';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { isDateStampInRange } from '../utils/date';
+import { getCompletedSetCount, getTotalVolume } from '../utils/workoutMetrics';
 
 type TimeRange = '7d' | '30d' | '90d' | 'all';
 
@@ -44,34 +46,21 @@ export function Progress() {
   };
 
   const rangeStart = getRangeStart();
-  const filteredSessions = workoutSessions.filter(
-    (ws) => new Date(ws.date) >= rangeStart
+  const filteredSessions = workoutSessions.filter((ws) =>
+    isDateStampInRange(ws.date, rangeStart, today)
   );
 
   // Calculate stats
   const totalWorkouts = filteredSessions.length;
-  const totalVolume = filteredSessions.reduce((total, ws) => {
-    return (
-      total +
-      ws.exercises.reduce((exTotal, ex) => {
-        return (
-          exTotal +
-          ex.sets.reduce((setTotal, set) => {
-            return setTotal + (set.completed ? set.weight * set.reps : 0);
-          }, 0)
-        );
-      }, 0)
-    );
-  }, 0);
+  const totalVolume = filteredSessions.reduce(
+    (total, ws) => total + getTotalVolume(ws.exercises),
+    0
+  );
 
-  const totalSets = filteredSessions.reduce((total, ws) => {
-    return (
-      total +
-      ws.exercises.reduce((exTotal, ex) => {
-        return exTotal + ex.sets.filter((s) => s.completed).length;
-      }, 0)
-    );
-  }, 0);
+  const totalSets = filteredSessions.reduce(
+    (total, ws) => total + getCompletedSetCount(ws.exercises),
+    0
+  );
 
   // Workout frequency data for chart
   const workoutFrequencyData = (() => {

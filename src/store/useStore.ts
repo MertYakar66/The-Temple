@@ -12,6 +12,7 @@ import type {
   Exercise,
 } from '../types';
 import { defaultExercises } from '../data/exercises';
+import { getDateStamp, isDateStampInRange, parseDateStamp } from '../utils/date';
 
 interface AppState {
   // User
@@ -31,7 +32,7 @@ interface AppState {
   endWorkout: () => void;
   cancelWorkout: () => void;
   addExerciseToSession: (exercise: Exercise) => void;
-  removeExerciseFromSession: (exerciseId: string) => void;
+  removeExerciseFromSession: (workoutExerciseId: string) => void;
   addSetToExercise: (workoutExerciseId: string) => void;
   updateSet: (workoutExerciseId: string, setId: string, updates: Partial<WorkoutSet>) => void;
   removeSet: (workoutExerciseId: string, setId: string) => void;
@@ -91,7 +92,7 @@ export const useStore = create<AppState>()(
         const session: WorkoutSession = {
           id: uuidv4(),
           name,
-          date: new Date().toISOString().split('T')[0],
+          date: getDateStamp(),
           startTime: new Date().toISOString(),
           exercises: [],
           completed: false,
@@ -104,10 +105,13 @@ export const useStore = create<AppState>()(
           if (routine) {
             session.exercises = routine.exercises.map((re) => {
               const exercise = get().getExercise(re.exerciseId);
+              if (!exercise) {
+                return null;
+              }
               return {
                 id: uuidv4(),
                 exerciseId: re.exerciseId,
-                exercise: exercise!,
+                exercise,
                 sets: Array.from({ length: re.targetSets }, () => ({
                   id: uuidv4(),
                   reps: re.targetReps,
@@ -117,7 +121,7 @@ export const useStore = create<AppState>()(
                 restSeconds: re.restSeconds,
                 notes: re.notes,
               };
-            });
+            }).filter((exercise): exercise is WorkoutExercise => exercise !== null);
           }
         }
 
@@ -194,14 +198,14 @@ export const useStore = create<AppState>()(
         });
       },
 
-      removeExerciseFromSession: (exerciseId) => {
+      removeExerciseFromSession: (workoutExerciseId) => {
         set((state) => {
           if (!state.currentSession) return state;
           return {
             currentSession: {
               ...state.currentSession,
               exercises: state.currentSession.exercises.filter(
-                (e) => e.id !== exerciseId
+                (e) => e.id !== workoutExerciseId
               ),
             },
           };
@@ -378,7 +382,7 @@ export const useStore = create<AppState>()(
               exerciseName,
               weight,
               reps,
-              date: new Date().toISOString().split('T')[0],
+              date: getDateStamp(),
               workoutSessionId: sessionId,
             };
 
@@ -403,8 +407,10 @@ export const useStore = create<AppState>()(
       },
 
       getWorkoutsInRange: (startDate, endDate) => {
-        return get().workoutSessions.filter(
-          (ws) => ws.date >= startDate && ws.date <= endDate
+        const start = parseDateStamp(startDate);
+        const end = parseDateStamp(endDate);
+        return get().workoutSessions.filter((ws) =>
+          isDateStampInRange(ws.date, start, end)
         );
       },
 
@@ -414,8 +420,8 @@ export const useStore = create<AppState>()(
       getWeeklyWorkoutCount: () => {
         const now = new Date();
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return get().workoutSessions.filter(
-          (ws) => new Date(ws.date) >= weekAgo
+        return get().workoutSessions.filter((ws) =>
+          isDateStampInRange(ws.date, weekAgo, now)
         ).length;
       },
 
@@ -448,7 +454,9 @@ export const useStore = create<AppState>()(
           }
         });
 
-        return history.sort((a, b) => a.date.localeCompare(b.date));
+        return history.sort(
+          (a, b) => parseDateStamp(a.date).getTime() - parseDateStamp(b.date).getTime()
+        );
       },
     }),
     {

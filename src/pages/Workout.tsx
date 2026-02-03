@@ -6,6 +6,7 @@ import type { Exercise } from '../types';
 import { ExerciseSelector } from '../components/workout/ExerciseSelector';
 import { WorkoutExerciseCard } from '../components/workout/WorkoutExerciseCard';
 import { RestTimer } from '../components/workout/RestTimer';
+import { getCompletedSetCount, getTotalSetCount } from '../utils/workoutMetrics';
 
 export function Workout() {
   const navigate = useNavigate();
@@ -161,14 +162,8 @@ export function Workout() {
   }
 
   // Active session - show workout logging
-  const totalCompletedSets = currentSession.exercises.reduce(
-    (total, ex) => total + ex.sets.filter((s) => s.completed).length,
-    0
-  );
-  const totalSets = currentSession.exercises.reduce(
-    (total, ex) => total + ex.sets.length,
-    0
-  );
+  const totalCompletedSets = getCompletedSetCount(currentSession.exercises);
+  const totalSets = getTotalSetCount(currentSession.exercises);
 
   return (
     <div className="px-4 py-6 pb-32">
