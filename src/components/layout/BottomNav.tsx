@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   Home,
   Dumbbell,
-  Library,
+  Utensils,
   BarChart3,
   Calendar,
 } from 'lucide-react';
@@ -10,7 +10,7 @@ import {
 const navItems = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/workout', icon: Dumbbell, label: 'Workout' },
-  { to: '/exercises', icon: Library, label: 'Exercises' },
+  { to: '/diet', icon: Utensils, label: 'Nutrition' },
   { to: '/progress', icon: BarChart3, label: 'Progress' },
   { to: '/history', icon: Calendar, label: 'History' },
 ];

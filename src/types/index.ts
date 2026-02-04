@@ -111,3 +111,131 @@ export interface WeeklyStats {
   totalSets: number;
   totalReps: number;
 }
+
+// ============================================
+// Diet Module Types
+// ============================================
+
+export type FoodCategory = 'protein' | 'carbs' | 'fats' | 'vegetables' | 'dairy' | 'fruits' | 'other';
+export type DietGoalType = 'cut' | 'maintenance' | 'bulk';
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'pre_workout' | 'post_workout';
+
+export interface Macros {
+  calories: number;
+  protein: number; // grams
+  carbs: number; // grams
+  fat: number; // grams
+}
+
+export interface Food {
+  id: string;
+  name: string;
+  category: FoodCategory;
+  macros: Macros; // per serving
+  servingSize: number; // in grams
+  servingUnit: string; // e.g., "g", "ml", "piece", "cup"
+  isCustom: boolean;
+  createdAt: string;
+}
+
+export interface RecipeIngredient {
+  foodId: string;
+  food: Food;
+  quantity: number; // number of servings
+}
+
+export interface Recipe {
+  id: string;
+  name: string;
+  ingredients: RecipeIngredient[];
+  servings: number; // how many servings this recipe makes
+  macrosPerServing: Macros;
+  totalMacros: Macros;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Meal {
+  id: string;
+  name: string;
+  mealType: MealType;
+  items: MealItem[];
+  totalMacros: Macros;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MealItem {
+  id: string;
+  type: 'food' | 'recipe';
+  foodId?: string;
+  food?: Food;
+  recipeId?: string;
+  recipe?: Recipe;
+  servings: number;
+  macros: Macros; // calculated based on servings
+}
+
+export interface FoodLogEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  timestamp: string; // ISO string
+  mealType: MealType;
+  type: 'food' | 'recipe' | 'meal';
+  foodId?: string;
+  food?: Food;
+  recipeId?: string;
+  recipe?: Recipe;
+  mealId?: string;
+  meal?: Meal;
+  servings: number;
+  macros: Macros;
+}
+
+export interface DailyNutrition {
+  date: string;
+  entries: FoodLogEntry[];
+  totalMacros: Macros;
+  targetMacros: Macros;
+  isTrainingDay: boolean;
+  workoutIntensity?: 'light' | 'moderate' | 'heavy';
+}
+
+export interface DietGoals {
+  dailyCalories: number;
+  dailyProtein: number;
+  dailyCarbs: number;
+  dailyFat: number;
+  goalType: DietGoalType;
+  trainingDayCalorieAdjustment: number; // extra calories on training days
+  trainingDayProteinAdjustment: number; // extra protein on training days
+}
+
+export interface DietSettings {
+  goals: DietGoals;
+  mealReminders: MealReminder[];
+  proteinPriority: boolean; // highlight protein compliance
+}
+
+export interface MealReminder {
+  id: string;
+  mealType: MealType;
+  time: string; // HH:MM format
+  enabled: boolean;
+}
+
+export interface DietStreak {
+  proteinStreak: number; // consecutive days hitting protein target
+  loggingStreak: number; // consecutive days with logged meals
+  lastProteinHitDate: string | null;
+  lastLogDate: string | null;
+}
+
+export interface WeeklyDietStats {
+  weekStart: string;
+  avgCalories: number;
+  avgProtein: number;
+  proteinHitDays: number; // days protein target was met
+  totalDaysLogged: number;
+  trainingDaysAligned: number; // days where intake matched training
+}
