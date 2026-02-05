@@ -113,6 +113,47 @@ export interface WeeklyStats {
 }
 
 // ============================================
+// Body Weight Tracking Types
+// ============================================
+
+export interface WeightEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  weight: number; // in kg
+  notes?: string;
+  createdAt: string;
+}
+
+// ============================================
+// Workout Templates Types
+// ============================================
+
+export type WorkoutSplit = 'ppl' | 'upper_lower' | 'full_body' | 'bro_split' | 'custom';
+
+export interface WorkoutTemplate {
+  id: string;
+  name: string;
+  description: string;
+  split: WorkoutSplit;
+  daysPerWeek: number;
+  level: ExperienceLevel;
+  routines: TemplateRoutine[];
+}
+
+export interface TemplateRoutine {
+  dayName: string;
+  exercises: TemplateExercise[];
+}
+
+export interface TemplateExercise {
+  exerciseId: string;
+  sets: number;
+  repsMin: number;
+  repsMax: number;
+  restSeconds: number;
+}
+
+// ============================================
 // Diet Module Types
 // ============================================
 

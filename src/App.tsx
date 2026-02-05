@@ -11,6 +11,7 @@ import { RoutineDetail } from './pages/RoutineDetail';
 import { Progress } from './pages/Progress';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
+import { WorkoutTemplates } from './pages/WorkoutTemplates';
 // Diet Module
 import { Diet } from './pages/Diet';
 import { DietLog } from './pages/DietLog';
@@ -18,6 +19,8 @@ import { DietMeals } from './pages/DietMeals';
 import { DietWeekly } from './pages/DietWeekly';
 import { DietSettings } from './pages/DietSettings';
 import { DietFoodNew } from './pages/DietFoodNew';
+// Components
+import { PRCelebration } from './components/PRCelebration';
 
 function AppRoutes() {
   const user = useStore((state) => state.user);
@@ -51,6 +54,7 @@ function AppRoutes() {
       <Route path="/routines/:id" element={<RoutineDetail />} />
       <Route path="/routines/:id/edit" element={<RoutineEditor />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/templates" element={<WorkoutTemplates />} />
 
       {/* Diet routes without bottom nav */}
       <Route path="/diet/log" element={<DietLog />} />
@@ -72,6 +76,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppRoutes />
+      <PRCelebration />
     </BrowserRouter>
   );
 }

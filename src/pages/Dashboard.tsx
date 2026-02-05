@@ -7,6 +7,7 @@ import {
   Trophy,
   ChevronRight,
   Play,
+  Settings,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
@@ -49,21 +50,29 @@ export function Dashboard() {
 
   return (
     <div className="px-4 py-6 space-y-6">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Hey, {user?.name?.split(' ')[0] || 'Athlete'}!
-        </h1>
-        <p className="text-gray-600">
-          {format(today, 'EEEE, MMMM d')}
-        </p>
+      {/* Header with Settings */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Hey, {user?.name?.split(' ')[0] || 'Athlete'}!
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            {format(today, 'EEEE, MMMM d')}
+          </p>
+        </div>
+        <Link
+          to="/settings"
+          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <Settings className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+        </Link>
       </div>
 
       {/* Current Session Banner */}
       {currentSession && (
         <Link
           to="/workout"
-          className="block bg-primary-600 text-white rounded-xl p-4"
+          className="block bg-primary-600 text-white rounded-xl p-4 shadow-lg animate-fade-in"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -84,56 +93,60 @@ export function Dashboard() {
       <div className="grid grid-cols-2 gap-3">
         <Link
           to="/workout"
-          className="card flex items-center gap-3 hover:shadow-md transition-shadow"
+          className="card hover:shadow-md transition-shadow"
         >
-          <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-            <Plus className="w-6 h-6 text-primary-600" />
-          </div>
-          <div>
-            <p className="font-semibold text-gray-900">Start Workout</p>
-            <p className="text-sm text-gray-500">Log a session</p>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center">
+              <Plus className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 dark:text-white">Start Workout</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Log a session</p>
+            </div>
           </div>
         </Link>
         <Link
           to="/routines"
-          className="card flex items-center gap-3 hover:shadow-md transition-shadow"
+          className="card hover:shadow-md transition-shadow"
         >
-          <div className="w-12 h-12 bg-accent-100 rounded-xl flex items-center justify-center">
-            <Dumbbell className="w-6 h-6 text-accent-600" />
-          </div>
-          <div>
-            <p className="font-semibold text-gray-900">Routines</p>
-            <p className="text-sm text-gray-500">{routines.length} saved</p>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/30 rounded-xl flex items-center justify-center">
+              <Dumbbell className="w-6 h-6 text-accent-600 dark:text-accent-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 dark:text-white">Routines</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{routines.length} saved</p>
+            </div>
           </div>
         </Link>
       </div>
 
       {/* Weekly Stats */}
       <div className="card">
-        <h2 className="font-semibold text-gray-900 mb-4">This Week</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">This Week</h2>
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
-            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Calendar className="w-6 h-6 text-primary-600" />
+            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+              <Calendar className="w-6 h-6 text-primary-600 dark:text-primary-400" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{weeklyCount}</p>
-            <p className="text-sm text-gray-500">Workouts</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{weeklyCount}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Workouts</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-success-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
               <TrendingUp className="w-6 h-6 text-success-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {weeklyVolume > 1000 ? `${(weeklyVolume / 1000).toFixed(1)}k` : weeklyVolume}
             </p>
-            <p className="text-sm text-gray-500">Volume (kg)</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Volume (kg)</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-warning-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
               <Trophy className="w-6 h-6 text-warning-500" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">{personalRecords.length}</p>
-            <p className="text-sm text-gray-500">PRs</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{personalRecords.length}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">PRs</p>
           </div>
         </div>
       </div>
@@ -142,10 +155,10 @@ export function Dashboard() {
       {recentPRs.length > 0 && (
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Recent PRs</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">Recent PRs</h2>
             <Link
               to="/progress"
-              className="text-primary-600 text-sm font-medium flex items-center"
+              className="text-primary-600 dark:text-primary-400 text-sm font-medium flex items-center"
             >
               View all <ChevronRight className="w-4 h-4" />
             </Link>
@@ -154,15 +167,15 @@ export function Dashboard() {
             {recentPRs.map((pr, index) => (
               <div
                 key={`${pr.exerciseId}-${pr.reps}-${index}`}
-                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+                className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
               >
                 <div>
-                  <p className="font-medium text-gray-900">{pr.exerciseName}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-gray-900 dark:text-white">{pr.exerciseName}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {pr.weight} kg x {pr.reps} reps
                   </p>
                 </div>
-                <span className="text-sm text-gray-500">{pr.date}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{pr.date}</span>
               </div>
             ))}
           </div>
@@ -173,10 +186,10 @@ export function Dashboard() {
       {routines.length > 0 && (
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Your Routines</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">Your Routines</h2>
             <Link
               to="/routines"
-              className="text-primary-600 text-sm font-medium flex items-center"
+              className="text-primary-600 dark:text-primary-400 text-sm font-medium flex items-center"
             >
               View all <ChevronRight className="w-4 h-4" />
             </Link>
@@ -186,11 +199,11 @@ export function Dashboard() {
               <Link
                 key={routine.id}
                 to={`/routines/${routine.id}`}
-                className="flex items-center justify-between py-3 px-3 -mx-3 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between py-3 px-3 -mx-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
               >
                 <div>
-                  <p className="font-medium text-gray-900">{routine.name}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-gray-900 dark:text-white">{routine.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {routine.exercises.length} exercises
                   </p>
                 </div>
@@ -204,13 +217,13 @@ export function Dashboard() {
       {/* Empty State for New Users */}
       {totalWorkouts === 0 && routines.length === 0 && (
         <div className="card text-center py-8">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
             <Dumbbell className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="font-semibold text-gray-900 mb-2">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
             Ready to start your journey?
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
             Log your first workout or create a routine to get started!
           </p>
           <div className="flex gap-3 justify-center">

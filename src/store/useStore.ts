@@ -10,6 +10,7 @@ import type {
   RoutineExercise,
   PersonalRecord,
   Exercise,
+  WeightEntry,
 } from '../types';
 import { defaultExercises } from '../data/exercises';
 import { getDateStamp, isDateStampInRange, parseDateStamp } from '../utils/date';
@@ -59,6 +60,17 @@ interface AppState {
   getTotalWorkouts: () => number;
   getWeeklyWorkoutCount: () => number;
   getExerciseHistory: (exerciseId: string) => { date: string; maxWeight: number; totalVolume: number }[];
+
+  // Body Weight Tracking
+  weightEntries: WeightEntry[];
+  addWeightEntry: (weight: number, notes?: string, date?: string) => void;
+  deleteWeightEntry: (id: string) => void;
+  getLatestWeight: () => WeightEntry | null;
+  getWeightHistory: (days?: number) => WeightEntry[];
+
+  // New PR tracking
+  newPRs: PersonalRecord[];
+  clearNewPRs: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -103,25 +115,26 @@ export const useStore = create<AppState>()(
         if (routineId) {
           const routine = get().routines.find((r) => r.id === routineId);
           if (routine) {
-            session.exercises = routine.exercises.map((re) => {
+            const workoutExercises: WorkoutExercise[] = [];
+            routine.exercises.forEach((re) => {
               const exercise = get().getExercise(re.exerciseId);
-              if (!exercise) {
-                return null;
-              }
-              return {
-                id: uuidv4(),
-                exerciseId: re.exerciseId,
-                exercise,
-                sets: Array.from({ length: re.targetSets }, () => ({
+              if (exercise) {
+                workoutExercises.push({
                   id: uuidv4(),
-                  reps: re.targetReps,
-                  weight: re.targetWeight || 0,
-                  completed: false,
-                })),
-                restSeconds: re.restSeconds,
-                notes: re.notes,
-              };
-            }).filter((exercise): exercise is WorkoutExercise => exercise !== null);
+                  exerciseId: re.exerciseId,
+                  exercise,
+                  sets: Array.from({ length: re.targetSets }, () => ({
+                    id: uuidv4(),
+                    reps: re.targetReps,
+                    weight: re.targetWeight || 0,
+                    completed: false,
+                  })),
+                  restSeconds: re.restSeconds,
+                  notes: re.notes,
+                });
+              }
+            });
+            session.exercises = workoutExercises;
           }
         }
 
@@ -394,6 +407,8 @@ export const useStore = create<AppState>()(
                       : pr
                   )
                 : [...state.personalRecords, newPR],
+              // Track new PRs for celebration
+              newPRs: [...state.newPRs, newPR],
             };
           }
 
@@ -457,6 +472,61 @@ export const useStore = create<AppState>()(
         return history.sort(
           (a, b) => parseDateStamp(a.date).getTime() - parseDateStamp(b.date).getTime()
         );
+      },
+
+      // Body Weight Tracking
+      weightEntries: [],
+
+      addWeightEntry: (weight, notes, date) => {
+        const entry: WeightEntry = {
+          id: uuidv4(),
+          date: date || getDateStamp(),
+          weight,
+          notes,
+          createdAt: new Date().toISOString(),
+        };
+
+        set((state) => {
+          // Remove existing entry for the same date if exists
+          const filtered = state.weightEntries.filter((e) => e.date !== entry.date);
+          return {
+            weightEntries: [...filtered, entry].sort(
+              (a, b) => parseDateStamp(b.date).getTime() - parseDateStamp(a.date).getTime()
+            ),
+          };
+        });
+
+        // Also update user's current weight
+        const user = get().user;
+        if (user) {
+          get().updateUser({ weight });
+        }
+      },
+
+      deleteWeightEntry: (id) => {
+        set((state) => ({
+          weightEntries: state.weightEntries.filter((e) => e.id !== id),
+        }));
+      },
+
+      getLatestWeight: () => {
+        const entries = get().weightEntries;
+        return entries.length > 0 ? entries[0] : null;
+      },
+
+      getWeightHistory: (days = 30) => {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        return get().weightEntries.filter((e) =>
+          parseDateStamp(e.date).getTime() >= cutoff.getTime()
+        );
+      },
+
+      // New PR tracking for celebrations
+      newPRs: [],
+
+      clearNewPRs: () => {
+        set({ newPRs: [] });
       },
     }),
     {
