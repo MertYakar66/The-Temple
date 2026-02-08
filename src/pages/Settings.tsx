@@ -482,15 +482,15 @@ function SettingsRow({
     return (
       <div className="px-4 py-3">
         <div className="flex items-center gap-3 mb-2">
-          <Icon className="w-5 h-5 text-gray-500" />
-          <span className="text-sm text-gray-500">{label}</span>
+          <Icon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
         </div>
         <div className="flex gap-2">
           <input
             type={inputType}
             value={editValue}
             onChange={(e) => onEditValueChange(e.target.value)}
-            className="input flex-1"
+            className="input dark:bg-gray-700 dark:border-gray-600 dark:text-white flex-1"
             autoFocus
           />
           <button onClick={onSave} className="btn-primary px-3">
@@ -507,14 +507,14 @@ function SettingsRow({
   return (
     <button
       onClick={onEdit}
-      className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50"
+      className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700"
     >
       <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5 text-gray-500" />
-        <span className="text-gray-900">{label}</span>
+        <Icon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+        <span className="text-gray-900 dark:text-white">{label}</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-gray-500">{value}</span>
+        <span className="text-gray-500 dark:text-gray-300">{value}</span>
         <ChevronRight className="w-5 h-5 text-gray-400" />
       </div>
     </button>
@@ -544,14 +544,14 @@ function SelectRow({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700"
       >
         <div className="flex items-center gap-3">
-          <Icon className="w-5 h-5 text-gray-500" />
-          <span className="text-gray-900">{label}</span>
+          <Icon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          <span className="text-gray-900 dark:text-white">{label}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-gray-500">{value}</span>
+          <span className="text-gray-500 dark:text-gray-300">{value}</span>
           <ChevronRight className="w-5 h-5 text-gray-400" />
         </div>
       </button>
@@ -562,7 +562,7 @@ function SelectRow({
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-4 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20 overflow-hidden">
+          <div className="absolute right-4 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 overflow-hidden">
             {options.map((option) => (
               <button
                 key={option.id}
@@ -570,10 +570,10 @@ function SelectRow({
                   onChange(option.id);
                   setIsOpen(false);
                 }}
-                className={`w-full px-4 py-2 text-left hover:bg-gray-50 ${
+                className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 ${
                   option.id === selectedId
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-700'
+                    ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+                    : 'text-gray-700 dark:text-gray-300'
                 }`}
               >
                 {option.label}
