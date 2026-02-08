@@ -1,0 +1,73 @@
+====================================
+QUICK REFERENCE COMMANDS
+====================================
+
+DAILY USE
+---------
+Start development server:
+    npm run dev
+
+
+UPDATE FROM GITHUB
+------------------
+Pull latest changes:
+    git pull origin claude/workout-tracker-onboarding-8lcp2
+
+If dependencies changed, reinstall:
+    npm install
+
+One-liner (update and start):
+    git pull && npm install && npm run dev
+
+
+BUILD & DEPLOY
+--------------
+Build for production:
+    npm run build
+
+Preview production build locally:
+    npm run preview
+
+
+GIT COMMANDS
+------------
+Check status:
+    git status
+
+See recent commits:
+    git log --oneline -10
+
+Discard all local changes (careful!):
+    git checkout .
+
+Create a new branch:
+    git checkout -b my-new-feature
+
+
+TROUBLESHOOTING
+---------------
+Clear node_modules and reinstall:
+    rm -rf node_modules && npm install
+
+Clear build cache:
+    rm -rf dist && npm run build
+
+Check for TypeScript errors:
+    npx tsc --noEmit
+
+
+SERVER INFO
+-----------
+Dev server: http://localhost:5173/
+Branch: claude/workout-tracker-onboarding-8lcp2
+
+
+WINDOWS (POWERSHELL)
+--------------------
+Clone to desktop:
+    git clone https://github.com/MertYakar66/The-Temple.git %USERPROFILE%\Desktop\The_Temple
+
+Navigate and start:
+    cd %USERPROFILE%\Desktop\The_Temple
+    npm install
+    npm run dev

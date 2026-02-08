@@ -11,6 +11,16 @@ import { RoutineDetail } from './pages/RoutineDetail';
 import { Progress } from './pages/Progress';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
+import { WorkoutTemplates } from './pages/WorkoutTemplates';
+// Diet Module
+import { Diet } from './pages/Diet';
+import { DietLog } from './pages/DietLog';
+import { DietMeals } from './pages/DietMeals';
+import { DietWeekly } from './pages/DietWeekly';
+import { DietSettings } from './pages/DietSettings';
+import { DietFoodNew } from './pages/DietFoodNew';
+// Components
+import { PRCelebration } from './components/PRCelebration';
 
 function AppRoutes() {
   const user = useStore((state) => state.user);
@@ -32,6 +42,7 @@ function AppRoutes() {
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/workout" element={<Workout />} />
+        <Route path="/diet" element={<Diet />} />
         <Route path="/exercises" element={<Exercises />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/history" element={<History />} />
@@ -43,6 +54,14 @@ function AppRoutes() {
       <Route path="/routines/:id" element={<RoutineDetail />} />
       <Route path="/routines/:id/edit" element={<RoutineEditor />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/templates" element={<WorkoutTemplates />} />
+
+      {/* Diet routes without bottom nav */}
+      <Route path="/diet/log" element={<DietLog />} />
+      <Route path="/diet/meals" element={<DietMeals />} />
+      <Route path="/diet/weekly" element={<DietWeekly />} />
+      <Route path="/diet/settings" element={<DietSettings />} />
+      <Route path="/diet/food/new" element={<DietFoodNew />} />
 
       {/* Redirect to dashboard if onboarding is complete */}
       <Route path="/onboarding" element={<Navigate to="/" replace />} />
@@ -57,6 +76,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppRoutes />
+      <PRCelebration />
     </BrowserRouter>
   );
 }

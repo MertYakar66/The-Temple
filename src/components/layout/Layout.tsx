@@ -14,7 +14,7 @@ export function Layout({
   title,
 }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {showHeader && <Header title={title} />}
       <main className={`max-w-lg mx-auto ${showNav ? 'pb-20' : ''} ${showHeader ? '' : ''}`}>
         <Outlet />

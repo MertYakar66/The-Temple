@@ -10,8 +10,10 @@ import type {
   RoutineExercise,
   PersonalRecord,
   Exercise,
+  WeightEntry,
 } from '../types';
 import { defaultExercises } from '../data/exercises';
+import { getDateStamp, isDateStampInRange, parseDateStamp } from '../utils/date';
 
 interface AppState {
   // User
@@ -31,7 +33,7 @@ interface AppState {
   endWorkout: () => void;
   cancelWorkout: () => void;
   addExerciseToSession: (exercise: Exercise) => void;
-  removeExerciseFromSession: (exerciseId: string) => void;
+  removeExerciseFromSession: (workoutExerciseId: string) => void;
   addSetToExercise: (workoutExerciseId: string) => void;
   updateSet: (workoutExerciseId: string, setId: string, updates: Partial<WorkoutSet>) => void;
   removeSet: (workoutExerciseId: string, setId: string) => void;
@@ -53,11 +55,23 @@ interface AppState {
   // History
   getWorkoutsByDate: (date: string) => WorkoutSession[];
   getWorkoutsInRange: (startDate: string, endDate: string) => WorkoutSession[];
+  deleteWorkoutSession: (id: string) => void;
 
   // Stats
   getTotalWorkouts: () => number;
   getWeeklyWorkoutCount: () => number;
   getExerciseHistory: (exerciseId: string) => { date: string; maxWeight: number; totalVolume: number }[];
+
+  // Body Weight Tracking
+  weightEntries: WeightEntry[];
+  addWeightEntry: (weight: number, notes?: string, date?: string) => void;
+  deleteWeightEntry: (id: string) => void;
+  getLatestWeight: () => WeightEntry | null;
+  getWeightHistory: (days?: number) => WeightEntry[];
+
+  // New PR tracking
+  newPRs: PersonalRecord[];
+  clearNewPRs: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -91,7 +105,7 @@ export const useStore = create<AppState>()(
         const session: WorkoutSession = {
           id: uuidv4(),
           name,
-          date: new Date().toISOString().split('T')[0],
+          date: getDateStamp(),
           startTime: new Date().toISOString(),
           exercises: [],
           completed: false,
@@ -102,22 +116,26 @@ export const useStore = create<AppState>()(
         if (routineId) {
           const routine = get().routines.find((r) => r.id === routineId);
           if (routine) {
-            session.exercises = routine.exercises.map((re) => {
+            const workoutExercises: WorkoutExercise[] = [];
+            routine.exercises.forEach((re) => {
               const exercise = get().getExercise(re.exerciseId);
-              return {
-                id: uuidv4(),
-                exerciseId: re.exerciseId,
-                exercise: exercise!,
-                sets: Array.from({ length: re.targetSets }, () => ({
+              if (exercise) {
+                workoutExercises.push({
                   id: uuidv4(),
-                  reps: re.targetReps,
-                  weight: re.targetWeight || 0,
-                  completed: false,
-                })),
-                restSeconds: re.restSeconds,
-                notes: re.notes,
-              };
+                  exerciseId: re.exerciseId,
+                  exercise,
+                  sets: Array.from({ length: re.targetSets }, () => ({
+                    id: uuidv4(),
+                    reps: re.targetReps,
+                    weight: re.targetWeight || 0,
+                    completed: false,
+                  })),
+                  restSeconds: re.restSeconds,
+                  notes: re.notes,
+                });
+              }
             });
+            session.exercises = workoutExercises;
           }
         }
 
@@ -194,14 +212,14 @@ export const useStore = create<AppState>()(
         });
       },
 
-      removeExerciseFromSession: (exerciseId) => {
+      removeExerciseFromSession: (workoutExerciseId) => {
         set((state) => {
           if (!state.currentSession) return state;
           return {
             currentSession: {
               ...state.currentSession,
               exercises: state.currentSession.exercises.filter(
-                (e) => e.id !== exerciseId
+                (e) => e.id !== workoutExerciseId
               ),
             },
           };
@@ -378,7 +396,7 @@ export const useStore = create<AppState>()(
               exerciseName,
               weight,
               reps,
-              date: new Date().toISOString().split('T')[0],
+              date: getDateStamp(),
               workoutSessionId: sessionId,
             };
 
@@ -390,6 +408,8 @@ export const useStore = create<AppState>()(
                       : pr
                   )
                 : [...state.personalRecords, newPR],
+              // Track new PRs for celebration
+              newPRs: [...state.newPRs, newPR],
             };
           }
 
@@ -403,10 +423,17 @@ export const useStore = create<AppState>()(
       },
 
       getWorkoutsInRange: (startDate, endDate) => {
-        return get().workoutSessions.filter(
-          (ws) => ws.date >= startDate && ws.date <= endDate
+        const start = parseDateStamp(startDate);
+        const end = parseDateStamp(endDate);
+        return get().workoutSessions.filter((ws) =>
+          isDateStampInRange(ws.date, start, end)
         );
       },
+
+      deleteWorkoutSession: (id) =>
+        set((state) => ({
+          workoutSessions: state.workoutSessions.filter((ws) => ws.id !== id),
+        })),
 
       // Stats
       getTotalWorkouts: () => get().workoutSessions.length,
@@ -414,8 +441,8 @@ export const useStore = create<AppState>()(
       getWeeklyWorkoutCount: () => {
         const now = new Date();
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return get().workoutSessions.filter(
-          (ws) => new Date(ws.date) >= weekAgo
+        return get().workoutSessions.filter((ws) =>
+          isDateStampInRange(ws.date, weekAgo, now)
         ).length;
       },
 
@@ -448,7 +475,64 @@ export const useStore = create<AppState>()(
           }
         });
 
-        return history.sort((a, b) => a.date.localeCompare(b.date));
+        return history.sort(
+          (a, b) => parseDateStamp(a.date).getTime() - parseDateStamp(b.date).getTime()
+        );
+      },
+
+      // Body Weight Tracking
+      weightEntries: [],
+
+      addWeightEntry: (weight, notes, date) => {
+        const entry: WeightEntry = {
+          id: uuidv4(),
+          date: date || getDateStamp(),
+          weight,
+          notes,
+          createdAt: new Date().toISOString(),
+        };
+
+        set((state) => {
+          // Remove existing entry for the same date if exists
+          const filtered = state.weightEntries.filter((e) => e.date !== entry.date);
+          return {
+            weightEntries: [...filtered, entry].sort(
+              (a, b) => parseDateStamp(b.date).getTime() - parseDateStamp(a.date).getTime()
+            ),
+          };
+        });
+
+        // Also update user's current weight
+        const user = get().user;
+        if (user) {
+          get().updateUser({ weight });
+        }
+      },
+
+      deleteWeightEntry: (id) => {
+        set((state) => ({
+          weightEntries: state.weightEntries.filter((e) => e.id !== id),
+        }));
+      },
+
+      getLatestWeight: () => {
+        const entries = get().weightEntries;
+        return entries.length > 0 ? entries[0] : null;
+      },
+
+      getWeightHistory: (days = 30) => {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        return get().weightEntries.filter((e) =>
+          parseDateStamp(e.date).getTime() >= cutoff.getTime()
+        );
+      },
+
+      // New PR tracking for celebrations
+      newPRs: [],
+
+      clearNewPRs: () => {
+        set({ newPRs: [] });
       },
     }),
     {
