@@ -221,7 +221,7 @@ export function Diet() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1">
-                <Droplet className="w-4 h-4 text-blue-500" />
+                <Droplet className="w-4 h-4 text-yellow-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Fat</span>
               </div>
               <span className="text-sm font-medium text-gray-900 dark:text-white">

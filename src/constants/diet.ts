@@ -12,6 +12,7 @@ import {
   Coffee,
   Dumbbell,
   Zap,
+  Utensils,
 } from 'lucide-react';
 import type { MealType, FoodCategory } from '../types';
 
@@ -51,6 +52,7 @@ export const categoryIcons: Record<FoodCategory, React.ElementType> = {
   vegetables: Salad,
   dairy: Milk,
   fruits: Apple,
+  sides: Utensils,
   other: MoreHorizontal,
 };
 
@@ -61,16 +63,18 @@ export const categoryLabels: Record<FoodCategory, string> = {
   vegetables: 'Vegetables',
   dairy: 'Dairy',
   fruits: 'Fruits',
+  sides: 'Sides',
   other: 'Other',
 };
 
 export const categoryColors: Record<FoodCategory, string> = {
   protein: 'text-red-500 bg-red-50',
   carbs: 'text-amber-500 bg-amber-50',
-  fats: 'text-blue-500 bg-blue-50',
+  fats: 'text-yellow-500 bg-yellow-50',
   vegetables: 'text-green-500 bg-green-50',
   dairy: 'text-purple-500 bg-purple-50',
   fruits: 'text-orange-500 bg-orange-50',
+  sides: 'text-teal-500 bg-teal-50',
   other: 'text-gray-500 bg-gray-50',
 };
 

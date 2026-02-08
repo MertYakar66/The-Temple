@@ -237,7 +237,7 @@ export function DietSettings() {
             {/* Fat */}
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">
-                <Droplet className="w-5 h-5 text-blue-500" />
+                <Droplet className="w-5 h-5 text-yellow-500" />
                 <span className="text-gray-900 dark:text-white">Fat (g)</span>
               </div>
               {editingGoals ? (
@@ -288,7 +288,7 @@ export function DietSettings() {
                 </div>
                 <span className="text-gray-400">+</span>
                 <div className="flex items-center gap-1">
-                  <Droplet className="w-4 h-4 text-blue-500" />
+                  <Droplet className="w-4 h-4 text-yellow-500" />
                   <span className="font-medium text-gray-900 dark:text-white">
                     {editingGoals ? localGoals.dailyFat : dietSettings.goals.dailyFat}g
                   </span>

@@ -15,6 +15,7 @@ import {
   XCircle,
   ChevronDown,
   ChevronUp,
+  Trash2,
 } from 'lucide-react';
 import {
   format,
@@ -51,9 +52,11 @@ const mealTypeOrder: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'pre
 export function History() {
   const workoutSessions = useStore((state) => state.workoutSessions);
   const routines = useStore((state) => state.routines);
+  const deleteWorkoutSession = useStore((state) => state.deleteWorkoutSession);
   const getLogEntriesForDate = useDietStore((state) => state.getLogEntriesForDate);
   const getDailyMacros = useDietStore((state) => state.getDailyMacros);
   const dietSettings = useDietStore((state) => state.dietSettings);
+  const deleteLogEntry = useDietStore((state) => state.deleteLogEntry);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
@@ -234,7 +237,12 @@ export function History() {
               ) : (
                 <div className="space-y-3">
                   {selectedDateWorkouts.map((workout) => (
-                    <WorkoutCard key={workout.id} workout={workout} routines={routines} />
+                    <WorkoutCard
+                      key={workout.id}
+                      workout={workout}
+                      routines={routines}
+                      onDelete={() => deleteWorkoutSession(workout.id)}
+                    />
                   ))}
                 </div>
               )}
@@ -326,9 +334,9 @@ export function History() {
                     </div>
 
                     {/* Fat */}
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
-                        <Droplet className="w-4 h-4 text-blue-500" />
+                        <Droplet className="w-4 h-4 text-yellow-500" />
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Fat</span>
                       </div>
                       <div className="flex items-baseline justify-between">
@@ -378,7 +386,7 @@ export function History() {
                               key={entry.id}
                               className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
                             >
-                              <div>
+                              <div className="flex-1">
                                 <p className="text-gray-900 dark:text-white">
                                   {entry.type === 'food' && entry.food?.name}
                                   {entry.type === 'meal' && entry.meal?.name}
@@ -389,10 +397,17 @@ export function History() {
                                   {Math.round(entry.macros.calories)} cal
                                 </p>
                               </div>
-                              <div className="text-right text-sm text-gray-500 dark:text-gray-400">
+                              <div className="text-right text-sm text-gray-500 dark:text-gray-400 mr-2">
                                 <p>{Math.round(entry.macros.protein)}g P</p>
                                 <p>{Math.round(entry.macros.carbs)}g C • {Math.round(entry.macros.fat)}g F</p>
                               </div>
+                              <button
+                                onClick={() => deleteLogEntry(entry.id)}
+                                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                                title="Delete entry"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -421,7 +436,13 @@ export function History() {
               .reverse()
               .slice(0, 5)
               .map((workout) => (
-                <WorkoutCard key={workout.id} workout={workout} routines={routines} compact />
+                <WorkoutCard
+                  key={workout.id}
+                  workout={workout}
+                  routines={routines}
+                  onDelete={() => deleteWorkoutSession(workout.id)}
+                  compact
+                />
               ))}
           </div>
         )}
@@ -433,13 +454,16 @@ export function History() {
 function WorkoutCard({
   workout,
   routines,
+  onDelete,
   compact = false
 }: {
   workout: WorkoutSession;
   routines: ReturnType<typeof useStore.getState>['routines'];
+  onDelete?: () => void;
   compact?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const totalSets = getCompletedSetCount(workout.exercises);
   const totalVolume = getTotalVolume(workout.exercises);
@@ -455,8 +479,38 @@ function WorkoutCard({
 
   const plannedExercises = routine ? routine.exercises.length : null;
 
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete();
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <div className="card">
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+          <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+            Delete this workout? This cannot be undone.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDelete}
+              className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full text-left"
@@ -477,6 +531,18 @@ function WorkoutCard({
                 <Clock className="w-4 h-4" />
                 {duration} min
               </div>
+            )}
+            {onDelete && !compact && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
+                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                title="Delete workout"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             )}
             {!compact && (
               expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />

@@ -55,6 +55,7 @@ interface AppState {
   // History
   getWorkoutsByDate: (date: string) => WorkoutSession[];
   getWorkoutsInRange: (startDate: string, endDate: string) => WorkoutSession[];
+  deleteWorkoutSession: (id: string) => void;
 
   // Stats
   getTotalWorkouts: () => number;
@@ -428,6 +429,11 @@ export const useStore = create<AppState>()(
           isDateStampInRange(ws.date, start, end)
         );
       },
+
+      deleteWorkoutSession: (id) =>
+        set((state) => ({
+          workoutSessions: state.workoutSessions.filter((ws) => ws.id !== id),
+        })),
 
       // Stats
       getTotalWorkouts: () => get().workoutSessions.length,

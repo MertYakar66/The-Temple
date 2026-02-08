@@ -157,7 +157,7 @@ export interface TemplateExercise {
 // Diet Module Types
 // ============================================
 
-export type FoodCategory = 'protein' | 'carbs' | 'fats' | 'vegetables' | 'dairy' | 'fruits' | 'other';
+export type FoodCategory = 'protein' | 'carbs' | 'fats' | 'vegetables' | 'dairy' | 'fruits' | 'sides' | 'other';
 export type DietGoalType = 'cut' | 'maintenance' | 'bulk';
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'pre_workout' | 'post_workout';
 
