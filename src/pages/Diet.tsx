@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
 import {
   Plus,
   Flame,
@@ -7,30 +8,24 @@ import {
   Wheat,
   Droplet,
   ChevronRight,
+  ChevronLeft,
   Dumbbell,
   Trash2,
   TrendingUp,
   Utensils,
   Settings,
   Target,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { useDietStore } from '../store/useDietStore';
 import { useStore } from '../store/useStore';
-import type { MealType } from '../types';
-
-const mealTypeLabels: Record<MealType, string> = {
-  breakfast: 'Breakfast',
-  lunch: 'Lunch',
-  dinner: 'Dinner',
-  snack: 'Snack',
-  pre_workout: 'Pre-Workout',
-  post_workout: 'Post-Workout',
-};
-
-const mealTypeOrder: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'pre_workout', 'post_workout'];
 
 export function Diet() {
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
   const getLogEntriesForDate = useDietStore((s) => s.getLogEntriesForDate);
   const getDailyMacros = useDietStore((s) => s.getDailyMacros);
@@ -40,7 +35,7 @@ export function Diet() {
 
   // Get workout data to determine if it's a training day
   const workoutSessions = useStore((s) => s.workoutSessions);
-  const todaysWorkouts = workoutSessions.filter((ws) => ws.date === today);
+  const todaysWorkouts = workoutSessions.filter((ws) => ws.date === dateStr);
   const isTrainingDay = todaysWorkouts.length > 0;
 
   // Calculate workout intensity based on volume
@@ -60,8 +55,8 @@ export function Diet() {
 
   const workoutIntensity = getWorkoutIntensity();
 
-  const entries = getLogEntriesForDate(today);
-  const dailyMacros = getDailyMacros(today);
+  const entries = getLogEntriesForDate(dateStr);
+  const dailyMacros = getDailyMacros(dateStr);
 
   // Adjust targets for training day
   const baseTargets = dietSettings.goals;
@@ -72,11 +67,32 @@ export function Diet() {
     fat: baseTargets.dailyFat,
   };
 
-  // Group entries by meal type
-  const entriesByMealType = mealTypeOrder.reduce((acc, mealType) => {
-    acc[mealType] = entries.filter((e) => e.mealType === mealType);
+  // Group entries by meal name
+  const entriesByMealName = entries.reduce((acc, entry) => {
+    const mealName = entry.mealType || 'Other';
+    if (!acc[mealName]) {
+      acc[mealName] = [];
+    }
+    acc[mealName].push(entry);
     return acc;
-  }, {} as Record<MealType, typeof entries>);
+  }, {} as Record<string, typeof entries>);
+
+  // Calendar logic
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  // Get the day of week for the first day (0 = Sunday)
+  const startDayOfWeek = monthStart.getDay();
+
+  // Check if a day has logged entries
+  const getDayStatus = (day: Date) => {
+    const dayStr = format(day, 'yyyy-MM-dd');
+    const dayEntries = getLogEntriesForDate(dayStr);
+    return dayEntries.length > 0;
+  };
+
+  const isToday = isSameDay(selectedDate, new Date());
 
   const MacroBar = ({
     current,
@@ -106,11 +122,22 @@ export function Diet() {
 
   return (
     <div className="px-4 py-6 space-y-6 pb-24">
-      {/* Header */}
+      {/* Header with Calendar Toggle */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nutrition</h1>
-          <p className="text-gray-600 dark:text-gray-400">{format(new Date(), 'EEEE, MMMM d')}</p>
+          <button
+            onClick={() => setShowCalendar(!showCalendar)}
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
+          >
+            <CalendarIcon className="w-4 h-4" />
+            <span>{format(selectedDate, 'EEEE, MMMM d')}</span>
+            {!isToday && (
+              <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-full">
+                {format(selectedDate, 'yyyy')}
+              </span>
+            )}
+          </button>
         </div>
         <div className="flex gap-2">
           <Link
@@ -127,6 +154,90 @@ export function Diet() {
           </Link>
         </div>
       </div>
+
+      {/* Calendar */}
+      {showCalendar && (
+        <div className="card">
+          {/* Month Navigation */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {format(currentMonth, 'MMMM yyyy')}
+            </h3>
+            <button
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
+
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+              <div key={day} className="text-center text-xs text-gray-500 dark:text-gray-400 font-medium py-1">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {/* Empty cells for days before month start */}
+            {Array.from({ length: startDayOfWeek }).map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-square" />
+            ))}
+
+            {/* Days of month */}
+            {daysInMonth.map((day) => {
+              const isSelected = isSameDay(day, selectedDate);
+              const isTodayDate = isSameDay(day, new Date());
+              const hasEntries = getDayStatus(day);
+
+              return (
+                <button
+                  key={day.toISOString()}
+                  onClick={() => {
+                    setSelectedDate(day);
+                    setShowCalendar(false);
+                  }}
+                  className={`aspect-square flex flex-col items-center justify-center rounded-lg text-sm relative transition-colors ${
+                    isSelected
+                      ? 'bg-primary-600 text-white'
+                      : isTodayDate
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  {format(day, 'd')}
+                  {hasEntries && !isSelected && (
+                    <div className="absolute bottom-1 w-1.5 h-1.5 bg-green-500 rounded-full" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => {
+                setSelectedDate(new Date());
+                setCurrentMonth(new Date());
+                setShowCalendar(false);
+              }}
+              className="flex-1 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Goals Button - Prominent */}
       <Link
@@ -228,7 +339,7 @@ export function Diet() {
                 {Math.round(dailyMacros.fat)}g
               </span>
             </div>
-            <MacroBar current={dailyMacros.fat} target={targets.fat} color="bg-blue-500" />
+            <MacroBar current={dailyMacros.fat} target={targets.fat} color="bg-yellow-500" />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">/ {targets.fat}g</p>
           </div>
         </div>
@@ -265,7 +376,7 @@ export function Diet() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3">
         <Link
-          to="/diet/log"
+          to={`/diet/log?date=${dateStr}`}
           className="card flex items-center gap-3 hover:shadow-md transition-shadow"
         >
           <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center">
@@ -290,10 +401,12 @@ export function Diet() {
         </Link>
       </div>
 
-      {/* Today's Log */}
+      {/* Day's Log */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-900 dark:text-white">Today's Log</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white">
+            {isToday ? "Today's Log" : `Log for ${format(selectedDate, 'MMM d')}`}
+          </h2>
           <Link
             to="/diet/weekly"
             className="text-primary-600 dark:text-primary-400 text-sm font-medium flex items-center"
@@ -305,17 +418,14 @@ export function Diet() {
         {entries.length === 0 ? (
           <div className="card text-center py-8">
             <Utensils className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 mb-4">No meals logged today</p>
-            <Link to="/diet/log" className="btn-primary">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">No meals logged {isToday ? 'today' : 'this day'}</p>
+            <Link to={`/diet/log?date=${dateStr}`} className="btn-primary">
               Log First Meal
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
-            {mealTypeOrder.map((mealType) => {
-              const mealEntries = entriesByMealType[mealType];
-              if (mealEntries.length === 0) return null;
-
+            {Object.entries(entriesByMealName).map(([mealName, mealEntries]) => {
               const mealMacros = mealEntries.reduce(
                 (acc, e) => ({
                   calories: acc.calories + e.macros.calories,
@@ -325,9 +435,9 @@ export function Diet() {
               );
 
               return (
-                <div key={mealType} className="card">
+                <div key={mealName} className="card">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-gray-900 dark:text-white">{mealTypeLabels[mealType]}</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{mealName}</h3>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       {Math.round(mealMacros.calories)} cal • {Math.round(mealMacros.protein)}g protein
                     </span>

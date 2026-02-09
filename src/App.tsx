@@ -16,6 +16,7 @@ import { WorkoutTemplates } from './pages/WorkoutTemplates';
 import { Diet } from './pages/Diet';
 import { DietLog } from './pages/DietLog';
 import { DietMeals } from './pages/DietMeals';
+import { DietMealNew } from './pages/DietMealNew';
 import { DietWeekly } from './pages/DietWeekly';
 import { DietSettings } from './pages/DietSettings';
 import { DietFoodNew } from './pages/DietFoodNew';
@@ -59,6 +60,7 @@ function AppRoutes() {
       {/* Diet routes without bottom nav */}
       <Route path="/diet/log" element={<DietLog />} />
       <Route path="/diet/meals" element={<DietMeals />} />
+      <Route path="/diet/meals/new" element={<DietMealNew />} />
       <Route path="/diet/weekly" element={<DietWeekly />} />
       <Route path="/diet/settings" element={<DietSettings />} />
       <Route path="/diet/food/new" element={<DietFoodNew />} />

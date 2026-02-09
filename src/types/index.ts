@@ -159,7 +159,8 @@ export interface TemplateExercise {
 
 export type FoodCategory = 'protein' | 'carbs' | 'fats' | 'vegetables' | 'dairy' | 'fruits' | 'sides' | 'other';
 export type DietGoalType = 'cut' | 'maintenance' | 'bulk';
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'pre_workout' | 'post_workout';
+// MealType is now a string to allow custom meal names
+export type MealType = string;
 
 export interface Macros {
   calories: number;

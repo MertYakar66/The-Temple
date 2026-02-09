@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   ChevronLeft,
@@ -19,16 +19,7 @@ import {
   Utensils,
 } from 'lucide-react';
 import { useDietStore } from '../store/useDietStore';
-import type { Food, MealType, FoodCategory } from '../types';
-
-const mealTypeOptions: { id: MealType; label: string }[] = [
-  { id: 'breakfast', label: 'Breakfast' },
-  { id: 'lunch', label: 'Lunch' },
-  { id: 'dinner', label: 'Dinner' },
-  { id: 'snack', label: 'Snack' },
-  { id: 'pre_workout', label: 'Pre-Workout' },
-  { id: 'post_workout', label: 'Post-Workout' },
-];
+import type { Food, FoodCategory } from '../types';
 
 const categoryIcons: Record<FoodCategory, React.ElementType> = {
   protein: Beef,
@@ -52,9 +43,14 @@ const categoryLabels: Record<FoodCategory, string> = {
   other: 'Other',
 };
 
+// Common meal name suggestions
+const mealSuggestions = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Pre-Workout', 'Post-Workout'];
+
 export function DietLog() {
   const navigate = useNavigate();
-  const today = format(new Date(), 'yyyy-MM-dd');
+  const [searchParams] = useSearchParams();
+  const dateParam = searchParams.get('date');
+  const logDate = dateParam || format(new Date(), 'yyyy-MM-dd');
 
   const getAllFoods = useDietStore((s) => s.getAllFoods);
   const recentFoodIds = useDietStore((s) => s.recentFoodIds);
@@ -66,7 +62,7 @@ export function DietLog() {
   const getFood = useDietStore((s) => s.getFood);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMealType, setSelectedMealType] = useState<MealType>('lunch');
+  const [mealName, setMealName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | 'all' | 'recent' | 'meals' | 'recipes'>('recent');
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [servings, setServings] = useState(1);
@@ -100,10 +96,14 @@ export function DietLog() {
 
   const handleLogFood = () => {
     if (!selectedFood) return;
+    if (!mealName.trim()) {
+      alert('Please enter a meal name');
+      return;
+    }
 
     logFood({
-      date: today,
-      mealType: selectedMealType,
+      date: logDate,
+      mealType: mealName.trim(),
       type: 'food',
       foodId: selectedFood.id,
       servings,
@@ -113,12 +113,20 @@ export function DietLog() {
   };
 
   const handleLogMeal = (mealId: string) => {
-    logMeal(mealId, today, selectedMealType);
+    if (!mealName.trim()) {
+      alert('Please enter a meal name');
+      return;
+    }
+    logMeal(mealId, logDate, mealName.trim());
     navigate('/diet');
   };
 
   const handleLogRecipe = (recipeId: string) => {
-    logRecipe(recipeId, 1, today, selectedMealType);
+    if (!mealName.trim()) {
+      alert('Please enter a meal name');
+      return;
+    }
+    logRecipe(recipeId, 1, logDate, mealName.trim());
     navigate('/diet');
   };
 
@@ -153,21 +161,28 @@ export function DietLog() {
             </p>
           </div>
 
-          {/* Meal Type */}
+          {/* Meal Name Input */}
           <div>
-            <label className="input-label">Meal</label>
-            <div className="flex flex-wrap gap-2">
-              {mealTypeOptions.map((option) => (
+            <label className="input-label">Meal Name</label>
+            <input
+              type="text"
+              value={mealName}
+              onChange={(e) => setMealName(e.target.value)}
+              placeholder="e.g., Breakfast, Lunch, Snack..."
+              className="input"
+            />
+            <div className="flex flex-wrap gap-2 mt-2">
+              {mealSuggestions.map((suggestion) => (
                 <button
-                  key={option.id}
-                  onClick={() => setSelectedMealType(option.id)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    selectedMealType === option.id
+                  key={suggestion}
+                  onClick={() => setMealName(suggestion)}
+                  className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                    mealName === suggestion
                       ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {option.label}
+                  {suggestion}
                 </button>
               ))}
             </div>
@@ -229,7 +244,15 @@ export function DietLog() {
             </div>
           </div>
 
-          <button onClick={handleLogFood} className="btn-primary w-full py-4 text-lg flex items-center justify-center">
+          <button
+            onClick={handleLogFood}
+            disabled={!mealName.trim()}
+            className={`w-full py-4 text-lg flex items-center justify-center rounded-xl font-semibold transition-colors ${
+              mealName.trim()
+                ? 'btn-primary'
+                : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+            }`}
+          >
             <Check className="w-5 h-5 mr-2" />
             Log Food
           </button>
@@ -261,21 +284,38 @@ export function DietLog() {
       </header>
 
       <div className="px-4 py-4 space-y-4">
-        {/* Meal Type Selector */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {mealTypeOptions.map((option) => (
-            <button
-              key={option.id}
-              onClick={() => setSelectedMealType(option.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedMealType === option.id
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
+        {/* Date Display */}
+        <div className="text-center py-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Logging for: <span className="font-medium text-gray-900 dark:text-white">{format(new Date(logDate), 'EEEE, MMMM d, yyyy')}</span>
+          </p>
+        </div>
+
+        {/* Meal Name Input */}
+        <div>
+          <label className="input-label">Meal Name</label>
+          <input
+            type="text"
+            value={mealName}
+            onChange={(e) => setMealName(e.target.value)}
+            placeholder="Enter meal name (e.g., Breakfast, Lunch...)"
+            className="input"
+          />
+          <div className="flex flex-wrap gap-2 mt-2">
+            {mealSuggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                onClick={() => setMealName(suggestion)}
+                className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+                  mealName === suggestion
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Search */}
@@ -370,7 +410,10 @@ export function DietLog() {
                 <button
                   key={meal.id}
                   onClick={() => handleLogMeal(meal.id)}
-                  className="w-full card flex items-center justify-between hover:shadow-md transition-shadow"
+                  disabled={!mealName.trim()}
+                  className={`w-full card flex items-center justify-between transition-shadow ${
+                    mealName.trim() ? 'hover:shadow-md' : 'opacity-50 cursor-not-allowed'
+                  }`}
                 >
                   <div className="text-left">
                     <p className="font-medium text-gray-900 dark:text-white">{meal.name}</p>
@@ -381,6 +424,11 @@ export function DietLog() {
                   <Plus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </button>
               ))
+            )}
+            {meals.length > 0 && !mealName.trim() && (
+              <p className="text-center text-sm text-amber-600 dark:text-amber-400">
+                Enter a meal name above to log
+              </p>
             )}
           </div>
         )}
@@ -403,7 +451,10 @@ export function DietLog() {
                 <button
                   key={recipe.id}
                   onClick={() => handleLogRecipe(recipe.id)}
-                  className="w-full card flex items-center justify-between hover:shadow-md transition-shadow"
+                  disabled={!mealName.trim()}
+                  className={`w-full card flex items-center justify-between transition-shadow ${
+                    mealName.trim() ? 'hover:shadow-md' : 'opacity-50 cursor-not-allowed'
+                  }`}
                 >
                   <div className="text-left">
                     <p className="font-medium text-gray-900 dark:text-white">{recipe.name}</p>
@@ -414,6 +465,11 @@ export function DietLog() {
                   <Plus className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 </button>
               ))
+            )}
+            {recipes.length > 0 && !mealName.trim() && (
+              <p className="text-center text-sm text-amber-600 dark:text-amber-400">
+                Enter a meal name above to log
+              </p>
             )}
           </div>
         )}
