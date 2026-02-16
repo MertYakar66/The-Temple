@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/layout/Layout';
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
@@ -12,6 +13,8 @@ import { Progress } from './pages/Progress';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
 import { WorkoutTemplates } from './pages/WorkoutTemplates';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
 // Diet Module
 import { Diet } from './pages/Diet';
 import { DietLog } from './pages/DietLog';
@@ -22,10 +25,39 @@ import { DietSettings } from './pages/DietSettings';
 import { DietFoodNew } from './pages/DietFoodNew';
 // Components
 import { PRCelebration } from './components/PRCelebration';
+import { Dumbbell } from 'lucide-react';
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center">
+      <div className="text-center text-white">
+        <Dumbbell className="w-16 h-16 mx-auto mb-4 animate-pulse" />
+        <p className="text-lg">Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 function AppRoutes() {
+  const { currentUser, loading } = useAuth();
   const user = useStore((state) => state.user);
   const hasCompletedOnboarding = user?.onboardingCompleted;
+
+  // Show loading while checking auth
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  // Show login/signup if not authenticated
+  if (!currentUser) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
 
   // Show onboarding if not completed
   if (!hasCompletedOnboarding) {
@@ -65,6 +97,10 @@ function AppRoutes() {
       <Route path="/diet/settings" element={<DietSettings />} />
       <Route path="/diet/food/new" element={<DietFoodNew />} />
 
+      {/* Auth routes - redirect if already logged in */}
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/signup" element={<Navigate to="/" replace />} />
+
       {/* Redirect to dashboard if onboarding is complete */}
       <Route path="/onboarding" element={<Navigate to="/" replace />} />
 
@@ -77,8 +113,10 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
-      <PRCelebration />
+      <AuthProvider>
+        <AppRoutes />
+        <PRCelebration />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

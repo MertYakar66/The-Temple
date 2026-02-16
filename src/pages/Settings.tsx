@@ -17,10 +17,13 @@ import {
   Plus,
   TrendingUp,
   Library,
+  LogOut,
+  Mail,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { useAuth } from '../contexts/AuthContext';
 import type { TrainingGoal, ExperienceLevel, Equipment } from '../types';
 
 const goalLabels: Record<TrainingGoal, string> = {
@@ -46,6 +49,7 @@ const equipmentLabels: Record<Equipment, string> = {
 
 export function Settings() {
   const navigate = useNavigate();
+  const { currentUser, logout } = useAuth();
   const user = useStore((state) => state.user);
   const updateUser = useStore((state) => state.updateUser);
   const workoutSessions = useStore((state) => state.workoutSessions);
@@ -64,6 +68,15 @@ export function Settings() {
   const [editValue, setEditValue] = useState('');
   const [showWeightInput, setShowWeightInput] = useState(false);
   const [newWeight, setNewWeight] = useState('');
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
+  };
 
   if (!user) {
     return (
@@ -442,9 +455,38 @@ export function Settings() {
           </div>
         </div>
 
+        {/* Account */}
+        <div>
+          <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+            Account
+          </h2>
+          <div className="card dark:bg-gray-800 dark:border-gray-700 p-0 divide-y divide-gray-100 dark:divide-gray-700">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <div>
+                  <span className="text-gray-900 dark:text-white block">Signed in as</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{currentUser?.email}</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <div className="flex items-center gap-3">
+                <LogOut className="w-5 h-5 text-red-500" />
+                <span className="text-red-600 dark:text-red-400">Sign Out</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+        </div>
+
         {/* App Info */}
         <div className="text-center text-sm text-gray-500 dark:text-gray-400 pt-4">
-          <p>FitTrack v1.1.0</p>
+          <p>The Temple v1.2.0</p>
           <p className="mt-1">
             {workoutSessions.length} workouts • {routines.length} routines • {personalRecords.length} PRs
           </p>
