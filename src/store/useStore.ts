@@ -11,6 +11,7 @@ import type {
   PersonalRecord,
   Exercise,
   WeightEntry,
+  ExerciseGoal,
 } from '../types';
 import { defaultExercises } from '../data/exercises';
 import { defaultRoutines } from '../data/defaultRoutines';
@@ -73,6 +74,12 @@ interface AppState {
   // New PR tracking
   newPRs: PersonalRecord[];
   clearNewPRs: () => void;
+
+  // Exercise Goals
+  exerciseGoals: ExerciseGoal[];
+  setExerciseGoal: (goal: Omit<ExerciseGoal, 'createdAt' | 'updatedAt'>) => void;
+  getExerciseGoal: (exerciseId: string) => ExerciseGoal | undefined;
+  getLastWorkoutForExercise: (exerciseId: string) => WorkoutExercise | undefined;
 }
 
 export const useStore = create<AppState>()(
@@ -534,6 +541,55 @@ export const useStore = create<AppState>()(
 
       clearNewPRs: () => {
         set({ newPRs: [] });
+      },
+
+      // Exercise Goals
+      exerciseGoals: [],
+
+      setExerciseGoal: (goalData) => {
+        const now = new Date().toISOString();
+        set((state) => {
+          const existingIndex = state.exerciseGoals.findIndex(
+            (g) => g.exerciseId === goalData.exerciseId
+          );
+
+          if (existingIndex >= 0) {
+            // Update existing goal
+            const updated = [...state.exerciseGoals];
+            updated[existingIndex] = {
+              ...goalData,
+              createdAt: state.exerciseGoals[existingIndex].createdAt,
+              updatedAt: now,
+            };
+            return { exerciseGoals: updated };
+          }
+
+          // Add new goal
+          return {
+            exerciseGoals: [
+              ...state.exerciseGoals,
+              { ...goalData, createdAt: now, updatedAt: now },
+            ],
+          };
+        });
+      },
+
+      getExerciseGoal: (exerciseId) => {
+        return get().exerciseGoals.find((g) => g.exerciseId === exerciseId);
+      },
+
+      getLastWorkoutForExercise: (exerciseId) => {
+        const sessions = get().workoutSessions;
+        // Go through sessions in reverse (most recent first)
+        for (let i = sessions.length - 1; i >= 0; i--) {
+          const exercise = sessions[i].exercises.find(
+            (e) => e.exerciseId === exerciseId
+          );
+          if (exercise) {
+            return exercise;
+          }
+        }
+        return undefined;
       },
     }),
     {
