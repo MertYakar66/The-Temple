@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Play, Trash2, Edit2, MoreVertical } from 'lucide-react';
+import { Plus, Play, Trash2, Edit2, MoreVertical, ChevronLeft } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export function Routines() {
@@ -23,25 +23,37 @@ export function Routines() {
   };
 
   return (
-    <div className="px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Routines</h1>
-        <Link
-          to="/routines/new"
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          New
-        </Link>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <header className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 z-10">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+          >
+            <ChevronLeft className="w-5 h-5 mr-1" />
+            Home
+          </button>
+          <h1 className="font-semibold text-gray-900 dark:text-white">My Routines</h1>
+          <Link
+            to="/routines/new"
+            className="text-primary-600 dark:text-primary-400 font-medium flex items-center gap-1"
+          >
+            <Plus className="w-5 h-5" />
+            New
+          </Link>
+        </div>
+      </header>
+
+      <div className="px-4 py-6">
 
       {routines.length === 0 ? (
         <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Plus className="w-8 h-8 text-gray-400" />
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Plus className="w-8 h-8 text-gray-400 dark:text-gray-500" />
           </div>
-          <h3 className="font-semibold text-gray-900 mb-2">No routines yet</h3>
-          <p className="text-gray-600 mb-4">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">No routines yet</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
             Create workout routines to save time and stay consistent
           </p>
           <Link to="/routines/new" className="btn-primary">
@@ -57,15 +69,15 @@ export function Routines() {
                   to={`/routines/${routine.id}`}
                   className="flex-1"
                 >
-                  <h3 className="font-semibold text-gray-900 mb-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                     {routine.name}
                   </h3>
                   {routine.description && (
-                    <p className="text-sm text-gray-500 mb-2 line-clamp-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">
                       {routine.description}
                     </p>
                   )}
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {routine.exercises.length} exercises
                   </p>
                 </Link>
@@ -73,9 +85,9 @@ export function Routines() {
                 <div className="relative">
                   <button
                     onClick={() => setMenuOpen(menuOpen === routine.id ? null : routine.id)}
-                    className="p-2 hover:bg-gray-100 rounded-lg"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                   >
-                    <MoreVertical className="w-5 h-5 text-gray-500" />
+                    <MoreVertical className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   </button>
 
                   {menuOpen === routine.id && (
@@ -84,10 +96,10 @@ export function Routines() {
                         className="fixed inset-0 z-10"
                         onClick={() => setMenuOpen(null)}
                       />
-                      <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-20 overflow-hidden">
+                      <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 overflow-hidden">
                         <Link
                           to={`/routines/${routine.id}/edit`}
-                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-gray-700"
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
                           onClick={() => setMenuOpen(null)}
                         >
                           <Edit2 className="w-4 h-4" />
@@ -95,7 +107,7 @@ export function Routines() {
                         </Link>
                         <button
                           onClick={() => handleDelete(routine.id)}
-                          className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 text-red-600"
+                          className="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-red-600 dark:text-red-400"
                         >
                           <Trash2 className="w-4 h-4" />
                           Delete
@@ -106,7 +118,7 @@ export function Routines() {
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <button
                   onClick={() => handleStartWorkout(routine.id)}
                   className="w-full btn-primary flex items-center justify-center gap-2"

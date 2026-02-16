@@ -55,7 +55,7 @@ export function Exercises() {
 
   return (
     <div className="px-4 py-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Exercise Library</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Exercise Library</h1>
 
       {/* Search */}
       <div className="relative mb-4">
@@ -78,7 +78,7 @@ export function Exercises() {
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
               selectedMuscle === muscle.id
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {muscle.label}
@@ -92,29 +92,29 @@ export function Exercises() {
         <div className="space-y-6">
           {Object.entries(groupedExercises).map(([muscle, exerciseList]) => (
             <div key={muscle}>
-              <h2 className="font-semibold text-gray-900 mb-2 capitalize">
+              <h2 className="font-semibold text-gray-900 dark:text-white mb-2 capitalize">
                 {muscle.replace('_', ' ')}
               </h2>
               <div className="card p-0 overflow-hidden">
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {exerciseList.map((exercise) => (
                     <button
                       key={exercise.id}
                       onClick={() => setSelectedExercise(exercise)}
-                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                          <Dumbbell className="w-5 h-5 text-primary-600" />
+                        <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                          <Dumbbell className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                         </div>
                         <div className="text-left">
-                          <p className="font-medium text-gray-900">{exercise.name}</p>
-                          <p className="text-sm text-gray-500 line-clamp-1">
+                          <p className="font-medium text-gray-900 dark:text-white">{exercise.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
                             {exercise.equipment.join(', ')}
                           </p>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                      <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                     </button>
                   ))}
                 </div>
@@ -127,30 +127,30 @@ export function Exercises() {
         <div className="card p-0 overflow-hidden">
           {filteredExercises.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No exercises found</p>
+              <p className="text-gray-500 dark:text-gray-400">No exercises found</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {filteredExercises.map((exercise) => (
                 <button
                   key={exercise.id}
                   onClick={() => setSelectedExercise(exercise)}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <Dumbbell className="w-5 h-5 text-primary-600" />
+                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                      <Dumbbell className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div className="text-left">
-                      <p className="font-medium text-gray-900">{exercise.name}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-gray-900 dark:text-white">{exercise.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         {exercise.muscleGroups
                           .map((mg) => mg.charAt(0).toUpperCase() + mg.slice(1))
                           .join(', ')}
                       </p>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                  <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                 </button>
               ))}
             </div>
