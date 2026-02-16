@@ -235,11 +235,18 @@ export function WorkoutExerciseCard({
                     <span>RIR</span>
                   </div>
                   {lastWorkout.sets.map((set, idx) => (
-                    <div key={idx} className="grid grid-cols-4 gap-1 text-gray-700 dark:text-gray-300 px-1 py-0.5">
-                      <span>{idx + 1}</span>
-                      <span>{set.weight}kg</span>
-                      <span>{set.reps}</span>
-                      <span>{set.rir ?? '-'}</span>
+                    <div key={idx} className="px-1 py-0.5">
+                      <div className="grid grid-cols-4 gap-1 text-gray-700 dark:text-gray-300">
+                        <span>{idx + 1}</span>
+                        <span>{set.weight}kg</span>
+                        <span>{set.reps}</span>
+                        <span>{set.rir ?? '-'}</span>
+                      </div>
+                      {set.notes && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400 italic mt-0.5 pl-1">
+                          "{set.notes}"
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
