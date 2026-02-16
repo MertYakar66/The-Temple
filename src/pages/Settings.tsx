@@ -132,10 +132,11 @@ export function Settings() {
   const handleClearData = () => {
     if (
       window.confirm(
-        'This will delete all your data including workouts, routines, and personal records. This cannot be undone. Are you sure?'
+        'This will delete all your data including workouts, routines, nutrition logs, and personal records. This cannot be undone. Are you sure?'
       )
     ) {
       localStorage.removeItem('workout-tracker-storage');
+      localStorage.removeItem('diet-tracker-storage');
       window.location.reload();
     }
   };

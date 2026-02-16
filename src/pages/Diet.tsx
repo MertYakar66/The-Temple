@@ -20,6 +20,33 @@ import {
 import { useDietStore } from '../store/useDietStore';
 import { useStore } from '../store/useStore';
 
+// MacroBar component - extracted outside Diet to avoid lint warnings
+function MacroBar({
+  current,
+  target,
+  color,
+  isPrimary = false,
+}: {
+  current: number;
+  target: number;
+  color: string;
+  isPrimary?: boolean;
+}) {
+  const percentage = Math.min((current / target) * 100, 100);
+  const isOver = current > target;
+
+  return (
+    <div className="w-full">
+      <div className={`h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden ${isPrimary ? 'h-3' : ''}`}>
+        <div
+          className={`h-full rounded-full transition-all ${color} ${isOver ? 'opacity-80' : ''}`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function Diet() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -93,32 +120,6 @@ export function Diet() {
   };
 
   const isToday = isSameDay(selectedDate, new Date());
-
-  const MacroBar = ({
-    current,
-    target,
-    color,
-    isPrimary = false,
-  }: {
-    current: number;
-    target: number;
-    color: string;
-    isPrimary?: boolean;
-  }) => {
-    const percentage = Math.min((current / target) * 100, 100);
-    const isOver = current > target;
-
-    return (
-      <div className="w-full">
-        <div className={`h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden ${isPrimary ? 'h-3' : ''}`}>
-          <div
-            className={`h-full rounded-full transition-all ${color} ${isOver ? 'opacity-80' : ''}`}
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="px-4 py-6 space-y-6 pb-24">
