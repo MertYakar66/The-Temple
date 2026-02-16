@@ -93,37 +93,37 @@ export function DietWeekly() {
   const feedback = getFeedback();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+      <header className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 z-10">
         <div className="flex items-center">
           <button
             onClick={() => navigate('/diet')}
-            className="flex items-center text-gray-600 hover:text-gray-900"
+            className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
             Back
           </button>
-          <h1 className="ml-4 font-semibold text-gray-900">Weekly Summary</h1>
+          <h1 className="ml-4 font-semibold text-gray-900 dark:text-white">Weekly Summary</h1>
         </div>
       </header>
 
       <div className="px-4 py-6 space-y-6">
         {/* Week Navigation */}
         <div className="flex items-center justify-between">
-          <button onClick={prevWeek} className="p-2 hover:bg-gray-100 rounded-lg">
+          <button onClick={prevWeek} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-900 dark:text-white">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div className="text-center">
-            <p className="font-semibold text-gray-900">
+            <p className="font-semibold text-gray-900 dark:text-white">
               {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
             </p>
-            {isCurrentWeek && <span className="text-xs text-primary-600">This Week</span>}
+            {isCurrentWeek && <span className="text-xs text-primary-600 dark:text-primary-400">This Week</span>}
           </div>
           <button
             onClick={nextWeek}
             disabled={isCurrentWeek}
-            className={`p-2 rounded-lg ${isCurrentWeek ? 'opacity-30' : 'hover:bg-gray-100'}`}
+            className={`p-2 rounded-lg text-gray-900 dark:text-white ${isCurrentWeek ? 'opacity-30' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -133,33 +133,33 @@ export function DietWeekly() {
         <div className="grid grid-cols-2 gap-3">
           <div className="card text-center">
             <Flame className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{stats.avgCalories}</p>
-            <p className="text-sm text-gray-500">Avg Calories</p>
-            <p className="text-xs text-gray-400 mt-1">Target: {targets.dailyCalories}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.avgCalories}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Avg Calories</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Target: {targets.dailyCalories}</p>
           </div>
           <div className="card text-center">
             <Beef className="w-6 h-6 text-red-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{stats.avgProtein}g</p>
-            <p className="text-sm text-gray-500">Avg Protein</p>
-            <p className="text-xs text-gray-400 mt-1">Target: {targets.dailyProtein}g</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.avgProtein}g</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Avg Protein</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Target: {targets.dailyProtein}g</p>
           </div>
           <div className="card text-center">
             <Check className="w-6 h-6 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{stats.proteinHitDays}/7</p>
-            <p className="text-sm text-gray-500">Protein Days</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.proteinHitDays}/7</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Protein Days</p>
           </div>
           <div className="card text-center">
             <Dumbbell className="w-6 h-6 text-primary-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {alignment.alignedDays}/{alignment.trainingDays}
             </p>
-            <p className="text-sm text-gray-500">Training Aligned</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Training Aligned</p>
           </div>
         </div>
 
         {/* Day by Day */}
         <div className="card">
-          <h3 className="font-semibold text-gray-900 mb-4">Daily Breakdown</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Daily Breakdown</h3>
           <div className="space-y-3">
             {weekDates.map((date) => {
               const dateStr = format(date, 'yyyy-MM-dd');
@@ -173,14 +173,14 @@ export function DietWeekly() {
               return (
                 <div
                   key={dateStr}
-                  className={`flex items-center justify-between py-2 border-b border-gray-100 last:border-0 ${
-                    isToday ? 'bg-primary-50 -mx-4 px-4 rounded-lg' : ''
+                  className={`flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0 ${
+                    isToday ? 'bg-primary-50 dark:bg-primary-900/20 -mx-4 px-4 rounded-lg' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 text-center">
-                      <p className="text-xs text-gray-500">{format(date, 'EEE')}</p>
-                      <p className="font-semibold text-gray-900">{format(date, 'd')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{format(date, 'EEE')}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{format(date, 'd')}</p>
                     </div>
                     {isTrainingDay && (
                       <Dumbbell className="w-4 h-4 text-primary-500" />
@@ -188,28 +188,28 @@ export function DietWeekly() {
                   </div>
 
                   {isFuture ? (
-                    <span className="text-sm text-gray-400">-</span>
+                    <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
                   ) : entries.length === 0 ? (
-                    <span className="text-sm text-gray-400">Not logged</span>
+                    <span className="text-sm text-gray-400 dark:text-gray-500">Not logged</span>
                   ) : (
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {Math.round(macros.calories)} cal
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                           {Math.round(macros.protein)}g protein
                         </p>
                       </div>
                       <div
                         className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                          proteinHit ? 'bg-green-100' : 'bg-red-100'
+                          proteinHit ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
                         }`}
                       >
                         {proteinHit ? (
-                          <Check className="w-4 h-4 text-green-600" />
+                          <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                         ) : (
-                          <X className="w-4 h-4 text-red-600" />
+                          <X className="w-4 h-4 text-red-600 dark:text-red-400" />
                         )}
                       </div>
                     </div>
@@ -223,12 +223,12 @@ export function DietWeekly() {
         {/* Feedback */}
         {feedback.length > 0 && (
           <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-3">Insights</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Insights</h3>
             <div className="space-y-2">
               {feedback.map((msg, index) => (
                 <div key={index} className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-2" />
-                  <p className="text-sm text-gray-600">{msg}</p>
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 mt-2" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{msg}</p>
                 </div>
               ))}
             </div>
@@ -238,28 +238,28 @@ export function DietWeekly() {
         {/* Trend Comparison */}
         {stats.avgCalories > 0 && (
           <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-3">vs Target</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3">vs Target</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Calories</span>
+                <span className="text-gray-600 dark:text-gray-400">Calories</span>
                 <div className="flex items-center gap-2">
                   {stats.avgCalories >= targets.dailyCalories * 0.95 &&
                   stats.avgCalories <= targets.dailyCalories * 1.05 ? (
                     <>
                       <Minus className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600">On target</span>
+                      <span className="text-gray-600 dark:text-gray-400">On target</span>
                     </>
                   ) : stats.avgCalories < targets.dailyCalories ? (
                     <>
                       <TrendingDown className="w-4 h-4 text-amber-500" />
-                      <span className="text-amber-600">
+                      <span className="text-amber-600 dark:text-amber-400">
                         {Math.round(targets.dailyCalories - stats.avgCalories)} under
                       </span>
                     </>
                   ) : (
                     <>
                       <TrendingUp className="w-4 h-4 text-amber-500" />
-                      <span className="text-amber-600">
+                      <span className="text-amber-600 dark:text-amber-400">
                         {Math.round(stats.avgCalories - targets.dailyCalories)} over
                       </span>
                     </>
@@ -267,17 +267,17 @@ export function DietWeekly() {
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Protein</span>
+                <span className="text-gray-600 dark:text-gray-400">Protein</span>
                 <div className="flex items-center gap-2">
                   {stats.avgProtein >= targets.dailyProtein * 0.9 ? (
                     <>
                       <Check className="w-4 h-4 text-green-500" />
-                      <span className="text-green-600">Meeting target</span>
+                      <span className="text-green-600 dark:text-green-400">Meeting target</span>
                     </>
                   ) : (
                     <>
                       <TrendingDown className="w-4 h-4 text-red-500" />
-                      <span className="text-red-600">
+                      <span className="text-red-600 dark:text-red-400">
                         {Math.round(targets.dailyProtein - stats.avgProtein)}g below
                       </span>
                     </>

@@ -14,9 +14,9 @@ export function RoutineDetail() {
 
   if (!routine) {
     return (
-      <div className="px-4 py-6 text-center">
-        <p className="text-gray-500">Routine not found</p>
-        <Link to="/routines" className="btn-primary mt-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 py-6 text-center">
+        <p className="text-gray-500 dark:text-gray-400">Routine not found</p>
+        <Link to="/routines" className="btn-primary mt-4 inline-block">
           Back to Routines
         </Link>
       </div>
@@ -29,20 +29,20 @@ export function RoutineDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+      <header className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 z-10">
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate('/routines')}
-            className="flex items-center text-gray-600 hover:text-gray-900"
+            className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
             Back
           </button>
           <Link
             to={`/routines/${routine.id}/edit`}
-            className="flex items-center gap-1 text-primary-600 font-medium"
+            className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-medium"
           >
             <Edit2 className="w-5 h-5" />
             Edit
@@ -53,20 +53,20 @@ export function RoutineDetail() {
       <div className="px-4 py-6 space-y-6">
         {/* Title */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             {routine.name}
           </h1>
           {routine.description && (
-            <p className="text-gray-600">{routine.description}</p>
+            <p className="text-gray-600 dark:text-gray-400">{routine.description}</p>
           )}
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             {routine.exercises.length} exercises
           </p>
         </div>
 
         {/* Exercises */}
         <div>
-          <h2 className="font-semibold text-gray-900 mb-3">Exercises</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Exercises</h2>
           <div className="space-y-3">
             {routine.exercises.map((re, index) => {
               const exercise = getExercise(re.exerciseId);
@@ -74,16 +74,16 @@ export function RoutineDetail() {
 
               return (
                 <div key={re.id} className="card flex items-center gap-4">
-                  <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600 font-medium">
+                  <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center text-primary-600 dark:text-primary-400 font-medium">
                     {index + 1}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{exercise.name}</h3>
-                    <p className="text-sm text-gray-500">
+                    <h3 className="font-medium text-gray-900 dark:text-white">{exercise.name}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {re.targetSets} sets × {re.targetReps} reps • {re.restSeconds}s rest
                     </p>
                   </div>
-                  <Dumbbell className="w-5 h-5 text-gray-400" />
+                  <Dumbbell className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                 </div>
               );
             })}

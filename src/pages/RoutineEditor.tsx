@@ -82,23 +82,23 @@ export function RoutineEditor() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+      <header className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 z-10">
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate('/routines')}
-            className="flex items-center text-gray-600 hover:text-gray-900"
+            className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
             Back
           </button>
-          <h1 className="font-semibold text-gray-900">
+          <h1 className="font-semibold text-gray-900 dark:text-white">
             {isEditing ? 'Edit Routine' : 'New Routine'}
           </h1>
           <button
             onClick={handleSave}
-            className="text-primary-600 font-medium flex items-center gap-1"
+            className="text-primary-600 dark:text-primary-400 font-medium flex items-center gap-1"
           >
             <Save className="w-5 h-5" />
             Save
@@ -137,19 +137,19 @@ export function RoutineEditor() {
         {/* Exercises */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-900">Exercises</h2>
-            <span className="text-sm text-gray-500">
+            <h2 className="font-semibold text-gray-900 dark:text-white">Exercises</h2>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               {routineExercises.length} exercise{routineExercises.length !== 1 ? 's' : ''}
             </span>
           </div>
 
           {errors.exercises && (
-            <p className="text-red-500 text-sm mb-3">{errors.exercises}</p>
+            <p className="text-red-500 dark:text-red-400 text-sm mb-3">{errors.exercises}</p>
           )}
 
           {routineExercises.length === 0 ? (
             <div className="text-center py-8 card">
-              <p className="text-gray-500 mb-4">No exercises added yet</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">No exercises added yet</p>
               <button
                 onClick={() => setShowExerciseSelector(true)}
                 className="btn-primary"
@@ -167,19 +167,19 @@ export function RoutineEditor() {
                 return (
                   <div key={re.id} className="card">
                     <div className="flex items-start gap-3">
-                      <div className="flex items-center gap-2 text-gray-400 pt-1">
+                      <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 pt-1">
                         <GripVertical className="w-5 h-5" />
                         <span className="text-sm font-medium">{index + 1}</span>
                       </div>
 
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-3">
-                          <h3 className="font-medium text-gray-900">
+                          <h3 className="font-medium text-gray-900 dark:text-white">
                             {exercise.name}
                           </h3>
                           <button
                             onClick={() => handleRemoveExercise(re.id)}
-                            className="p-1 text-gray-400 hover:text-red-600"
+                            className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -187,7 +187,7 @@ export function RoutineEditor() {
 
                         <div className="grid grid-cols-3 gap-3">
                           <div>
-                            <label className="text-xs text-gray-500 mb-1 block">
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
                               Sets
                             </label>
                             <input
@@ -203,7 +203,7 @@ export function RoutineEditor() {
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-500 mb-1 block">
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
                               Reps
                             </label>
                             <input
@@ -219,7 +219,7 @@ export function RoutineEditor() {
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-500 mb-1 block">
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
                               Rest (s)
                             </label>
                             <input
@@ -244,7 +244,7 @@ export function RoutineEditor() {
 
               <button
                 onClick={() => setShowExerciseSelector(true)}
-                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-primary-500 hover:text-primary-600 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors flex items-center justify-center gap-2"
               >
                 <Plus className="w-5 h-5" />
                 Add Exercise

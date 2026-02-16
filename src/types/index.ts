@@ -50,8 +50,20 @@ export interface WorkoutSet {
   reps: number;
   weight: number; // in kg
   completed: boolean;
+  rir?: number; // Reps In Reserve (0-5)
   rpe?: number; // Rate of Perceived Exertion (1-10)
   notes?: string;
+}
+
+export interface ExerciseGoal {
+  exerciseId: string;
+  targetWeight: number;
+  targetReps: number;
+  targetRIR?: number;
+  targetSets?: number;
+  notes: string; // explanation about the goal
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface WorkoutExercise {

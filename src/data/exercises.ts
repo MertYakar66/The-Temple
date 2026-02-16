@@ -505,6 +505,224 @@ export const defaultExercises: Exercise[] = [
       'Raise legs higher to increase difficulty'
     ],
     variations: ['Knee Raises', 'Toes to Bar']
+  },
+
+  // Additional exercises for Mert's routines
+  {
+    id: 'plate-loaded-chest-press',
+    name: 'Plate Loaded Chest Press',
+    description: 'A machine chest press that allows for heavy, stable pressing.',
+    muscleGroups: ['chest', 'shoulders', 'triceps'],
+    equipment: ['plate loaded machine'],
+    instructions: [
+      'Sit with back flat against pad',
+      'Grip handles at chest level',
+      'Press forward until arms are extended',
+      'Return with control'
+    ],
+    tips: [
+      'Keep shoulder blades retracted',
+      'Don\'t lock out elbows completely'
+    ],
+    variations: ['Incline Plate Loaded Press', 'Decline Plate Loaded Press']
+  },
+  {
+    id: 'smith-machine-incline-press',
+    name: 'Smith Machine Low Incline Press',
+    description: 'An incline press using the Smith machine for stability.',
+    muscleGroups: ['chest', 'shoulders', 'triceps'],
+    equipment: ['smith machine', 'adjustable bench'],
+    instructions: [
+      'Set bench to 15-30 degree incline under Smith machine',
+      'Grip bar slightly wider than shoulders',
+      'Lower bar to upper chest',
+      'Press up to full extension'
+    ],
+    tips: [
+      'Keep feet planted firmly',
+      'Control the descent'
+    ],
+    variations: ['Flat Smith Machine Press', 'High Incline Smith Press']
+  },
+  {
+    id: 'chest-fly-machine',
+    name: 'Chest Fly Machine',
+    description: 'A machine-based chest isolation exercise.',
+    muscleGroups: ['chest'],
+    equipment: ['pec deck machine'],
+    instructions: [
+      'Sit with back against pad',
+      'Place forearms on pads or grip handles',
+      'Bring arms together in front of chest',
+      'Return with control to starting position'
+    ],
+    tips: [
+      'Focus on squeezing chest at the peak',
+      'Keep slight bend in elbows'
+    ],
+    variations: ['Reverse Pec Deck']
+  },
+  {
+    id: 'shoulder-press-machine',
+    name: 'Shoulder Press Machine',
+    description: 'A machine overhead press for shoulder development.',
+    muscleGroups: ['shoulders', 'triceps'],
+    equipment: ['shoulder press machine'],
+    instructions: [
+      'Sit with back against pad',
+      'Grip handles at shoulder level',
+      'Press up until arms are extended',
+      'Lower with control'
+    ],
+    tips: [
+      'Don\'t arch back excessively',
+      'Keep core engaged'
+    ],
+    variations: ['Single Arm Machine Press']
+  },
+  {
+    id: 'overhead-rope-extension',
+    name: 'Overhead Rope Extension',
+    description: 'A tricep exercise emphasizing the long head.',
+    muscleGroups: ['triceps'],
+    equipment: ['cable machine', 'rope attachment'],
+    instructions: [
+      'Face away from low cable with rope overhead',
+      'Extend arms overhead, keeping elbows close to head',
+      'Lower rope behind head by bending elbows',
+      'Return to extended position'
+    ],
+    tips: [
+      'Keep upper arms stationary',
+      'Focus on tricep contraction'
+    ],
+    variations: ['Dumbbell Overhead Extension', 'EZ Bar Overhead Extension']
+  },
+  {
+    id: 'incline-dumbbell-curl',
+    name: 'Incline Dumbbell Curl',
+    description: 'A bicep curl performed on an incline bench for greater stretch.',
+    muscleGroups: ['biceps'],
+    equipment: ['dumbbells', 'incline bench'],
+    instructions: [
+      'Sit on incline bench set to 45-60 degrees',
+      'Let arms hang straight down with dumbbells',
+      'Curl weights up towards shoulders',
+      'Lower with control'
+    ],
+    tips: [
+      'Don\'t swing the weights',
+      'Keep elbows pointing down throughout'
+    ],
+    variations: ['Alternating Incline Curl']
+  },
+  {
+    id: 'cable-curl',
+    name: 'Cable Curl',
+    description: 'A bicep curl using cables for constant tension.',
+    muscleGroups: ['biceps'],
+    equipment: ['cable machine'],
+    instructions: [
+      'Stand facing low cable with straight bar or EZ attachment',
+      'Grip bar with underhand grip',
+      'Curl bar up towards shoulders',
+      'Lower with control'
+    ],
+    tips: [
+      'Keep elbows stationary at sides',
+      'Constant tension throughout movement'
+    ],
+    variations: ['Rope Cable Curl', 'High Cable Curl']
+  },
+  {
+    id: 'reverse-barbell-curl',
+    name: 'Reverse Barbell Curl',
+    description: 'A forearm and brachioradialis focused curl.',
+    muscleGroups: ['forearms', 'biceps'],
+    equipment: ['barbell'],
+    instructions: [
+      'Stand holding barbell with overhand grip',
+      'Curl bar up towards shoulders',
+      'Lower with control',
+      'Keep elbows stationary'
+    ],
+    tips: [
+      'Use lighter weight than regular curls',
+      'Great for forearm development'
+    ],
+    variations: ['Reverse EZ Bar Curl', 'Reverse Cable Curl']
+  },
+  {
+    id: 'plate-loaded-row',
+    name: 'Plate Loaded Wide Grip Row',
+    description: 'A rowing machine emphasizing back width.',
+    muscleGroups: ['back', 'biceps'],
+    equipment: ['plate loaded row machine'],
+    instructions: [
+      'Sit at machine with chest against pad',
+      'Grip wide handles',
+      'Pull handles towards lower chest',
+      'Return with control'
+    ],
+    tips: [
+      'Squeeze shoulder blades together',
+      'Don\'t use momentum'
+    ],
+    variations: ['Close Grip Row', 'Single Arm Row']
+  },
+  {
+    id: 'smith-machine-squat',
+    name: 'Smith Machine Squat',
+    description: 'A squat performed on the Smith machine for stability.',
+    muscleGroups: ['quadriceps', 'hamstrings', 'glutes'],
+    equipment: ['smith machine'],
+    instructions: [
+      'Position bar on upper back under Smith machine',
+      'Place feet slightly forward of the bar',
+      'Unrack and squat down until thighs are parallel',
+      'Drive through heels to stand'
+    ],
+    tips: [
+      'Feet slightly forward helps with depth',
+      'Keep core braced'
+    ],
+    variations: ['Smith Machine Front Squat']
+  },
+  {
+    id: 'seated-leg-curl',
+    name: 'Seated Leg Curl',
+    description: 'A hamstring isolation exercise in seated position.',
+    muscleGroups: ['hamstrings'],
+    equipment: ['seated leg curl machine'],
+    instructions: [
+      'Sit with back against pad, legs extended',
+      'Position pad above ankles',
+      'Curl legs down and back',
+      'Return with control'
+    ],
+    tips: [
+      'Don\'t use momentum',
+      'Focus on hamstring contraction'
+    ],
+    variations: ['Single Leg Seated Curl']
+  },
+  {
+    id: 'cable-rear-delt-fly',
+    name: 'Cable Rear Delt Fly',
+    description: 'An isolation exercise for rear deltoids using cables.',
+    muscleGroups: ['shoulders'],
+    equipment: ['cable machine'],
+    instructions: [
+      'Set cables to shoulder height',
+      'Cross arms and grab opposite cables',
+      'Pull hands apart and back, squeezing rear delts',
+      'Return with control'
+    ],
+    tips: [
+      'Keep slight bend in elbows',
+      'Focus on rear delt contraction'
+    ],
+    variations: ['Bent Over Cable Rear Delt Fly']
   }
 ];
 
