@@ -13,6 +13,7 @@ import type {
   WeightEntry,
 } from '../types';
 import { defaultExercises } from '../data/exercises';
+import { defaultRoutines } from '../data/defaultRoutines';
 import { getDateStamp, isDateStampInRange, parseDateStamp } from '../utils/date';
 
 interface AppState {
@@ -537,6 +538,17 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'workout-tracker-storage',
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<AppState> | undefined;
+        return {
+          ...currentState,
+          ...persisted,
+          // If no routines in storage, use default routines
+          routines: persisted?.routines?.length ? persisted.routines : defaultRoutines,
+          // Always use latest exercises from code
+          exercises: currentState.exercises,
+        };
+      },
     }
   )
 );
