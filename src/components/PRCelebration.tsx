@@ -1,10 +1,24 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Trophy, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
+
+// Pre-generate confetti data outside component to avoid render-time randomness
+const CONFETTI_COLORS = ['#FFF', '#FFD700', '#FF6B6B', '#4ECDC4'];
 
 export function PRCelebration() {
   const newPRs = useStore((state) => state.newPRs);
   const clearNewPRs = useStore((state) => state.clearNewPRs);
+
+  // Generate confetti positions once using useMemo
+  const confettiPieces = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => ({
+      id: i,
+      left: `${(i * 8.33) + Math.random() * 5}%`, // Spread evenly with slight randomness
+      color: CONFETTI_COLORS[i % 4],
+      delay: `${i * 0.04}s`,
+      duration: `${1.2 + (i % 3) * 0.2}s`,
+    }));
+  }, []);
 
   // Auto-dismiss after 5 seconds
   useEffect(() => {
@@ -58,16 +72,16 @@ export function PRCelebration() {
 
         {/* Confetti effect */}
         <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-          {[...Array(12)].map((_, i) => (
+          {confettiPieces.map((piece) => (
             <div
-              key={i}
+              key={piece.id}
               className="absolute w-2 h-2 animate-confetti"
               style={{
-                left: `${Math.random() * 100}%`,
+                left: piece.left,
                 top: '-10px',
-                backgroundColor: ['#FFF', '#FFD700', '#FF6B6B', '#4ECDC4'][i % 4],
-                animationDelay: `${Math.random() * 0.5}s`,
-                animationDuration: `${1 + Math.random()}s`,
+                backgroundColor: piece.color,
+                animationDelay: piece.delay,
+                animationDuration: piece.duration,
               }}
             />
           ))}

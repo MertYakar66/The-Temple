@@ -3,7 +3,7 @@
 
 export const seedRoutinesScript = `
 (function() {
-  const storageKey = 'fit-track-store';
+  const storageKey = 'workout-tracker-storage';
   const currentState = JSON.parse(localStorage.getItem(storageKey) || '{}');
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
