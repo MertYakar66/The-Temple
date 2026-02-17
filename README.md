@@ -1,73 +1,59 @@
-# React + TypeScript + Vite
+# TheTemple
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A workout tracker and nutrition logger built with React, TypeScript, and Firebase.
 
-Currently, two official plugins are available:
+**Live:** [thetemple.web.app](https://thetemple.web.app)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **Workout Tracking** — Log sets, reps, and weight for each exercise. Supports custom routines and pre-built templates.
+- **Personal Records** — Automatic PR detection with celebration animations when you hit a new best.
+- **Body Weight Tracking** — Track weight over time with visual progress charts.
+- **Nutrition Logging** — Log meals with calorie and macro tracking. Create custom foods and recipes.
+- **Progress Dashboard** — View strength progression, volume trends, and body composition changes.
+- **Cloud Sync** — Data syncs to Firebase per user account. Log in from any device.
+- **Dark Mode** — Full dark mode support across all screens.
+- **Unit System** — Toggle between metric (kg) and imperial (lbs).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- React 19 + TypeScript
+- Zustand (state management with persistence)
+- Firebase Auth + Firestore (authentication and cloud storage)
+- Tailwind CSS
+- Vite
+- Recharts (data visualization)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# Install dependencies
+npm install
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# Run development server
+npm run dev
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Build for production
+npm run build
+
+# Deploy to Firebase
+firebase deploy --only hosting:myapp
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── components/       # Reusable UI components
+├── contexts/         # React context providers (Auth)
+├── hooks/            # Custom hooks (dark mode, etc.)
+├── lib/              # Firebase config and sync logic
+├── pages/            # Route-level page components
+├── store/            # Zustand stores (workout, diet)
+├── types/            # TypeScript type definitions
+└── utils/            # Utility functions (weight conversion, etc.)
+```
+
+## License
+
+MIT
