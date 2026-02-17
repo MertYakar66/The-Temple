@@ -1,6 +1,7 @@
 import { ChevronLeft, Target, Dumbbell, Info, Lightbulb } from 'lucide-react';
 import type { Exercise } from '../../types';
 import { useStore } from '../../store/useStore';
+import { kgToDisplay, getWeightUnit } from '../../utils/weight';
 
 interface ExerciseDetailProps {
   exercise: Exercise;
@@ -10,6 +11,10 @@ interface ExerciseDetailProps {
 export function ExerciseDetail({ exercise, onBack }: ExerciseDetailProps) {
   const getExerciseHistory = useStore((state) => state.getExerciseHistory);
   const personalRecords = useStore((state) => state.personalRecords);
+  const user = useStore((state) => state.user);
+
+  const unitSystem = user?.unitSystem || 'metric';
+  const weightUnit = getWeightUnit(unitSystem);
 
   const history = getExerciseHistory(exercise.id);
   const prs = personalRecords.filter((pr) => pr.exerciseId === exercise.id);
@@ -136,7 +141,7 @@ export function ExerciseDetail({ exercise, onBack }: ExerciseDetailProps) {
                   className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
                 >
                   <span className="text-gray-900 dark:text-white font-medium">
-                    {pr.weight} kg x {pr.reps} reps
+                    {Math.round(kgToDisplay(pr.weight, unitSystem) * 10) / 10} {weightUnit} x {pr.reps} reps
                   </span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">{pr.date}</span>
                 </div>
@@ -156,9 +161,9 @@ export function ExerciseDetail({ exercise, onBack }: ExerciseDetailProps) {
                   className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
                 >
                   <div>
-                    <span className="text-gray-900 dark:text-white">Max: {entry.maxWeight} kg</span>
+                    <span className="text-gray-900 dark:text-white">Max: {Math.round(kgToDisplay(entry.maxWeight, unitSystem) * 10) / 10} {weightUnit}</span>
                     <span className="text-gray-500 dark:text-gray-400 text-sm ml-2">
-                      (Vol: {entry.totalVolume} kg)
+                      (Vol: {Math.round(kgToDisplay(entry.totalVolume, unitSystem))} {weightUnit})
                     </span>
                   </div>
                   <span className="text-sm text-gray-500 dark:text-gray-400">{entry.date}</span>

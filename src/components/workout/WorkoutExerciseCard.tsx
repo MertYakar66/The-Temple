@@ -1,8 +1,9 @@
 import { Plus, Trash2, ChevronDown, ChevronUp, History, Target, Edit3, Info } from 'lucide-react';
 import { useState } from 'react';
-import type { WorkoutExercise, WorkoutSet } from '../../types';
+import type { WorkoutExercise, WorkoutSet, UnitSystem } from '../../types';
 import { SetRow } from './SetRow';
 import { useStore } from '../../store/useStore';
+import { kgToDisplay, displayToKg, getWeightUnit } from '../../utils/weight';
 
 interface WorkoutExerciseCardProps {
   workoutExercise: WorkoutExercise;
@@ -11,6 +12,7 @@ interface WorkoutExerciseCardProps {
   onRemoveSet: (setId: string) => void;
   onToggleSetComplete: (setId: string) => void;
   onRemove: () => void;
+  unitSystem: UnitSystem;
 }
 
 export function WorkoutExerciseCard({
@@ -20,6 +22,7 @@ export function WorkoutExerciseCard({
   onRemoveSet,
   onToggleSetComplete,
   onRemove,
+  unitSystem,
 }: WorkoutExerciseCardProps) {
   const [expanded, setExpanded] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
@@ -28,6 +31,8 @@ export function WorkoutExerciseCard({
   const getLastWorkoutForExercise = useStore((state) => state.getLastWorkoutForExercise);
   const getExerciseGoal = useStore((state) => state.getExerciseGoal);
   const setExerciseGoal = useStore((state) => state.setExerciseGoal);
+
+  const weightUnit = getWeightUnit(unitSystem);
 
   const completedSets = workoutExercise.sets.filter((s) => s.completed).length;
   const lastWorkout = getLastWorkoutForExercise(workoutExercise.exerciseId);
@@ -41,9 +46,11 @@ export function WorkoutExerciseCard({
   const [goalNotes, setGoalNotes] = useState(currentGoal?.notes || '');
 
   const handleSaveGoal = () => {
+    // Convert display weight back to kg for storage
+    const weightInKg = displayToKg(parseFloat(goalWeight) || 0, unitSystem);
     setExerciseGoal({
       exerciseId: workoutExercise.exerciseId,
-      targetWeight: parseFloat(goalWeight) || 0,
+      targetWeight: weightInKg,
       targetReps: parseInt(goalReps) || 0,
       targetRIR: goalRIR ? parseInt(goalRIR) : undefined,
       targetSets: goalSets ? parseInt(goalSets) : undefined,
@@ -104,7 +111,11 @@ export function WorkoutExerciseCard({
                 </div>
                 <button
                   onClick={() => {
-                    setGoalWeight(currentGoal.targetWeight?.toString() || '');
+                    // Convert stored kg to display unit for editing
+                    const displayWeight = currentGoal.targetWeight
+                      ? (Math.round(kgToDisplay(currentGoal.targetWeight, unitSystem) * 10) / 10).toString()
+                      : '';
+                    setGoalWeight(displayWeight);
                     setGoalReps(currentGoal.targetReps?.toString() || '');
                     setGoalRIR(currentGoal.targetRIR?.toString() || '');
                     setGoalSets(currentGoal.targetSets?.toString() || '');
@@ -117,7 +128,7 @@ export function WorkoutExerciseCard({
                 </button>
               </div>
               <div className="text-sm text-primary-800 dark:text-primary-200">
-                <span className="font-semibold">{currentGoal.targetWeight}kg</span> x{' '}
+                <span className="font-semibold">{Math.round(kgToDisplay(currentGoal.targetWeight, unitSystem) * 10) / 10}{weightUnit}</span> x{' '}
                 <span className="font-semibold">{currentGoal.targetReps} reps</span>
                 {currentGoal.targetRIR !== undefined && (
                   <span> @ RIR {currentGoal.targetRIR}</span>
@@ -141,12 +152,12 @@ export function WorkoutExerciseCard({
               </div>
               <div className="grid grid-cols-4 gap-2 mb-2">
                 <div>
-                  <label className="text-xs text-gray-500 dark:text-gray-400">Weight</label>
+                  <label className="text-xs text-gray-500 dark:text-gray-400">Weight ({weightUnit})</label>
                   <input
                     type="number"
                     value={goalWeight}
                     onChange={(e) => setGoalWeight(e.target.value)}
-                    placeholder="kg"
+                    placeholder={weightUnit}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -238,7 +249,7 @@ export function WorkoutExerciseCard({
                     <div key={idx} className="px-1 py-0.5">
                       <div className="grid grid-cols-4 gap-1 text-gray-700 dark:text-gray-300">
                         <span>{idx + 1}</span>
-                        <span>{set.weight}kg</span>
+                        <span>{Math.round(kgToDisplay(set.weight, unitSystem) * 10) / 10}{weightUnit}</span>
                         <span>{set.reps}</span>
                         <span>{set.rir ?? '-'}</span>
                       </div>
@@ -284,6 +295,7 @@ export function WorkoutExerciseCard({
                   onUpdate={(updates) => onUpdateSet(set.id, updates)}
                   onRemove={() => onRemoveSet(set.id)}
                   onToggleComplete={() => onToggleSetComplete(set.id)}
+                  unitSystem={unitSystem}
                 />
               ))}
             </div>

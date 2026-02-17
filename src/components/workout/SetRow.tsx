@@ -1,6 +1,7 @@
 import { Check, X, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
-import type { WorkoutSet } from '../../types';
+import type { WorkoutSet, UnitSystem } from '../../types';
+import { kgToDisplay, displayToKg, getWeightUnit } from '../../utils/weight';
 
 interface SetRowProps {
   set: WorkoutSet;
@@ -8,10 +9,22 @@ interface SetRowProps {
   onUpdate: (updates: Partial<WorkoutSet>) => void;
   onRemove: () => void;
   onToggleComplete: () => void;
+  unitSystem: UnitSystem;
 }
 
-export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete }: SetRowProps) {
+export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitSystem }: SetRowProps) {
   const [showNotes, setShowNotes] = useState(false);
+
+  // Convert stored kg to display unit
+  const displayWeight = set.weight ? Math.round(kgToDisplay(set.weight, unitSystem) * 10) / 10 : '';
+  const weightUnit = getWeightUnit(unitSystem);
+
+  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const displayValue = parseFloat(e.target.value) || 0;
+    // Convert display value back to kg for storage
+    const kgValue = displayToKg(displayValue, unitSystem);
+    onUpdate({ weight: kgValue });
+  };
 
   return (
     <div className="py-2">
@@ -26,13 +39,13 @@ export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete }: Set
 
         <input
           type="number"
-          value={set.weight || ''}
-          onChange={(e) => onUpdate({ weight: parseFloat(e.target.value) || 0 })}
+          value={displayWeight}
+          onChange={handleWeightChange}
           placeholder="0"
           className="w-14 px-1 py-2 text-center border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
           disabled={set.completed}
         />
-        <span className="text-xs text-gray-500 dark:text-gray-400">kg</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{weightUnit}</span>
 
         <input
           type="number"

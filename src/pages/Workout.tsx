@@ -12,6 +12,7 @@ export function Workout() {
   const navigate = useNavigate();
   const currentSession = useStore((state) => state.currentSession);
   const routines = useStore((state) => state.routines);
+  const user = useStore((state) => state.user);
   const startWorkout = useStore((state) => state.startWorkout);
   const endWorkout = useStore((state) => state.endWorkout);
   const cancelWorkout = useStore((state) => state.cancelWorkout);
@@ -22,6 +23,9 @@ export function Workout() {
   const removeSet = useStore((state) => state.removeSet);
   const toggleSetComplete = useStore((state) => state.toggleSetComplete);
   const startWorkoutFromRoutine = useStore((state) => state.startWorkoutFromRoutine);
+
+  // Get user's preferred unit system, default to metric
+  const unitSystem = user?.unitSystem || 'metric';
 
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [showRestTimer, setShowRestTimer] = useState(false);
@@ -209,6 +213,7 @@ export function Workout() {
                 setShowRestTimer(true);
               }}
               onRemove={() => removeExerciseFromSession(we.id)}
+              unitSystem={unitSystem}
             />
           ))}
         </div>

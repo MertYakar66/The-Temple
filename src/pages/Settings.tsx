@@ -24,7 +24,7 @@ import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useAuth } from '../contexts/AuthContext';
-import type { TrainingGoal, ExperienceLevel, Equipment } from '../types';
+import type { TrainingGoal, ExperienceLevel, Equipment, UnitSystem } from '../types';
 
 const goalLabels: Record<TrainingGoal, string> = {
   strength: 'Build Strength',
@@ -45,6 +45,11 @@ const equipmentLabels: Record<Equipment, string> = {
   home_gym: 'Home Gym',
   minimal: 'Minimal Equipment',
   bodyweight: 'Bodyweight Only',
+};
+
+const unitLabels: Record<UnitSystem, string> = {
+  metric: 'Metric (kg)',
+  imperial: 'Imperial (lbs)',
 };
 
 export function Settings() {
@@ -285,6 +290,26 @@ export function Settings() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Units */}
+        <div>
+          <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+            Units
+          </h2>
+          <div className="card dark:bg-gray-800 dark:border-gray-700 p-0">
+            <SelectRow
+              icon={Scale}
+              label="Weight Unit"
+              value={unitLabels[user.unitSystem || 'metric']}
+              options={Object.entries(unitLabels).map(([id, label]) => ({
+                id,
+                label,
+              }))}
+              selectedId={user.unitSystem || 'metric'}
+              onChange={(value) => updateUser({ unitSystem: value as UnitSystem })}
+            />
           </div>
         </div>
 

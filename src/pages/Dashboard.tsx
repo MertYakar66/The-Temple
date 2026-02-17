@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { kgToDisplay, getWeightUnit } from '../utils/weight';
 
 export function Dashboard() {
   const user = useStore((state) => state.user);
@@ -19,6 +20,9 @@ export function Dashboard() {
   const routines = useStore((state) => state.routines);
   const personalRecords = useStore((state) => state.personalRecords);
   const getWeeklyWorkoutCount = useStore((state) => state.getWeeklyWorkoutCount);
+
+  const unitSystem = user?.unitSystem || 'metric';
+  const weightUnit = getWeightUnit(unitSystem);
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -137,9 +141,12 @@ export function Dashboard() {
               <TrendingUp className="w-6 h-6 text-success-500" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {weeklyVolume > 1000 ? `${(weeklyVolume / 1000).toFixed(1)}k` : weeklyVolume}
+              {(() => {
+                const displayVolume = Math.round(kgToDisplay(weeklyVolume, unitSystem));
+                return displayVolume > 1000 ? `${(displayVolume / 1000).toFixed(1)}k` : displayVolume;
+              })()}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Volume (kg)</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Volume ({weightUnit})</p>
           </div>
           <div className="text-center">
             <div className="w-12 h-12 bg-warning-500/10 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -172,7 +179,7 @@ export function Dashboard() {
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">{pr.exerciseName}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {pr.weight} kg x {pr.reps} reps
+                    {Math.round(kgToDisplay(pr.weight, unitSystem) * 10) / 10} {weightUnit} x {pr.reps} reps
                   </p>
                 </div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">{pr.date}</span>

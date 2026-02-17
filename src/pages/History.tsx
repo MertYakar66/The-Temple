@@ -31,12 +31,13 @@ import {
 } from 'date-fns';
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
-import type { WorkoutSession, MealType } from '../types';
+import type { WorkoutSession, MealType, UnitSystem } from '../types';
 import {
   getCompletedSetCount,
   getSessionDurationMinutes,
   getTotalVolume,
 } from '../utils/workoutMetrics';
+import { kgToDisplay, getWeightUnit } from '../utils/weight';
 
 const mealTypeLabels: Record<MealType, string> = {
   breakfast: 'Breakfast',
@@ -52,11 +53,14 @@ const mealTypeOrder: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'pre
 export function History() {
   const workoutSessions = useStore((state) => state.workoutSessions);
   const routines = useStore((state) => state.routines);
+  const user = useStore((state) => state.user);
   const deleteWorkoutSession = useStore((state) => state.deleteWorkoutSession);
   const getLogEntriesForDate = useDietStore((state) => state.getLogEntriesForDate);
   const getDailyMacros = useDietStore((state) => state.getDailyMacros);
   const dietSettings = useDietStore((state) => state.dietSettings);
   const deleteLogEntry = useDietStore((state) => state.deleteLogEntry);
+
+  const unitSystem = user?.unitSystem || 'metric';
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
@@ -242,6 +246,7 @@ export function History() {
                       workout={workout}
                       routines={routines}
                       onDelete={() => deleteWorkoutSession(workout.id)}
+                      unitSystem={unitSystem}
                     />
                   ))}
                 </div>
@@ -441,6 +446,7 @@ export function History() {
                   workout={workout}
                   routines={routines}
                   onDelete={() => deleteWorkoutSession(workout.id)}
+                  unitSystem={unitSystem}
                   compact
                 />
               ))}
@@ -455,11 +461,13 @@ function WorkoutCard({
   workout,
   routines,
   onDelete,
+  unitSystem,
   compact = false
 }: {
   workout: WorkoutSession;
   routines: ReturnType<typeof useStore.getState>['routines'];
   onDelete?: () => void;
+  unitSystem: UnitSystem;
   compact?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -468,6 +476,7 @@ function WorkoutCard({
   const totalSets = getCompletedSetCount(workout.exercises);
   const totalVolume = getTotalVolume(workout.exercises);
   const duration = getSessionDurationMinutes(workout);
+  const weightUnit = getWeightUnit(unitSystem);
 
   // Find the routine if this workout was based on one
   const routine = workout.routineId ? routines.find(r => r.id === workout.routineId) : null;
@@ -553,7 +562,7 @@ function WorkoutCard({
         <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-300">
           <span>{workout.exercises.length} exercises</span>
           <span>{totalSets} sets</span>
-          <span>{totalVolume.toLocaleString()} kg</span>
+          <span>{Math.round(kgToDisplay(totalVolume, unitSystem)).toLocaleString()} {weightUnit}</span>
         </div>
 
         {/* Planned vs Actual comparison */}
@@ -618,7 +627,7 @@ function WorkoutCard({
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                       }`}
                     >
-                      {set.weight}kg × {set.reps}
+                      {Math.round(kgToDisplay(set.weight, unitSystem) * 10) / 10}{weightUnit} × {set.reps}
                       {plannedExercise && index < plannedSetCount && (
                         <span className="ml-1 opacity-60">
                           (target: {plannedExercise.targetReps})
