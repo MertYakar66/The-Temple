@@ -6,7 +6,7 @@ interface HeaderProps {
   showSettings?: boolean;
 }
 
-export function Header({ title = 'FitTrack', showSettings = true }: HeaderProps) {
+export function Header({ title = 'TheTemple', showSettings = true }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">

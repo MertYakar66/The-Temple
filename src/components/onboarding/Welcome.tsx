@@ -34,7 +34,7 @@ export function Welcome({ onNext }: WelcomeProps) {
         <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-6">
           <Dumbbell className="w-12 h-12 text-primary-600" />
         </div>
-        <h1 className="text-3xl font-bold mb-2">Welcome to FitTrack</h1>
+        <h1 className="text-3xl font-bold mb-2">Welcome to TheTemple</h1>
         <p className="text-primary-100 text-center mb-12">
           Your personal workout companion for reaching your fitness goals
         </p>
