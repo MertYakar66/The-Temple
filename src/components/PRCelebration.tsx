@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { Trophy, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { kgToDisplay, getWeightUnit } from '../utils/weight';
 
 // Pre-generate confetti data outside component to avoid render-time randomness
 const CONFETTI_COLORS = ['#FFF', '#FFD700', '#FF6B6B', '#4ECDC4'];
@@ -8,6 +9,10 @@ const CONFETTI_COLORS = ['#FFF', '#FFD700', '#FF6B6B', '#4ECDC4'];
 export function PRCelebration() {
   const newPRs = useStore((state) => state.newPRs);
   const clearNewPRs = useStore((state) => state.clearNewPRs);
+  const user = useStore((state) => state.user);
+
+  const unitSystem = user?.unitSystem || 'metric';
+  const weightUnit = getWeightUnit(unitSystem);
 
   // Generate confetti positions once using useMemo
   const confettiPieces = useMemo(() => {
@@ -61,7 +66,7 @@ export function PRCelebration() {
         <div className="text-center">
           <p className="text-lg font-semibold mb-1">{latestPR.exerciseName}</p>
           <p className="text-3xl font-bold mb-1">
-            {latestPR.weight} kg × {latestPR.reps} reps
+            {Math.round(kgToDisplay(latestPR.weight, unitSystem) * 10) / 10} {weightUnit} × {latestPR.reps} reps
           </p>
           {newPRs.length > 1 && (
             <p className="text-sm opacity-80 mt-2">

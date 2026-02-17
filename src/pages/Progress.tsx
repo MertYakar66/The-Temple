@@ -29,6 +29,7 @@ import { useDietStore } from '../store/useDietStore';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { isDateStampInRange } from '../utils/date';
 import { getCompletedSetCount, getTotalVolume } from '../utils/workoutMetrics';
+import { kgToDisplay, displayToKg, getWeightUnit } from '../utils/weight';
 import type { WeightEntry } from '../types';
 
 type TimeRange = '7d' | '30d' | '90d' | 'all';
@@ -42,9 +43,13 @@ export function Progress() {
   const weightEntries = useStore((state) => state.weightEntries);
   const addWeightEntry = useStore((state) => state.addWeightEntry);
   const deleteWeightEntry = useStore((state) => state.deleteWeightEntry);
+  const user = useStore((state) => state.user);
 
   const getDailyMacros = useDietStore((state) => state.getDailyMacros);
   const dietSettings = useDietStore((state) => state.dietSettings);
+
+  const unitSystem = user?.unitSystem || 'metric';
+  const weightUnit = getWeightUnit(unitSystem);
 
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
@@ -57,9 +62,11 @@ export function Progress() {
   const [showWeightHistory, setShowWeightHistory] = useState(false);
 
   const handleAddWeight = () => {
-    const weight = parseFloat(newWeight);
-    if (weight > 0) {
-      addWeightEntry(weight, weightNotes.trim() || undefined);
+    const displayWeight = parseFloat(newWeight);
+    if (displayWeight > 0) {
+      // Convert from display unit to kg for storage
+      const weightInKg = displayToKg(displayWeight, unitSystem);
+      addWeightEntry(weightInKg, weightNotes.trim() || undefined);
       setNewWeight('');
       setWeightNotes('');
       setShowWeightNotes(false);
@@ -117,10 +124,15 @@ export function Progress() {
   );
   const loggedExercises = exercises.filter((e) => loggedExerciseIds.has(e.id));
 
-  // Get exercise progress data
-  const exerciseHistory = selectedExercise
+  // Get exercise progress data (convert to display unit)
+  const exerciseHistoryRaw = selectedExercise
     ? getExerciseHistory(selectedExercise)
     : [];
+  const exerciseHistory = exerciseHistoryRaw.map((entry) => ({
+    ...entry,
+    maxWeight: Math.round(kgToDisplay(entry.maxWeight, unitSystem) * 10) / 10,
+    totalVolume: Math.round(kgToDisplay(entry.totalVolume, unitSystem)),
+  }));
 
   // Diet tracking data
   const dietTrackingData = (() => {
@@ -154,13 +166,13 @@ export function Progress() {
     : 0;
   const proteinGoalDays = dietTrackingData.filter(d => d.logged && d.protein >= d.proteinTarget * 0.9).length;
 
-  // Body weight tracking data
+  // Body weight tracking data (convert to display unit)
   const bodyWeightData = weightEntries
     .filter((entry: WeightEntry) => isDateStampInRange(entry.date, rangeStart, today))
     .sort((a: WeightEntry, b: WeightEntry) => a.date.localeCompare(b.date))
     .map((entry: WeightEntry) => ({
       date: format(new Date(entry.date), 'MMM d'),
-      weight: entry.weight,
+      weight: Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10,
     }));
 
   const latestWeight = weightEntries.length > 0
@@ -249,9 +261,12 @@ export function Progress() {
                 <TrendingUp className="w-5 h-5 text-success-500 dark:text-success-400" />
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {totalVolume > 1000 ? `${(totalVolume / 1000).toFixed(0)}k` : totalVolume}
+                {(() => {
+                  const displayVolume = Math.round(kgToDisplay(totalVolume, unitSystem));
+                  return displayVolume > 1000 ? `${(displayVolume / 1000).toFixed(0)}k` : displayVolume;
+                })()}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Volume (kg)</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Volume ({weightUnit})</p>
             </div>
             <div className="card text-center">
               <div className="w-10 h-10 bg-accent-100 dark:bg-accent-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -322,7 +337,7 @@ export function Progress() {
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">{pr.exerciseName}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {pr.weight} kg × {pr.reps} reps
+                        {Math.round(kgToDisplay(pr.weight, unitSystem) * 10) / 10} {weightUnit} × {pr.reps} reps
                       </p>
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">{pr.date}</span>
@@ -379,7 +394,7 @@ export function Progress() {
                         dataKey="maxWeight"
                         stroke="#2563eb"
                         strokeWidth={2}
-                        name="Max Weight (kg)"
+                        name={`Max Weight (${weightUnit})`}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -578,7 +593,7 @@ export function Progress() {
                   className="w-full pl-9 pr-12 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="Weight"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">kg</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">{weightUnit}</span>
               </div>
               <button
                 onClick={() => setShowWeightNotes(!showWeightNotes)}
@@ -617,7 +632,7 @@ export function Progress() {
                 <Scale className="w-5 h-5 text-blue-500" />
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {latestWeight ? `${latestWeight} kg` : '--'}
+                {latestWeight ? `${(Math.round(kgToDisplay(latestWeight, unitSystem) * 10) / 10)} ${weightUnit}` : '--'}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Current Weight</p>
             </div>
@@ -644,7 +659,7 @@ export function Progress() {
                   ? 'text-red-600 dark:text-red-400'
                   : 'text-gray-900 dark:text-white'
               }`}>
-                {weightChange !== null ? `${weightChange > 0 ? '+' : ''}${weightChange.toFixed(1)} kg` : '--'}
+                {weightChange !== null ? `${weightChange > 0 ? '+' : ''}${(Math.round(kgToDisplay(weightChange, unitSystem) * 10) / 10)} ${weightUnit}` : '--'}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Change ({timeRange})</p>
             </div>
@@ -683,7 +698,7 @@ export function Progress() {
                       stroke="#3B82F6"
                       strokeWidth={2}
                       dot={{ fill: '#3B82F6', strokeWidth: 2 }}
-                      name="Weight (kg)"
+                      name={`Weight (${weightUnit})`}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -713,7 +728,7 @@ export function Progress() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {entry.weight} kg
+                          {Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10} {weightUnit}
                         </span>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {format(new Date(entry.date), 'MMM d, yyyy')}
