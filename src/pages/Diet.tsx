@@ -9,9 +9,18 @@ import {
   Settings,
 } from 'lucide-react';
 import { useDietStore } from '../store/useDietStore';
+import type { MealType } from '../types';
 
-// Fixed meal slots like MyFitnessPal
-const MEAL_SLOTS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
+// Fixed meal slots like MyFitnessPal (lowercase to match stored mealType values)
+const MEAL_SLOTS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+// Display labels for meal slots
+const MEAL_LABELS: Record<MealType, string> = {
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner',
+  snack: 'Snacks',
+};
 
 export function Diet() {
   const navigate = useNavigate();
@@ -126,7 +135,7 @@ export function Diet() {
           <div key={mealSlot} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
             {/* Meal Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="font-semibold text-gray-900 dark:text-white">{mealSlot}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{MEAL_LABELS[mealSlot] || mealSlot}</h3>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {Math.round(mealCalories)} cal
               </span>

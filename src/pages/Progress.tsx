@@ -175,11 +175,18 @@ export function Progress() {
       weight: Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10,
     }));
 
-  const latestWeight = weightEntries.length > 0
-    ? weightEntries[weightEntries.length - 1]?.weight
+  // Get latest weight (weightEntries is sorted newest-first)
+  const latestWeightKg = weightEntries.length > 0 ? weightEntries[0]?.weight : null;
+  // Convert to display unit for consistent comparison
+  const latestWeightDisplay = latestWeightKg
+    ? Math.round(kgToDisplay(latestWeightKg, unitSystem) * 10) / 10
     : null;
-  const earliestWeight = bodyWeightData.length > 0 ? bodyWeightData[0]?.weight : null;
-  const weightChange = latestWeight && earliestWeight ? latestWeight - earliestWeight : null;
+  // Get earliest weight in range (bodyWeightData is sorted oldest-first, already in display units)
+  const earliestWeightDisplay = bodyWeightData.length > 0 ? bodyWeightData[0]?.weight : null;
+  // Calculate change in display units
+  const weightChange = latestWeightDisplay && earliestWeightDisplay
+    ? Math.round((latestWeightDisplay - earliestWeightDisplay) * 10) / 10
+    : null;
 
   return (
     <div className="px-4 py-6 space-y-6 pb-24">
@@ -632,7 +639,7 @@ export function Progress() {
                 <Scale className="w-5 h-5 text-blue-500" />
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {latestWeight ? `${(Math.round(kgToDisplay(latestWeight, unitSystem) * 10) / 10)} ${weightUnit}` : '--'}
+                {latestWeightDisplay ? `${latestWeightDisplay} ${weightUnit}` : '--'}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Current Weight</p>
             </div>
@@ -659,7 +666,7 @@ export function Progress() {
                   ? 'text-red-600 dark:text-red-400'
                   : 'text-gray-900 dark:text-white'
               }`}>
-                {weightChange !== null ? `${weightChange > 0 ? '+' : ''}${(Math.round(kgToDisplay(weightChange, unitSystem) * 10) / 10)} ${weightUnit}` : '--'}
+                {weightChange !== null ? `${weightChange > 0 ? '+' : ''}${weightChange} ${weightUnit}` : '--'}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Change ({timeRange})</p>
             </div>

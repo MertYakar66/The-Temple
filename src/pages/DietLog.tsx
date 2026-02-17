@@ -19,7 +19,8 @@ export function DietLog() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const dateParam = searchParams.get('date');
-  const mealParam = searchParams.get('meal') || 'Snacks';
+  // Normalize meal param to lowercase to match stored mealType values
+  const mealParam = (searchParams.get('meal') || 'snack').toLowerCase();
   const logDate = dateParam || format(new Date(), 'yyyy-MM-dd');
 
   const getAllFoods = useDietStore((s) => s.getAllFoods);

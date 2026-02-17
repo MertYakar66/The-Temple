@@ -48,7 +48,7 @@ export function Onboarding() {
       trainingGoal: goal,
       experienceLevel: experience,
       equipment: equipment,
-      unitSystem: 'metric',
+      unitSystem: profileData.unitSystem,
       onboardingCompleted: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
