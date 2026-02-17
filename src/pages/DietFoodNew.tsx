@@ -2,25 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Save, Flame, Beef, Wheat, Droplet } from 'lucide-react';
 import { useDietStore } from '../store/useDietStore';
-import type { FoodCategory } from '../types';
-
-const categoryOptions: { id: FoodCategory; label: string }[] = [
-  { id: 'protein', label: 'Protein' },
-  { id: 'carbs', label: 'Carbs' },
-  { id: 'fats', label: 'Fats' },
-  { id: 'vegetables', label: 'Vegetables' },
-  { id: 'dairy', label: 'Dairy' },
-  { id: 'fruits', label: 'Fruits' },
-  { id: 'sides', label: 'Sides' },
-  { id: 'other', label: 'Other' },
-];
 
 export function DietFoodNew() {
   const navigate = useNavigate();
   const addCustomFood = useDietStore((s) => s.addCustomFood);
 
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<FoodCategory>('other');
   const [servingSize, setServingSize] = useState(100);
   const [servingUnit, setServingUnit] = useState('g');
   const [calories, setCalories] = useState(0);
@@ -41,7 +28,7 @@ export function DietFoodNew() {
 
     addCustomFood({
       name: name.trim(),
-      category,
+      category: 'other', // Simplified - no category selection
       servingSize,
       servingUnit,
       macros: {
@@ -52,7 +39,7 @@ export function DietFoodNew() {
       },
     });
 
-    navigate('/diet/log');
+    navigate(-1);
   };
 
   const isValid = name.trim() && calories > 0;
@@ -79,13 +66,13 @@ export function DietFoodNew() {
             className="bg-primary-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-700 transition-colors"
           >
             <Save className="w-5 h-5" />
-            Save Food
+            Save
           </button>
         </div>
       </header>
 
       <div className="px-4 py-6 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Custom Food</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Food</h1>
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg">
@@ -95,7 +82,7 @@ export function DietFoodNew() {
 
         {/* Name */}
         <div>
-          <label className="input-label">Food Name *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Food Name *</label>
           <input
             type="text"
             value={name}
@@ -104,47 +91,27 @@ export function DietFoodNew() {
               setError('');
             }}
             placeholder="e.g., Homemade Protein Shake"
-            className="input"
+            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white"
           />
-        </div>
-
-        {/* Category */}
-        <div>
-          <label className="input-label">Category</label>
-          <div className="flex flex-wrap gap-2">
-            {categoryOptions.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => setCategory(option.id)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  category === option.id
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Serving Size */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="input-label">Serving Size</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Serving Size</label>
             <input
               type="number"
               value={servingSize}
               onChange={(e) => setServingSize(parseFloat(e.target.value) || 0)}
-              className="input"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white"
             />
           </div>
           <div>
-            <label className="input-label">Unit</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
             <select
               value={servingUnit}
               onChange={(e) => setServingUnit(e.target.value)}
-              className="input"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white"
             >
               <option value="g">grams (g)</option>
               <option value="ml">milliliters (ml)</option>
@@ -161,8 +128,8 @@ export function DietFoodNew() {
 
         {/* Macros */}
         <div>
-          <label className="input-label">Nutrition per Serving *</label>
-          <div className="card p-0 divide-y divide-gray-100 dark:divide-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nutrition per Serving *</label>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
                 <Flame className="w-5 h-5 text-orange-500" />
@@ -175,7 +142,7 @@ export function DietFoodNew() {
                   setCalories(parseFloat(e.target.value) || 0);
                   setError('');
                 }}
-                className="w-24 text-right input py-1"
+                className="w-24 text-right px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 placeholder="0"
               />
             </div>
@@ -188,7 +155,7 @@ export function DietFoodNew() {
                 type="number"
                 value={protein || ''}
                 onChange={(e) => setProtein(parseFloat(e.target.value) || 0)}
-                className="w-24 text-right input py-1"
+                className="w-24 text-right px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 placeholder="0"
               />
             </div>
@@ -201,7 +168,7 @@ export function DietFoodNew() {
                 type="number"
                 value={carbs || ''}
                 onChange={(e) => setCarbs(parseFloat(e.target.value) || 0)}
-                className="w-24 text-right input py-1"
+                className="w-24 text-right px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 placeholder="0"
               />
             </div>
@@ -214,7 +181,7 @@ export function DietFoodNew() {
                 type="number"
                 value={fat || ''}
                 onChange={(e) => setFat(parseFloat(e.target.value) || 0)}
-                className="w-24 text-right input py-1"
+                className="w-24 text-right px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 placeholder="0"
               />
             </div>
@@ -242,7 +209,6 @@ export function DietFoodNew() {
 
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Enter the nutrition information from the food label. Values should be per serving.
-          Fields marked with * are required.
         </p>
       </div>
     </div>
