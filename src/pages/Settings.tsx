@@ -23,6 +23,7 @@ import { useDietStore } from '../store/useDietStore';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useAuth } from '../contexts/AuthContext';
 import { kgToDisplay, displayToKg, getWeightUnit } from '../utils/weight';
+import { deleteUserCloudData } from '../lib/firestoreSync';
 import type { TrainingGoal, ExperienceLevel, Equipment, UnitSystem } from '../types';
 
 const goalLabels: Record<TrainingGoal, string> = {
@@ -135,20 +136,30 @@ export function Settings() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `fittrack-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `thetemple-export-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     if (
       window.confirm(
-        'This will delete all your data including workouts, routines, nutrition logs, and personal records. This cannot be undone. Are you sure?'
+        'This will permanently delete all your data including workouts, routines, nutrition logs, and personal records from both this device and the cloud. This cannot be undone. Are you sure?'
       )
     ) {
-      localStorage.removeItem('workout-tracker-storage');
-      localStorage.removeItem('diet-tracker-storage');
-      window.location.reload();
+      try {
+        // Delete cloud data if user is authenticated
+        if (currentUser?.uid) {
+          await deleteUserCloudData(currentUser.uid);
+        }
+        // Clear local storage
+        localStorage.removeItem('workout-tracker-storage');
+        localStorage.removeItem('diet-tracker-storage');
+        window.location.reload();
+      } catch (error) {
+        console.error('Failed to clear data:', error);
+        alert('Failed to delete cloud data. Please try again.');
+      }
     }
   };
 
