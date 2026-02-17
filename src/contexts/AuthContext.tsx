@@ -33,6 +33,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
@@ -82,6 +83,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setCurrentUser(user);
 
       if (user) {
+        // Clear any existing data from previous user before loading new user's data
+        useStore.getState().resetStore();
+        useDietStore.getState().resetStore();
+
         // Load data from Firestore
         try {
           const [workoutData, dietData] = await Promise.all([
@@ -102,8 +107,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Start syncing store changes to Firestore
         startSync(user.uid);
       } else {
-        // User logged out — stop syncing
+        // User logged out — stop syncing and clear local data
         stopSync();
+        useStore.getState().resetStore();
+        useDietStore.getState().resetStore();
       }
 
       setLoading(false);

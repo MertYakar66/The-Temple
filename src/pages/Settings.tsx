@@ -14,8 +14,6 @@ import {
   Sun,
   Moon,
   Monitor,
-  Plus,
-  TrendingUp,
   Library,
   LogOut,
   Mail,
@@ -24,6 +22,7 @@ import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useAuth } from '../contexts/AuthContext';
+import { kgToDisplay, displayToKg, getWeightUnit } from '../utils/weight';
 import type { TrainingGoal, ExperienceLevel, Equipment, UnitSystem } from '../types';
 
 const goalLabels: Record<TrainingGoal, string> = {
@@ -60,7 +59,6 @@ export function Settings() {
   const workoutSessions = useStore((state) => state.workoutSessions);
   const routines = useStore((state) => state.routines);
   const weightEntries = useStore((state) => state.weightEntries);
-  const addWeightEntry = useStore((state) => state.addWeightEntry);
   const personalRecords = useStore((state) => state.personalRecords);
 
   // Diet store data for export
@@ -69,10 +67,12 @@ export function Settings() {
   // Dark mode
   const { theme, setTheme, isDark } = useDarkMode();
 
+  // Unit system
+  const unitSystem = user?.unitSystem || 'metric';
+  const weightUnit = getWeightUnit(unitSystem);
+
   const [editMode, setEditMode] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
-  const [showWeightInput, setShowWeightInput] = useState(false);
-  const [newWeight, setNewWeight] = useState('');
 
   const handleLogout = async () => {
     try {
@@ -100,7 +100,9 @@ export function Settings() {
     if (field === 'name') {
       updateUser({ name: editValue });
     } else if (field === 'weight') {
-      updateUser({ weight: parseFloat(editValue) });
+      // Convert from display unit to kg for storage
+      const weightInKg = displayToKg(parseFloat(editValue), unitSystem);
+      updateUser({ weight: weightInKg });
     } else if (field === 'height') {
       updateUser({ height: parseFloat(editValue) });
     } else if (field === 'age') {
@@ -136,15 +138,6 @@ export function Settings() {
     a.download = `fittrack-export-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const handleAddWeight = () => {
-    const weight = parseFloat(newWeight);
-    if (weight > 0) {
-      addWeightEntry(weight);
-      setNewWeight('');
-      setShowWeightInput(false);
-    }
   };
 
   const handleClearData = () => {
@@ -227,8 +220,8 @@ export function Settings() {
             <SettingsRow
               icon={Scale}
               label="Weight"
-              value={`${user.weight} kg`}
-              onEdit={() => handleEdit('weight', user.weight)}
+              value={`${Math.round(kgToDisplay(user.weight, unitSystem) * 10) / 10} ${weightUnit}`}
+              onEdit={() => handleEdit('weight', Math.round(kgToDisplay(user.weight, unitSystem) * 10) / 10)}
               editMode={editMode === 'weight'}
               editValue={editValue}
               onEditValueChange={setEditValue}
@@ -310,74 +303,6 @@ export function Settings() {
               selectedId={user.unitSystem || 'metric'}
               onChange={(value) => updateUser({ unitSystem: value as UnitSystem })}
             />
-          </div>
-        </div>
-
-        {/* Body Weight Tracking */}
-        <div>
-          <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-            Body Weight
-          </h2>
-          <div className="card dark:bg-gray-800 dark:border-gray-700 p-4">
-            {showWeightInput ? (
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={newWeight}
-                  onChange={(e) => setNewWeight(e.target.value)}
-                  placeholder="Enter weight (kg)"
-                  className="input dark:bg-gray-700 dark:border-gray-600 dark:text-white flex-1"
-                  autoFocus
-                />
-                <button onClick={handleAddWeight} className="btn-primary px-3">
-                  Add
-                </button>
-                <button
-                  onClick={() => setShowWeightInput(false)}
-                  className="btn-secondary px-3"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                    <span className="text-gray-900 dark:text-white">Track Weight</span>
-                  </div>
-                  <button
-                    onClick={() => setShowWeightInput(true)}
-                    className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Log Weight
-                  </button>
-                </div>
-                {weightEntries.length > 0 ? (
-                  <div className="space-y-2">
-                    {weightEntries.slice(0, 5).map((entry) => (
-                      <div
-                        key={entry.id}
-                        className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                      >
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">{entry.date}</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{entry.weight} kg</span>
-                      </div>
-                    ))}
-                    {weightEntries.length > 5 && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center pt-1">
-                        +{weightEntries.length - 5} more entries
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">
-                    No weight entries yet. Start tracking your progress!
-                  </p>
-                )}
-              </>
-            )}
           </div>
         </div>
 

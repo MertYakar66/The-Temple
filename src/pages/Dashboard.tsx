@@ -10,7 +10,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { kgToDisplay, getWeightUnit } from '../utils/weight';
 
 export function Dashboard() {
@@ -35,7 +35,7 @@ export function Dashboard() {
   // Calculate total volume this week
   const weeklyVolume = workoutSessions
     .filter((ws) => {
-      const wsDate = new Date(ws.date);
+      const wsDate = parseISO(ws.date);
       return wsDate >= weekStart && wsDate <= weekEnd;
     })
     .reduce((total, ws) => {
