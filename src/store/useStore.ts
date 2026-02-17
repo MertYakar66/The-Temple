@@ -500,9 +500,12 @@ export const useStore = create<AppState>()(
           id: uuidv4(),
           date: date || getDateStamp(),
           weight,
-          notes,
           createdAt: new Date().toISOString(),
         };
+        // Only add notes if provided (Firestore doesn't accept undefined)
+        if (notes) {
+          entry.notes = notes;
+        }
 
         set((state) => {
           // Remove existing entry for the same date if exists

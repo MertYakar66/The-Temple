@@ -26,7 +26,7 @@ import {
 } from 'recharts';
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
-import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { format, subDays, eachDayOfInterval, parseISO } from 'date-fns';
 import { isDateStampInRange } from '../utils/date';
 import { getCompletedSetCount, getTotalVolume } from '../utils/workoutMetrics';
 import { kgToDisplay, displayToKg, getWeightUnit } from '../utils/weight';
@@ -171,7 +171,7 @@ export function Progress() {
     .filter((entry: WeightEntry) => isDateStampInRange(entry.date, rangeStart, today))
     .sort((a: WeightEntry, b: WeightEntry) => a.date.localeCompare(b.date))
     .map((entry: WeightEntry) => ({
-      date: format(new Date(entry.date), 'MMM d'),
+      date: format(parseISO(entry.date), 'MMM d'),
       weight: Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10,
     }));
 
@@ -731,7 +731,7 @@ export function Progress() {
                           {Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10} {weightUnit}
                         </span>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {format(new Date(entry.date), 'MMM d, yyyy')}
+                          {format(parseISO(entry.date), 'MMM d, yyyy')}
                         </span>
                       </div>
                       {entry.notes && (
