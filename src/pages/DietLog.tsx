@@ -8,9 +8,12 @@ import {
   Clock,
   Check,
   Flame,
+  User,
 } from 'lucide-react';
 import { useDietStore } from '../store/useDietStore';
 import type { Food } from '../types';
+
+type FoodTab = 'recent' | 'myfoods';
 
 export function DietLog() {
   const navigate = useNavigate();
@@ -20,6 +23,7 @@ export function DietLog() {
   const logDate = dateParam || format(new Date(), 'yyyy-MM-dd');
 
   const getAllFoods = useDietStore((s) => s.getAllFoods);
+  const customFoods = useDietStore((s) => s.customFoods);
   const recentFoodIds = useDietStore((s) => s.recentFoodIds);
   const logFood = useDietStore((s) => s.logFood);
   const getFood = useDietStore((s) => s.getFood);
@@ -27,18 +31,28 @@ export function DietLog() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [servings, setServings] = useState(1);
+  const [activeTab, setActiveTab] = useState<FoodTab>('recent');
 
   const allFoods = getAllFoods();
   const recentFoods = recentFoodIds.map((id) => getFood(id)).filter(Boolean) as Food[];
 
-  // Filter foods based on search
+  // Filter foods based on search and active tab
   const getFilteredFoods = (): Food[] => {
-    if (!searchQuery) {
-      // Show recent foods when no search
-      return recentFoods.length > 0 ? recentFoods : allFoods.slice(0, 20);
+    let baseFoods: Food[];
+
+    if (activeTab === 'myfoods') {
+      baseFoods = customFoods;
+    } else {
+      // Recent tab
+      baseFoods = recentFoods.length > 0 ? recentFoods : allFoods.slice(0, 20);
     }
+
+    if (!searchQuery) {
+      return baseFoods;
+    }
+
     const query = searchQuery.toLowerCase();
-    return allFoods.filter((f) => f.name.toLowerCase().includes(query));
+    return baseFoods.filter((f) => f.name.toLowerCase().includes(query));
   };
 
   const filteredFoods = getFilteredFoods();
@@ -195,11 +209,37 @@ export function DietLog() {
           />
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab('recent')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition-colors ${
+              activeTab === 'recent'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            Recent Foods
+          </button>
+          <button
+            onClick={() => setActiveTab('myfoods')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition-colors ${
+              activeTab === 'myfoods'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            My Foods
+          </button>
+        </div>
+
         {/* Section Label */}
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-          <Clock className="w-4 h-4" />
+          {activeTab === 'recent' ? <Clock className="w-4 h-4" /> : <User className="w-4 h-4" />}
           <span className="text-sm font-medium">
-            {searchQuery ? 'Search Results' : 'Recent Foods'}
+            {searchQuery ? 'Search Results' : activeTab === 'recent' ? 'Recent Foods' : 'My Custom Foods'}
           </span>
         </div>
 
@@ -208,7 +248,11 @@ export function DietLog() {
           {filteredFoods.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 dark:text-gray-400 mb-4">
-                {searchQuery ? 'No foods found' : 'No recent foods yet'}
+                {searchQuery
+                  ? 'No foods found'
+                  : activeTab === 'myfoods'
+                  ? 'No custom foods created yet'
+                  : 'No recent foods yet'}
               </p>
               <button
                 onClick={() => navigate('/diet/food/new')}

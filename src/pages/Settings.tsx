@@ -302,12 +302,12 @@ export function Settings() {
             <SelectRow
               icon={Scale}
               label="Weight Unit"
-              value={unitLabels[user.unitSystem]}
+              value={unitLabels[user.unitSystem || 'metric']}
               options={Object.entries(unitLabels).map(([id, label]) => ({
                 id,
                 label,
               }))}
-              selectedId={user.unitSystem}
+              selectedId={user.unitSystem || 'metric'}
               onChange={(value) => updateUser({ unitSystem: value as UnitSystem })}
             />
           </div>
