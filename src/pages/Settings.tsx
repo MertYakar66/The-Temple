@@ -24,6 +24,7 @@ import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useAuth } from '../contexts/AuthContext';
+import { kgToDisplay, displayToKg, getWeightUnit } from '../utils/weight';
 import type { TrainingGoal, ExperienceLevel, Equipment, UnitSystem } from '../types';
 
 const goalLabels: Record<TrainingGoal, string> = {
@@ -69,6 +70,10 @@ export function Settings() {
   // Dark mode
   const { theme, setTheme, isDark } = useDarkMode();
 
+  // Unit system
+  const unitSystem = user?.unitSystem || 'metric';
+  const weightUnit = getWeightUnit(unitSystem);
+
   const [editMode, setEditMode] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [showWeightInput, setShowWeightInput] = useState(false);
@@ -100,7 +105,9 @@ export function Settings() {
     if (field === 'name') {
       updateUser({ name: editValue });
     } else if (field === 'weight') {
-      updateUser({ weight: parseFloat(editValue) });
+      // Convert from display unit to kg for storage
+      const weightInKg = displayToKg(parseFloat(editValue), unitSystem);
+      updateUser({ weight: weightInKg });
     } else if (field === 'height') {
       updateUser({ height: parseFloat(editValue) });
     } else if (field === 'age') {
@@ -139,9 +146,11 @@ export function Settings() {
   };
 
   const handleAddWeight = () => {
-    const weight = parseFloat(newWeight);
-    if (weight > 0) {
-      addWeightEntry(weight);
+    const displayWeight = parseFloat(newWeight);
+    if (displayWeight > 0) {
+      // Convert from display unit to kg for storage
+      const weightInKg = displayToKg(displayWeight, unitSystem);
+      addWeightEntry(weightInKg);
       setNewWeight('');
       setShowWeightInput(false);
     }
@@ -227,8 +236,8 @@ export function Settings() {
             <SettingsRow
               icon={Scale}
               label="Weight"
-              value={`${user.weight} kg`}
-              onEdit={() => handleEdit('weight', user.weight)}
+              value={`${Math.round(kgToDisplay(user.weight, unitSystem) * 10) / 10} ${weightUnit}`}
+              onEdit={() => handleEdit('weight', Math.round(kgToDisplay(user.weight, unitSystem) * 10) / 10)}
               editMode={editMode === 'weight'}
               editValue={editValue}
               onEditValueChange={setEditValue}
@@ -325,7 +334,7 @@ export function Settings() {
                   type="number"
                   value={newWeight}
                   onChange={(e) => setNewWeight(e.target.value)}
-                  placeholder="Enter weight (kg)"
+                  placeholder={`Enter weight (${weightUnit})`}
                   className="input dark:bg-gray-700 dark:border-gray-600 dark:text-white flex-1"
                   autoFocus
                 />
@@ -362,7 +371,7 @@ export function Settings() {
                         className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
                       >
                         <span className="text-gray-600 dark:text-gray-400 text-sm">{entry.date}</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{entry.weight} kg</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10} {weightUnit}</span>
                       </div>
                     ))}
                     {weightEntries.length > 5 && (
