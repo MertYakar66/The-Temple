@@ -69,6 +69,10 @@ interface DietState {
     proteinHitDays: number;
     totalDaysLogged: number;
   };
+
+  // Cloud sync
+  loadFromCloud: (data: Record<string, unknown>) => void;
+  getCloudSyncData: () => Record<string, unknown>;
 }
 
 const calculateMacros = (items: { macros: Macros; servings: number }[]): Macros => {
@@ -512,6 +516,32 @@ export const useDietStore = create<DietState>()(
           avgProtein: totalDaysLogged > 0 ? Math.round(totalProtein / totalDaysLogged) : 0,
           proteinHitDays,
           totalDaysLogged,
+        };
+      },
+
+      // Cloud sync
+      loadFromCloud: (data) => {
+        set({
+          customFoods: (data.customFoods as Food[]) ?? get().customFoods,
+          recipes: (data.recipes as Recipe[]) ?? get().recipes,
+          meals: (data.meals as Meal[]) ?? get().meals,
+          foodLog: (data.foodLog as FoodLogEntry[]) ?? get().foodLog,
+          recentFoodIds: (data.recentFoodIds as string[]) ?? get().recentFoodIds,
+          dietSettings: (data.dietSettings as DietSettings) ?? get().dietSettings,
+          streaks: (data.streaks as DietStreak) ?? get().streaks,
+        });
+      },
+
+      getCloudSyncData: () => {
+        const state = get();
+        return {
+          customFoods: state.customFoods,
+          recipes: state.recipes,
+          meals: state.meals,
+          foodLog: state.foodLog,
+          recentFoodIds: state.recentFoodIds,
+          dietSettings: state.dietSettings,
+          streaks: state.streaks,
         };
       },
     }),

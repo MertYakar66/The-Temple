@@ -9,6 +9,9 @@ import {
   Beef,
   Scale,
   Target,
+  Plus,
+  Trash2,
+  MessageSquare,
 } from 'lucide-react';
 import {
   LineChart,
@@ -37,6 +40,8 @@ export function Progress() {
   const exercises = useStore((state) => state.exercises);
   const getExerciseHistory = useStore((state) => state.getExerciseHistory);
   const weightEntries = useStore((state) => state.weightEntries);
+  const addWeightEntry = useStore((state) => state.addWeightEntry);
+  const deleteWeightEntry = useStore((state) => state.deleteWeightEntry);
 
   const getDailyMacros = useDietStore((state) => state.getDailyMacros);
   const dietSettings = useDietStore((state) => state.dietSettings);
@@ -44,6 +49,22 @@ export function Progress() {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProgressTab>('workout');
+
+  // Weight entry form state
+  const [newWeight, setNewWeight] = useState('');
+  const [weightNotes, setWeightNotes] = useState('');
+  const [showWeightNotes, setShowWeightNotes] = useState(false);
+  const [showWeightHistory, setShowWeightHistory] = useState(false);
+
+  const handleAddWeight = () => {
+    const weight = parseFloat(newWeight);
+    if (weight > 0) {
+      addWeightEntry(weight, weightNotes.trim() || undefined);
+      setNewWeight('');
+      setWeightNotes('');
+      setShowWeightNotes(false);
+    }
+  };
 
   // Calculate date range
   const today = new Date();
@@ -541,6 +562,54 @@ export function Progress() {
       {/* Body Tab */}
       {activeTab === 'body' && (
         <>
+          {/* Log Weight Card */}
+          <div className="card">
+            <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Log Weight</h2>
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Scale className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={newWeight}
+                  onChange={(e) => setNewWeight(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddWeight()}
+                  className="w-full pl-9 pr-12 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Weight"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">kg</span>
+              </div>
+              <button
+                onClick={() => setShowWeightNotes(!showWeightNotes)}
+                className={`p-2.5 rounded-lg border transition-colors ${
+                  showWeightNotes
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400'
+                    : 'border-gray-300 dark:border-gray-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                }`}
+              >
+                <MessageSquare className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleAddWeight}
+                disabled={!newWeight || parseFloat(newWeight) <= 0}
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                Log
+              </button>
+            </div>
+            {showWeightNotes && (
+              <textarea
+                value={weightNotes}
+                onChange={(e) => setWeightNotes(e.target.value)}
+                className="w-full mt-2 p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm resize-none"
+                placeholder="How are you feeling today? Any notes..."
+                rows={2}
+              />
+            )}
+          </div>
+
           {/* Weight Stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="card text-center">
@@ -622,15 +691,63 @@ export function Progress() {
             </div>
           )}
 
-          {/* Empty state */}
-          {bodyWeightData.length === 0 && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Scale className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+          {/* Weight History */}
+          <div className="card">
+            <button
+              onClick={() => setShowWeightHistory(!showWeightHistory)}
+              className="w-full flex items-center justify-between"
+            >
+              <h2 className="font-semibold text-gray-900 dark:text-white">Weight History</h2>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {weightEntries.length} {weightEntries.length === 1 ? 'entry' : 'entries'}
+              </span>
+            </button>
+
+            {showWeightHistory && weightEntries.length > 0 && (
+              <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
+                {weightEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {entry.weight} kg
+                        </span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {format(new Date(entry.date), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                      {entry.notes && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                          {entry.notes}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => deleteWeightEntry(entry.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors ml-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">No weight data yet</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Start tracking your body weight to see trends
+            )}
+
+            {showWeightHistory && weightEntries.length === 0 && (
+              <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                No entries yet. Log your first weight above!
+              </p>
+            )}
+          </div>
+
+          {/* Empty state for chart */}
+          {bodyWeightData.length === 0 && (
+            <div className="text-center py-4">
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
+                Log your weight to see trends on the chart
               </p>
             </div>
           )}
