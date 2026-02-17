@@ -7,12 +7,14 @@ import { GoalsSetup } from '../components/onboarding/GoalsSetup';
 import { ExperienceSetup } from '../components/onboarding/ExperienceSetup';
 import { EquipmentSetup } from '../components/onboarding/EquipmentSetup';
 import { useStore } from '../store/useStore';
+import { useAuth } from '../contexts/AuthContext';
 import type { TrainingGoal, ExperienceLevel, Equipment, UserProfile } from '../types';
 
 type OnboardingStep = 'welcome' | 'profile' | 'goals' | 'experience' | 'equipment';
 
 export function Onboarding() {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const setUser = useStore((state) => state.setUser);
   const [step, setStep] = useState<OnboardingStep>('welcome');
 
@@ -42,6 +44,7 @@ export function Onboarding() {
     const user: UserProfile = {
       id: uuidv4(),
       name: profileData.name,
+      email: currentUser?.email || undefined,
       age: profileData.age,
       height: profileData.height,
       weight: profileData.weight,

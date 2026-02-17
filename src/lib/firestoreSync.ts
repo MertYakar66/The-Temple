@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Debounce timer references
@@ -75,6 +75,19 @@ export function debouncedSaveDietData(uid: string, data: SyncData): void {
   dietSyncTimer = setTimeout(() => {
     saveDietData(uid, data);
   }, SYNC_DEBOUNCE_MS);
+}
+
+// ---------- Delete User Data ----------
+
+export async function deleteUserCloudData(uid: string): Promise<void> {
+  try {
+    const workoutRef = doc(db, 'users', uid, 'data', 'workout');
+    const dietRef = doc(db, 'users', uid, 'data', 'diet');
+    await Promise.all([deleteDoc(workoutRef), deleteDoc(dietRef)]);
+  } catch (error) {
+    console.error('Failed to delete user cloud data:', error);
+    throw error;
+  }
 }
 
 // ---------- Cleanup ----------
