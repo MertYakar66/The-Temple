@@ -80,6 +80,10 @@ interface AppState {
   setExerciseGoal: (goal: Omit<ExerciseGoal, 'createdAt' | 'updatedAt'>) => void;
   getExerciseGoal: (exerciseId: string) => ExerciseGoal | undefined;
   getLastWorkoutForExercise: (exerciseId: string) => WorkoutExercise | undefined;
+
+  // Cloud sync
+  loadFromCloud: (data: Record<string, unknown>) => void;
+  getCloudSyncData: () => Record<string, unknown>;
 }
 
 export const useStore = create<AppState>()(
@@ -590,6 +594,34 @@ export const useStore = create<AppState>()(
           }
         }
         return undefined;
+      },
+
+      // Cloud sync
+      loadFromCloud: (data) => {
+        set({
+          user: (data.user as UserProfile) ?? get().user,
+          workoutSessions: (data.workoutSessions as WorkoutSession[]) ?? get().workoutSessions,
+          currentSession: (data.currentSession as WorkoutSession | null) ?? get().currentSession,
+          routines: (data.routines as Routine[])?.length
+            ? (data.routines as Routine[])
+            : get().routines,
+          personalRecords: (data.personalRecords as PersonalRecord[]) ?? get().personalRecords,
+          weightEntries: (data.weightEntries as WeightEntry[]) ?? get().weightEntries,
+          exerciseGoals: (data.exerciseGoals as ExerciseGoal[]) ?? get().exerciseGoals,
+        });
+      },
+
+      getCloudSyncData: () => {
+        const state = get();
+        return {
+          user: state.user,
+          workoutSessions: state.workoutSessions,
+          currentSession: state.currentSession,
+          routines: state.routines,
+          personalRecords: state.personalRecords,
+          weightEntries: state.weightEntries,
+          exerciseGoals: state.exerciseGoals,
+        };
       },
     }),
     {
