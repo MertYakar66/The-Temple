@@ -84,6 +84,9 @@ interface AppState {
   // Cloud sync
   loadFromCloud: (data: Record<string, unknown>) => void;
   getCloudSyncData: () => Record<string, unknown>;
+
+  // Reset store (for logout/user switch)
+  resetStore: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -625,6 +628,20 @@ export const useStore = create<AppState>()(
           weightEntries: state.weightEntries,
           exerciseGoals: state.exerciseGoals,
         };
+      },
+
+      // Reset store to initial state (for logout/user switch)
+      resetStore: () => {
+        set({
+          user: null,
+          workoutSessions: [],
+          currentSession: null,
+          routines: defaultRoutines,
+          personalRecords: [],
+          weightEntries: [],
+          exerciseGoals: [],
+          newPRs: [],
+        });
       },
     }),
     {

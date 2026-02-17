@@ -73,6 +73,9 @@ interface DietState {
   // Cloud sync
   loadFromCloud: (data: Record<string, unknown>) => void;
   getCloudSyncData: () => Record<string, unknown>;
+
+  // Reset store (for logout/user switch)
+  resetStore: () => void;
 }
 
 const calculateMacros = (items: { macros: Macros; servings: number }[]): Macros => {
@@ -543,6 +546,19 @@ export const useDietStore = create<DietState>()(
           dietSettings: state.dietSettings,
           streaks: state.streaks,
         };
+      },
+
+      // Reset store to initial state (for logout/user switch)
+      resetStore: () => {
+        set({
+          customFoods: [],
+          recipes: [],
+          meals: [],
+          foodLog: [],
+          recentFoodIds: [],
+          dietSettings: defaultDietSettings,
+          streaks: defaultStreaks,
+        });
       },
     }),
     {

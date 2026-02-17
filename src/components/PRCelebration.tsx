@@ -1,10 +1,22 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Trophy, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { kgToDisplay, getWeightUnit } from '../utils/weight';
 
 // Pre-generate confetti data outside component to avoid render-time randomness
 const CONFETTI_COLORS = ['#FFF', '#FFD700', '#FF6B6B', '#4ECDC4'];
+
+// Deterministic pseudo-random offsets (avoiding Math.random in render)
+const CONFETTI_OFFSETS = [2.1, 4.3, 1.7, 3.9, 0.8, 4.1, 2.5, 3.2, 1.4, 4.7, 0.5, 3.6];
+
+// Pre-generated confetti pieces - completely static, no render-time computation
+const CONFETTI_PIECES = Array.from({ length: 12 }, (_, i) => ({
+  id: i,
+  left: `${(i * 8.33) + CONFETTI_OFFSETS[i]}%`,
+  color: CONFETTI_COLORS[i % 4],
+  delay: `${i * 0.04}s`,
+  duration: `${1.2 + (i % 3) * 0.2}s`,
+}));
 
 export function PRCelebration() {
   const newPRs = useStore((state) => state.newPRs);
@@ -13,17 +25,6 @@ export function PRCelebration() {
 
   const unitSystem = user?.unitSystem || 'metric';
   const weightUnit = getWeightUnit(unitSystem);
-
-  // Generate confetti positions once using useMemo
-  const confettiPieces = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => ({
-      id: i,
-      left: `${(i * 8.33) + Math.random() * 5}%`, // Spread evenly with slight randomness
-      color: CONFETTI_COLORS[i % 4],
-      delay: `${i * 0.04}s`,
-      duration: `${1.2 + (i % 3) * 0.2}s`,
-    }));
-  }, []);
 
   // Auto-dismiss after 5 seconds
   useEffect(() => {
@@ -77,7 +78,7 @@ export function PRCelebration() {
 
         {/* Confetti effect */}
         <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
-          {confettiPieces.map((piece) => (
+          {CONFETTI_PIECES.map((piece) => (
             <div
               key={piece.id}
               className="absolute w-2 h-2 animate-confetti"
