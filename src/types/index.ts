@@ -2,6 +2,8 @@ export type TrainingGoal = 'strength' | 'hypertrophy' | 'fat_loss' | 'endurance'
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
 export type Equipment = 'full_gym' | 'home_gym' | 'minimal' | 'bodyweight';
 export type UnitSystem = 'metric' | 'imperial';
+export type Sex = 'male' | 'female';
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 export type MuscleGroup =
   | 'chest'
   | 'back'
@@ -20,6 +22,8 @@ export interface UserProfile {
   id: string;
   name: string;
   email?: string;
+  sex?: Sex;
+  activityLevel?: ActivityLevel;
   height: number; // in cm
   weight: number; // in kg
   age: number;

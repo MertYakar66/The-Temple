@@ -45,6 +45,7 @@ export function Onboarding() {
       id: uuidv4(),
       name: profileData.name,
       email: currentUser?.email || undefined,
+      sex: profileData.sex,
       age: profileData.age,
       height: profileData.height,
       weight: profileData.weight,
