@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import type { UnitSystem } from '../../types';
+import type { UnitSystem, Sex } from '../../types';
 
 interface ProfileSetupProps {
   onNext: (data: ProfileData) => void;
@@ -10,6 +10,7 @@ interface ProfileSetupProps {
 
 export interface ProfileData {
   name: string;
+  sex: Sex;
   age: number;
   height: number;
   weight: number;
@@ -18,6 +19,7 @@ export interface ProfileData {
 
 export function ProfileSetup({ onNext, onBack, initialData }: ProfileSetupProps) {
   const [name, setName] = useState(initialData?.name || '');
+  const [sex, setSex] = useState<Sex>(initialData?.sex || 'male');
   const [age, setAge] = useState(initialData?.age?.toString() || '');
   const [height, setHeight] = useState(initialData?.height?.toString() || '');
   const [weight, setWeight] = useState(initialData?.weight?.toString() || '');
@@ -67,6 +69,7 @@ export function ProfileSetup({ onNext, onBack, initialData }: ProfileSetupProps)
 
       onNext({
         name: name.trim(),
+        sex,
         age: parseInt(age),
         height: parseInt(height),
         weight: Math.round(weightInKg * 10) / 10, // Always store in kg
@@ -110,6 +113,34 @@ export function ProfileSetup({ onNext, onBack, initialData }: ProfileSetupProps)
             {errors.name && (
               <p className="text-red-500 text-sm mt-1">{errors.name}</p>
             )}
+          </div>
+
+          <div>
+            <label className="input-label dark:text-gray-300">Sex</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSex('male')}
+                className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                  sex === 'male'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                Male
+              </button>
+              <button
+                type="button"
+                onClick={() => setSex('female')}
+                className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                  sex === 'female'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                Female
+              </button>
+            </div>
           </div>
 
           <div>

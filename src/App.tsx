@@ -23,6 +23,7 @@ import { DietMealNew } from './pages/DietMealNew';
 import { DietWeekly } from './pages/DietWeekly';
 import { DietSettings } from './pages/DietSettings';
 import { DietFoodNew } from './pages/DietFoodNew';
+import { TDEECalculator } from './pages/TDEECalculator';
 // Components
 import { PRCelebration } from './components/PRCelebration';
 import { Dumbbell } from 'lucide-react';
@@ -88,6 +89,9 @@ function AppRoutes() {
       <Route path="/routines/:id/edit" element={<RoutineEditor />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/templates" element={<WorkoutTemplates />} />
+
+      {/* TDEE Calculator */}
+      <Route path="/tdee-calculator" element={<TDEECalculator />} />
 
       {/* Diet routes without bottom nav */}
       <Route path="/diet/log" element={<DietLog />} />

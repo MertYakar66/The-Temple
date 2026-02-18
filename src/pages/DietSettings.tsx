@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   ChevronLeft,
   Flame,
@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Check,
   Calculator,
+  ChevronRight,
 } from 'lucide-react';
 import { useDietStore } from '../store/useDietStore';
 import type { DietGoalType, MealType } from '../types';
@@ -102,6 +103,23 @@ export function DietSettings() {
       </header>
 
       <div className="px-4 py-6 space-y-6">
+        {/* TDEE Calculator Link */}
+        <Link
+          to="/tdee-calculator"
+          className="block card bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 border-primary-200 dark:border-primary-700 hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Calculator className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              <div>
+                <p className="font-semibold text-primary-800 dark:text-primary-300">TDEE Calculator</p>
+                <p className="text-sm text-primary-600 dark:text-primary-400">Calculate your daily calorie needs</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-primary-400" />
+          </div>
+        </Link>
+
         {/* Goal Type */}
         <div>
           <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">

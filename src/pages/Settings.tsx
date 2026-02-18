@@ -24,7 +24,7 @@ import { useDarkMode } from '../hooks/useDarkMode';
 import { useAuth } from '../contexts/AuthContext';
 import { kgToDisplay, displayToKg, getWeightUnit } from '../utils/weight';
 import { deleteUserCloudData } from '../lib/firestoreSync';
-import type { TrainingGoal, ExperienceLevel, Equipment, UnitSystem } from '../types';
+import type { TrainingGoal, ExperienceLevel, Equipment, UnitSystem, Sex } from '../types';
 
 const goalLabels: Record<TrainingGoal, string> = {
   strength: 'Build Strength',
@@ -50,6 +50,11 @@ const equipmentLabels: Record<Equipment, string> = {
 const unitLabels: Record<UnitSystem, string> = {
   metric: 'Metric (kg)',
   imperial: 'Imperial (lbs)',
+};
+
+const sexLabels: Record<Sex, string> = {
+  male: 'Male',
+  female: 'Female',
 };
 
 export function Settings() {
@@ -197,6 +202,19 @@ export function Settings() {
               onEditValueChange={setEditValue}
               onSave={() => handleSave('name')}
               onCancel={() => setEditMode(null)}
+            />
+
+            {/* Sex */}
+            <SelectRow
+              icon={User}
+              label="Sex"
+              value={sexLabels[user.sex || 'male']}
+              options={Object.entries(sexLabels).map(([id, label]) => ({
+                id,
+                label,
+              }))}
+              selectedId={user.sex || 'male'}
+              onChange={(value) => updateUser({ sex: value as Sex })}
             />
 
             {/* Age */}
