@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "the-temple-f195e"
+  },
+  "targets": {
+    "the-temple-f195e": {
+      "hosting": {
+        "myapp": [
+          "thetemple"
+        ]
+      }
+    }
+  }
+}
