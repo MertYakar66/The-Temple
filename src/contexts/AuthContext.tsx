@@ -7,6 +7,8 @@ import {
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
@@ -79,6 +81,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
+    // Handle Google redirect result on mobile
+    getRedirectResult(auth).catch(() => {
+      // Redirect result errors are handled by onAuthStateChanged
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
 
@@ -149,7 +156,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      await signInWithRedirect(auth, provider);
+    } else {
+      await signInWithPopup(auth, provider);
+    }
   };
 
   const value: AuthContextType = {
