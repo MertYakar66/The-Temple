@@ -210,24 +210,7 @@ export function Dashboard() {
 
       {/* Daily Nutrition Progress */}
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900 dark:text-white">Today's Nutrition</h2>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/tdee-calculator"
-              className="text-primary-600 dark:text-primary-400 text-sm font-medium flex items-center"
-            >
-              <Calculator className="w-4 h-4 mr-1" />
-              TDEE
-            </Link>
-            <Link
-              to="/diet"
-              className="text-primary-600 dark:text-primary-400 text-sm font-medium flex items-center"
-            >
-              Log <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Today's Nutrition</h2>
 
         {/* Calorie summary */}
         <div className="flex items-center justify-between mb-3">
@@ -250,7 +233,7 @@ export function Dashboard() {
         </div>
 
         {/* Macro bars */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3 mb-5">
           {/* Protein */}
           <div>
             <div className="flex items-center gap-1 mb-1">
@@ -305,6 +288,29 @@ export function Dashboard() {
             </p>
           </div>
         </div>
+
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <Link
+            to="/diet"
+            className="flex items-center justify-center gap-2 py-2.5 px-4 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Log Food
+          </Link>
+          <Link
+            to="/tdee-calculator"
+            className="flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            <Calculator className="w-4 h-4" />
+            TDEE Calculator
+          </Link>
+        </div>
+
+        {/* TDEE explanation for beginners */}
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
+          TDEE (Total Daily Energy Expenditure) is the total number of calories your body burns per day, including exercise. Knowing your TDEE helps you set the right calorie target for your goal — whether cutting, maintaining, or bulking.
+        </p>
       </div>
 
       {/* Empty State for New Users */}
