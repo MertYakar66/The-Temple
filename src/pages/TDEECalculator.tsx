@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
+import { kgToDisplay, displayToKg, getWeightUnit } from '../utils/weight';
 import type { Sex, ActivityLevel, DietGoalType } from '../types';
 
 const activityLevels: { id: ActivityLevel; label: string; description: string; multiplier: number }[] = [
@@ -30,11 +31,9 @@ const goalOptions: { id: DietGoalType; label: string; description: string; calor
 ];
 
 /**
- * Calculate BMR using the Mifflin-St Jeor equation.
- * This is a well-established baseline formula.
- *
- * For custom formulations: replace the body of this function
- * with your preferred BMR equation.
+ * BMR via Mifflin-St Jeor equation.
+ * Male:   (10 × weight_kg) + (6.25 × height_cm) − (5 × age) + 5
+ * Female: (10 × weight_kg) + (6.25 × height_cm) − (5 × age) − 161
  */
 function calculateBMR(sex: Sex, weightKg: number, heightCm: number, age: number): number {
   if (sex === 'male') {
@@ -44,12 +43,10 @@ function calculateBMR(sex: Sex, weightKg: number, heightCm: number, age: number)
 }
 
 /**
- * Calculate macros for a given calorie target and goal.
- *
- * Current split (placeholder — replace with your exact formulation):
- * - Cut:         40% protein, 30% carbs, 30% fat
- * - Maintenance: 30% protein, 40% carbs, 30% fat
- * - Bulk:        30% protein, 45% carbs, 25% fat
+ * Macro splits by goal:
+ * - Cut:         40% protein / 30% carbs / 30% fat
+ * - Maintenance: 30% protein / 40% carbs / 30% fat
+ * - Bulk:        30% protein / 45% carbs / 25% fat
  */
 function calculateMacros(calories: number, goalType: DietGoalType): { protein: number; carbs: number; fat: number } {
   let proteinRatio: number;
@@ -87,23 +84,36 @@ export function TDEECalculator() {
   const user = useStore((state) => state.user);
   const updateUser = useStore((state) => state.updateUser);
   const updateDietGoals = useDietStore((state) => state.updateDietGoals);
+  const dietSettings = useDietStore((state) => state.dietSettings);
 
-  // Form state — pre-fill from user profile if available
+  const unitSystem = user?.unitSystem || 'metric';
+  const weightUnit = getWeightUnit(unitSystem);
+
+  // Pre-fill from user profile, converting weight to display unit
+  const initialDisplayWeight = user?.weight
+    ? (Math.round(kgToDisplay(user.weight, unitSystem) * 10) / 10).toString()
+    : '75';
+
   const [sex, setSex] = useState<Sex>(user?.sex || 'male');
   const [age, setAge] = useState(user?.age?.toString() || '25');
   const [height, setHeight] = useState(user?.height?.toString() || '175');
-  const [weight, setWeight] = useState(user?.weight?.toString() || '75');
+  const [weight, setWeight] = useState(initialDisplayWeight);
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(user?.activityLevel || 'moderate');
-  const [goalType, setGoalType] = useState<DietGoalType>('maintenance');
+  const [goalType, setGoalType] = useState<DietGoalType>(dietSettings.goals.goalType || 'maintenance');
   const [applied, setApplied] = useState(false);
 
-  const bmr = useMemo(() => {
+  // Always compute BMR in kg — convert from display unit to kg first
+  const weightInKg = useMemo(() => {
     const w = parseFloat(weight) || 0;
+    return displayToKg(w, unitSystem);
+  }, [weight, unitSystem]);
+
+  const bmr = useMemo(() => {
     const h = parseFloat(height) || 0;
     const a = parseInt(age) || 0;
-    if (w <= 0 || h <= 0 || a <= 0) return 0;
-    return Math.round(calculateBMR(sex, w, h, a));
-  }, [sex, weight, height, age]);
+    if (weightInKg <= 0 || h <= 0 || a <= 0) return 0;
+    return Math.round(calculateBMR(sex, weightInKg, h, a));
+  }, [sex, weightInKg, height, age]);
 
   const activityMultiplier = activityLevels.find((al) => al.id === activityLevel)?.multiplier || 1.55;
 
@@ -119,8 +129,17 @@ export function TDEECalculator() {
   }, [targetCalories, goalType]);
 
   const handleApplyToGoals = () => {
-    // Save activity level & sex to user profile
-    updateUser({ sex, activityLevel });
+    // Sync all form values back to user profile
+    const ageVal = parseInt(age) || user?.age || 25;
+    const heightVal = parseFloat(height) || user?.height || 175;
+
+    updateUser({
+      sex,
+      activityLevel,
+      age: ageVal,
+      height: heightVal,
+      weight: Math.round(weightInKg * 10) / 10,
+    });
 
     // Apply calculated values to diet goals
     updateDietGoals({
@@ -206,14 +225,14 @@ export function TDEECalculator() {
             />
           </div>
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-gray-900 dark:text-white">Weight (kg)</span>
+            <span className="text-gray-900 dark:text-white">Weight ({weightUnit})</span>
             <input
               type="number"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
               className="w-24 text-right input py-1"
-              min={30}
-              max={300}
+              min={unitSystem === 'imperial' ? 66 : 30}
+              max={unitSystem === 'imperial' ? 660 : 300}
             />
           </div>
         </div>
