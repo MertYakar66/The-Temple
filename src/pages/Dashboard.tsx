@@ -8,10 +8,17 @@ import {
   ChevronRight,
   Play,
   Settings,
+  Flame,
+  Beef,
+  Wheat,
+  Droplet,
+  Calculator,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useDietStore } from '../store/useDietStore';
 import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { kgToDisplay, getWeightUnit } from '../utils/weight';
+import { getDateStamp } from '../utils/date';
 
 export function Dashboard() {
   const user = useStore((state) => state.user);
@@ -20,6 +27,9 @@ export function Dashboard() {
   const routines = useStore((state) => state.routines);
   const personalRecords = useStore((state) => state.personalRecords);
   const getWeeklyWorkoutCount = useStore((state) => state.getWeeklyWorkoutCount);
+
+  const getDailyMacros = useDietStore((state) => state.getDailyMacros);
+  const dietSettings = useDietStore((state) => state.dietSettings);
 
   const unitSystem = user?.unitSystem || 'metric';
   const weightUnit = getWeightUnit(unitSystem);
@@ -51,6 +61,15 @@ export function Dashboard() {
         }, 0)
       );
     }, 0);
+
+  // Daily nutrition progress
+  const todayStr = getDateStamp();
+  const todayMacros = getDailyMacros(todayStr);
+  const goals = dietSettings.goals;
+  const calPercent = goals.dailyCalories > 0 ? Math.min(100, Math.round((todayMacros.calories / goals.dailyCalories) * 100)) : 0;
+  const proteinPercent = goals.dailyProtein > 0 ? Math.min(100, Math.round((todayMacros.protein / goals.dailyProtein) * 100)) : 0;
+  const carbsPercent = goals.dailyCarbs > 0 ? Math.min(100, Math.round((todayMacros.carbs / goals.dailyCarbs) * 100)) : 0;
+  const fatPercent = goals.dailyFat > 0 ? Math.min(100, Math.round((todayMacros.fat / goals.dailyFat) * 100)) : 0;
 
   return (
     <div className="px-4 py-6 space-y-6">
@@ -189,37 +208,104 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Quick Routines */}
-      {routines.length > 0 && (
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900 dark:text-white">Your Routines</h2>
+      {/* Daily Nutrition Progress */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900 dark:text-white">Today's Nutrition</h2>
+          <div className="flex items-center gap-2">
             <Link
-              to="/routines"
+              to="/tdee-calculator"
               className="text-primary-600 dark:text-primary-400 text-sm font-medium flex items-center"
             >
-              View all <ChevronRight className="w-4 h-4" />
+              <Calculator className="w-4 h-4 mr-1" />
+              TDEE
+            </Link>
+            <Link
+              to="/diet"
+              className="text-primary-600 dark:text-primary-400 text-sm font-medium flex items-center"
+            >
+              Log <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
-          <div className="space-y-2">
-            {routines.slice(0, 3).map((routine) => (
-              <Link
-                key={routine.id}
-                to={`/routines/${routine.id}`}
-                className="flex items-center justify-between py-3 px-3 -mx-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-              >
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{routine.name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {routine.exercises.length} exercises
-                  </p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </Link>
-            ))}
+        </div>
+
+        {/* Calorie summary */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Flame className="w-5 h-5 text-orange-500" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Calories</span>
+          </div>
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            <span className="font-semibold text-gray-900 dark:text-white">{Math.round(todayMacros.calories)}</span>
+            {' / '}{goals.dailyCalories}
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4">
+          <div
+            className={`h-3 rounded-full transition-all ${
+              calPercent >= 100 ? 'bg-orange-500' : 'bg-orange-400'
+            }`}
+            style={{ width: `${calPercent}%` }}
+          />
+        </div>
+
+        {/* Macro bars */}
+        <div className="grid grid-cols-3 gap-3">
+          {/* Protein */}
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              <Beef className="w-3.5 h-3.5 text-red-500" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">Protein</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-1">
+              <div
+                className="h-2 rounded-full bg-red-400 transition-all"
+                style={{ width: `${proteinPercent}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              <span className="font-medium text-gray-900 dark:text-white">{Math.round(todayMacros.protein)}g</span>
+              {' / '}{goals.dailyProtein}g
+            </p>
+          </div>
+
+          {/* Carbs */}
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              <Wheat className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">Carbs</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-1">
+              <div
+                className="h-2 rounded-full bg-amber-400 transition-all"
+                style={{ width: `${carbsPercent}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              <span className="font-medium text-gray-900 dark:text-white">{Math.round(todayMacros.carbs)}g</span>
+              {' / '}{goals.dailyCarbs}g
+            </p>
+          </div>
+
+          {/* Fat */}
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              <Droplet className="w-3.5 h-3.5 text-yellow-500" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">Fat</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-1">
+              <div
+                className="h-2 rounded-full bg-yellow-400 transition-all"
+                style={{ width: `${fatPercent}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              <span className="font-medium text-gray-900 dark:text-white">{Math.round(todayMacros.fat)}g</span>
+              {' / '}{goals.dailyFat}g
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Empty State for New Users */}
       {totalWorkouts === 0 && routines.length === 0 && (
