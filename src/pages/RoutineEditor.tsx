@@ -97,7 +97,7 @@ export function RoutineEditor() {
             Back
           </button>
           <h1 className="font-semibold text-gray-900 dark:text-white">
-            {isEditing ? 'Edit Routine' : 'New Routine'}
+            {isEditing ? 'Edit Workout' : 'New Workout'}
           </h1>
           <button
             onClick={handleSave}
@@ -113,7 +113,7 @@ export function RoutineEditor() {
         {/* Basic Info */}
         <div className="space-y-4">
           <div>
-            <label className="input-label">Routine Name</label>
+            <label className="input-label">Workout Name</label>
             <input
               type="text"
               value={name}
@@ -127,7 +127,7 @@ export function RoutineEditor() {
           </div>
 
           <div>
-            <label className="input-label">Program (optional)</label>
+            <label className="input-label">Routine Name (optional)</label>
             <input
               type="text"
               value={program}
@@ -135,9 +135,6 @@ export function RoutineEditor() {
               placeholder="e.g., Guray Baba's Hypertrophy Program"
               className="input"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Routines with the same program name will be grouped together.
-            </p>
           </div>
 
           <div>

@@ -7,9 +7,21 @@ export function Routines() {
   const navigate = useNavigate();
   const routines = useStore((state) => state.routines);
   const deleteRoutine = useStore((state) => state.deleteRoutine);
+  const updateRoutine = useStore((state) => state.updateRoutine);
   const startWorkoutFromRoutine = useStore((state) => state.startWorkoutFromRoutine);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [expandedPrograms, setExpandedPrograms] = useState<Set<string>>(new Set());
+
+  const handleEditProgram = (e: React.MouseEvent, programName: string, programRoutines: typeof routines) => {
+    e.stopPropagation();
+    const newName = window.prompt('Rename Routine:', programName);
+    if (newName !== null && newName !== programName) {
+      const trimmed = newName.trim();
+      programRoutines.forEach((r) => {
+        updateRoutine(r.id, { program: trimmed || undefined });
+      });
+    }
+  };
 
   // Group routines by program
   const { programGroups, ungroupedRoutines } = useMemo(() => {
@@ -184,11 +196,22 @@ export function Routines() {
                         {programRoutines.length} days &middot; {totalExercises} exercises
                       </p>
                     </div>
-                    {isExpanded ? (
-                      <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-                    )}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => handleEditProgram(e, programName, programRoutines)}
+                        className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                        title="Edit Routine Name"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <div className="p-1">
+                        {isExpanded ? (
+                          <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                        )}
+                      </div>
+                    </div>
                   </button>
 
                   {/* Expanded Routine List */}

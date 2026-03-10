@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Clock, Save, Play, Dumbbell, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, X, Clock, Save, Play, Dumbbell, ChevronDown, ChevronRight, Edit2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import type { Exercise, Routine } from '../types';
 import { ExerciseSelector } from '../components/workout/ExerciseSelector';
@@ -18,7 +18,19 @@ function ProgramAccordion({
   onStartRoutine: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const updateRoutine = useStore((state) => state.updateRoutine);
   const totalExercises = routines.reduce((sum, r) => sum + r.exercises.length, 0);
+
+  const handleEditProgram = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newName = window.prompt('Rename Routine:', programName);
+    if (newName !== null && newName !== programName) {
+      const trimmed = newName.trim();
+      routines.forEach((r) => {
+        updateRoutine(r.id, { program: trimmed || undefined });
+      });
+    }
+  };
 
   return (
     <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -37,11 +49,22 @@ function ProgramAccordion({
             {routines.length} days &middot; {totalExercises} exercises
           </p>
         </div>
-        {expanded ? (
-          <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-        ) : (
-          <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-        )}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleEditProgram}
+            className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            title="Edit Routine Name"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <div className="p-1">
+            {expanded ? (
+              <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            ) : (
+              <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            )}
+          </div>
+        </div>
       </button>
 
       {expanded && (
