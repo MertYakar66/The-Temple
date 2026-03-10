@@ -332,7 +332,7 @@ export const useStore = create<AppState>()(
       },
 
       // Routines
-      routines: [],
+      routines: defaultRoutines,
 
       addRoutine: (routineData) => {
         const routine: Routine = {
@@ -418,10 +418,10 @@ export const useStore = create<AppState>()(
             return {
               personalRecords: existingPR
                 ? state.personalRecords.map((pr) =>
-                    pr.exerciseId === exerciseId && pr.reps === reps
-                      ? newPR
-                      : pr
-                  )
+                  pr.exerciseId === exerciseId && pr.reps === reps
+                    ? newPR
+                    : pr
+                )
                 : [...state.personalRecords, newPR],
               // Track new PRs for celebration
               newPRs: [...state.newPRs, newPR],
@@ -646,11 +646,14 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'workout-tracker-storage',
-      version: 1,
-      migrate: (persistedState: unknown) => {
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Partial<AppState>;
-        // v1: Replace old Turkish-named routines with English defaults
-        return { ...state, routines: defaultRoutines };
+        if (version < 2) {
+          // v2: Ensure routines use English names with program grouping
+          return { ...state, routines: defaultRoutines };
+        }
+        return state as AppState;
       },
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<AppState> | undefined;
