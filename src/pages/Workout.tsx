@@ -232,6 +232,15 @@ export function Workout() {
                 );
               })()}
             </div>
+
+            {/* Create Routine Button (always visible if they have routines) */}
+            <button
+              onClick={() => navigate('/routines/new')}
+              className="w-full mt-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-primary-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Create a Routine
+            </button>
           </div>
         )}
 
@@ -242,8 +251,9 @@ export function Workout() {
             </p>
             <button
               onClick={() => navigate('/routines/new')}
-              className="btn-outline"
+              className="btn-primary w-full max-w-xs mx-auto flex items-center justify-center gap-2"
             >
+              <Plus className="w-5 h-5" />
               Create a Routine
             </button>
           </div>
