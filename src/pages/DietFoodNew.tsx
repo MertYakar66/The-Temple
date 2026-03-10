@@ -17,12 +17,20 @@ export function DietFoodNew() {
   const [error, setError] = useState('');
 
   const handleSave = () => {
-    if (!name.trim()) {
-      setError('Please enter a food name');
+    if (!name.trim() || name.trim().length > 100) {
+      setError('Please enter a valid food name (max 100 characters)');
       return;
     }
-    if (calories <= 0) {
-      setError('Please enter calories');
+    if (calories <= 0 || calories > 10000) {
+      setError('Please enter valid calories (1-10,000)');
+      return;
+    }
+    if (protein < 0 || protein > 1000 || carbs < 0 || carbs > 1000 || fat < 0 || fat > 1000) {
+      setError('Macro values must be between 0-1,000g');
+      return;
+    }
+    if (servingSize <= 0 || servingSize > 10000) {
+      setError('Serving size must be between 1-10,000');
       return;
     }
 
@@ -91,6 +99,7 @@ export function DietFoodNew() {
               setError('');
             }}
             placeholder="e.g., Homemade Protein Shake"
+            maxLength={100}
             className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white"
           />
         </div>
@@ -103,6 +112,8 @@ export function DietFoodNew() {
               type="number"
               value={servingSize}
               onChange={(e) => setServingSize(parseFloat(e.target.value) || 0)}
+              min="1"
+              max="10000"
               className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-gray-900 dark:text-white"
             />
           </div>
@@ -142,6 +153,8 @@ export function DietFoodNew() {
                   setCalories(parseFloat(e.target.value) || 0);
                   setError('');
                 }}
+                min="0"
+                max="10000"
                 className="w-24 text-right px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 placeholder="0"
               />
@@ -155,6 +168,8 @@ export function DietFoodNew() {
                 type="number"
                 value={protein || ''}
                 onChange={(e) => setProtein(parseFloat(e.target.value) || 0)}
+                min="0"
+                max="1000"
                 className="w-24 text-right px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 placeholder="0"
               />
@@ -168,6 +183,8 @@ export function DietFoodNew() {
                 type="number"
                 value={carbs || ''}
                 onChange={(e) => setCarbs(parseFloat(e.target.value) || 0)}
+                min="0"
+                max="1000"
                 className="w-24 text-right px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 placeholder="0"
               />
@@ -181,6 +198,8 @@ export function DietFoodNew() {
                 type="number"
                 value={fat || ''}
                 onChange={(e) => setFat(parseFloat(e.target.value) || 0)}
+                min="0"
+                max="1000"
                 className="w-24 text-right px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
                 placeholder="0"
               />

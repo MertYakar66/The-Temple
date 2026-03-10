@@ -33,8 +33,8 @@ export function ProfileSetup({ onNext, onBack, initialData }: ProfileSetupProps)
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!name.trim()) {
-      newErrors.name = 'Name is required';
+    if (!name.trim() || name.trim().length > 50) {
+      newErrors.name = 'Name is required (max 50 characters)';
     }
     if (!age || parseInt(age) < 13 || parseInt(age) > 100) {
       newErrors.age = 'Please enter a valid age (13-100)';
@@ -108,6 +108,7 @@ export function ProfileSetup({ onNext, onBack, initialData }: ProfileSetupProps)
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
+              maxLength={50}
               className={`input dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.name ? 'border-red-500' : ''}`}
             />
             {errors.name && (
@@ -150,6 +151,8 @@ export function ProfileSetup({ onNext, onBack, initialData }: ProfileSetupProps)
               value={age}
               onChange={(e) => setAge(e.target.value)}
               placeholder="Enter your age"
+              min="13"
+              max="100"
               className={`input dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.age ? 'border-red-500' : ''}`}
             />
             {errors.age && (
@@ -164,6 +167,8 @@ export function ProfileSetup({ onNext, onBack, initialData }: ProfileSetupProps)
               value={height}
               onChange={(e) => setHeight(e.target.value)}
               placeholder="Enter your height in cm"
+              min="100"
+              max="250"
               className={`input dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.height ? 'border-red-500' : ''}`}
             />
             {errors.height && (
@@ -207,6 +212,8 @@ export function ProfileSetup({ onNext, onBack, initialData }: ProfileSetupProps)
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
               placeholder={`Enter your weight in ${weightUnit}`}
+              min={unitSystem === 'imperial' ? '66' : '30'}
+              max={unitSystem === 'imperial' ? '660' : '300'}
               className={`input dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.weight ? 'border-red-500' : ''}`}
             />
             {errors.weight && (
