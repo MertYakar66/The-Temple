@@ -1,12 +1,73 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Clock, Save, Play } from 'lucide-react';
+import { Plus, X, Clock, Save, Play, Dumbbell, ChevronDown, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import type { Exercise } from '../types';
+import type { Exercise, Routine } from '../types';
 import { ExerciseSelector } from '../components/workout/ExerciseSelector';
 import { WorkoutExerciseCard } from '../components/workout/WorkoutExerciseCard';
 import { RestTimer } from '../components/workout/RestTimer';
 import { getCompletedSetCount, getTotalSetCount } from '../utils/workoutMetrics';
+
+function ProgramAccordion({
+  programName,
+  routines,
+  onStartRoutine,
+}: {
+  programName: string;
+  routines: Routine[];
+  onStartRoutine: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const totalExercises = routines.reduce((sum, r) => sum + r.exercises.length, 0);
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-3 px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+      >
+        <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+          <Dumbbell className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+        </div>
+        <div className="flex-1 text-left">
+          <h3 className="font-bold text-gray-900 dark:text-white text-base">
+            {programName}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {routines.length} days &middot; {totalExercises} exercises
+          </p>
+        </div>
+        {expanded ? (
+          <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+        ) : (
+          <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+        )}
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-4 space-y-2">
+          {routines.map((routine) => (
+            <button
+              key={routine.id}
+              onClick={() => onStartRoutine(routine.id)}
+              className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <div className="w-10 h-10 bg-accent-100 dark:bg-accent-900/30 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-accent-600 dark:text-accent-400" />
+              </div>
+              <div className="text-left flex-1">
+                <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{routine.name}</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {routine.exercises.length} exercises
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Workout() {
   const navigate = useNavigate();
@@ -126,24 +187,50 @@ export function Workout() {
         {routines.length > 0 && (
           <div>
             <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Start from Routine</h2>
-            <div className="space-y-2">
-              {routines.map((routine) => (
-                <button
-                  key={routine.id}
-                  onClick={() => handleStartFromRoutine(routine.id)}
-                  className="w-full card flex items-center gap-4 hover:shadow-md transition-shadow"
-                >
-                  <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/30 rounded-xl flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-accent-600 dark:text-accent-400" />
-                  </div>
-                  <div className="text-left flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{routine.name}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {routine.exercises.length} exercises
-                    </p>
-                  </div>
-                </button>
-              ))}
+            <div className="space-y-3">
+              {/* Group routines by program */}
+              {(() => {
+                const groups: Record<string, typeof routines> = {};
+                const ungrouped: typeof routines = [];
+                routines.forEach((r) => {
+                  if (r.program) {
+                    if (!groups[r.program]) groups[r.program] = [];
+                    groups[r.program].push(r);
+                  } else {
+                    ungrouped.push(r);
+                  }
+                });
+
+                return (
+                  <>
+                    {Object.entries(groups).map(([programName, programRoutines]) => (
+                      <ProgramAccordion
+                        key={programName}
+                        programName={programName}
+                        routines={programRoutines}
+                        onStartRoutine={handleStartFromRoutine}
+                      />
+                    ))}
+                    {ungrouped.map((routine) => (
+                      <button
+                        key={routine.id}
+                        onClick={() => handleStartFromRoutine(routine.id)}
+                        className="w-full card flex items-center gap-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/30 rounded-xl flex items-center justify-center">
+                          <Clock className="w-6 h-6 text-accent-600 dark:text-accent-400" />
+                        </div>
+                        <div className="text-left flex-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{routine.name}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {routine.exercises.length} exercises
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
