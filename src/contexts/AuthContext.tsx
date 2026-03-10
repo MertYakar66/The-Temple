@@ -145,6 +145,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
     await signOut(auth);
+    // Clear persisted localStorage data on logout
+    localStorage.removeItem('workout-tracker-storage');
+    localStorage.removeItem('diet-tracker-storage');
   };
 
   const loginWithGoogle = async () => {
