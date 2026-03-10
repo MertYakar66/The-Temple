@@ -104,15 +104,22 @@ export function Settings() {
 
   const handleSave = (field: string) => {
     if (field === 'name') {
-      updateUser({ name: editValue });
+      const trimmed = editValue.trim().slice(0, 50);
+      if (!trimmed) return;
+      updateUser({ name: trimmed });
     } else if (field === 'weight') {
-      // Convert from display unit to kg for storage
-      const weightInKg = displayToKg(parseFloat(editValue), unitSystem);
+      const val = parseFloat(editValue);
+      if (isNaN(val) || val <= 0 || val > 660) return;
+      const weightInKg = displayToKg(val, unitSystem);
       updateUser({ weight: weightInKg });
     } else if (field === 'height') {
-      updateUser({ height: parseFloat(editValue) });
+      const val = parseFloat(editValue);
+      if (isNaN(val) || val < 100 || val > 250) return;
+      updateUser({ height: val });
     } else if (field === 'age') {
-      updateUser({ age: parseInt(editValue) });
+      const val = parseInt(editValue);
+      if (isNaN(val) || val < 13 || val > 100) return;
+      updateUser({ age: val });
     }
     setEditMode(null);
   };

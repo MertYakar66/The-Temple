@@ -22,8 +22,13 @@ export function Signup() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setError('Password must contain at least one uppercase letter and one number');
       return;
     }
 
@@ -34,7 +39,7 @@ export function Signup() {
     } catch (err: unknown) {
       const error = err as { code?: string };
       if (error.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists');
+        setError('Unable to create account. Please try a different email or sign in.');
       } else if (error.code === 'auth/invalid-email') {
         setError('Invalid email address');
       } else if (error.code === 'auth/weak-password') {
@@ -109,7 +114,7 @@ export function Signup() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters"
                 required
               />
               <button

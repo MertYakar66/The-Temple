@@ -21,12 +21,10 @@ export function Login() {
       await login(email, password);
     } catch (err: unknown) {
       const error = err as { code?: string };
-      if (error.code === 'auth/user-not-found') {
-        setError('No account found with this email');
-      } else if (error.code === 'auth/wrong-password') {
-        setError('Incorrect password');
-      } else if (error.code === 'auth/invalid-email') {
+      if (error.code === 'auth/invalid-email') {
         setError('Invalid email address');
+      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        setError('Invalid email or password');
       } else {
         setError('Failed to sign in. Please try again.');
       }

@@ -3,11 +3,14 @@ import type { Routine } from '../types';
 
 const generateId = () => uuidv4();
 
+const PROGRAM_NAME = "Guray Baba's Hypertrophy Program";
+
 export const defaultRoutines: Routine[] = [
   {
     id: generateId(),
-    name: 'Pazartesi - Push (Chest/Shoulders/Triceps)',
+    name: 'Monday - Push (Chest/Shoulders/Triceps)',
     description: 'Push day focusing on chest, shoulders, and triceps',
+    program: PROGRAM_NAME,
     exercises: [
       { id: generateId(), exerciseId: 'plate-loaded-chest-press', targetSets: 2, targetReps: 5, restSeconds: 120, notes: 'RIR 1 (5-6 reps)' },
       { id: generateId(), exerciseId: 'smith-machine-incline-press', targetSets: 2, targetReps: 5, restSeconds: 120, notes: 'RIR 1 (5-6 reps)' },
@@ -22,8 +25,9 @@ export const defaultRoutines: Routine[] = [
   },
   {
     id: generateId(),
-    name: 'Salı - Pull (Back/Biceps)',
+    name: 'Tuesday - Pull (Back/Biceps)',
     description: 'Pull day focusing on back and biceps',
+    program: PROGRAM_NAME,
     exercises: [
       { id: generateId(), exerciseId: 'lat-pulldown', targetSets: 2, targetReps: 7, restSeconds: 90, notes: 'RIR 1 to Failure (6-8 reps)' },
       { id: generateId(), exerciseId: 'plate-loaded-row', targetSets: 3, targetReps: 7, restSeconds: 90, notes: 'RIR 1 to Failure (6-8 reps)' },
@@ -38,8 +42,9 @@ export const defaultRoutines: Routine[] = [
   },
   {
     id: generateId(),
-    name: 'Çarşamba - Legs',
+    name: 'Wednesday - Legs',
     description: 'Leg day focusing on quads and hamstrings',
+    program: PROGRAM_NAME,
     exercises: [
       { id: generateId(), exerciseId: 'leg-press', targetSets: 2, targetReps: 7, restSeconds: 120, notes: 'RIR 1-2 (6-8 reps)' },
       { id: generateId(), exerciseId: 'smith-machine-squat', targetSets: 2, targetReps: 7, restSeconds: 120, notes: 'RIR 1-2 (6-8 reps)' },
@@ -51,8 +56,9 @@ export const defaultRoutines: Routine[] = [
   },
   {
     id: generateId(),
-    name: 'Cuma - Push (Shoulders/Chest/Triceps)',
+    name: 'Friday - Push (Shoulders/Chest/Triceps)',
     description: 'Push day with shoulder emphasis + abs/calves finisher',
+    program: PROGRAM_NAME,
     exercises: [
       { id: generateId(), exerciseId: 'shoulder-press-machine', targetSets: 2, targetReps: 7, restSeconds: 90, notes: 'RIR 1 (6-8 reps)' },
       { id: generateId(), exerciseId: 'lateral-raises', targetSets: 3, targetReps: 9, restSeconds: 60, notes: 'To Failure (8-10 reps)' },
@@ -69,8 +75,9 @@ export const defaultRoutines: Routine[] = [
   },
   {
     id: generateId(),
-    name: 'Cumartesi - Pull & Legs',
+    name: 'Saturday - Pull & Legs',
     description: 'Combined pull and leg day + abs/calves finisher',
+    program: PROGRAM_NAME,
     exercises: [
       { id: generateId(), exerciseId: 'plate-loaded-row', targetSets: 3, targetReps: 7, restSeconds: 90, notes: 'RIR 1 to Failure (6-8 reps)' },
       { id: generateId(), exerciseId: 'lat-pulldown', targetSets: 3, targetReps: 7, restSeconds: 90, notes: 'RIR 1 to Failure (6-8 reps)' },

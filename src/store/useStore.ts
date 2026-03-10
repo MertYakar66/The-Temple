@@ -648,11 +648,38 @@ export const useStore = create<AppState>()(
       name: 'workout-tracker-storage',
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<AppState> | undefined;
+
+        // Migrate persisted routines: update Turkish day names to English and add program field
+        let routines = persisted?.routines?.length ? persisted.routines : defaultRoutines;
+        const turkishToEnglish: Record<string, string> = {
+          'Pazartesi': 'Monday',
+          'Salı': 'Tuesday',
+          'Çarşamba': 'Wednesday',
+          'Perşembe': 'Thursday',
+          'Cuma': 'Friday',
+          'Cumartesi': 'Saturday',
+          'Pazar': 'Sunday',
+        };
+        routines = routines.map((r: Routine) => {
+          let name = r.name;
+          let needsMigration = false;
+          for (const [tr, en] of Object.entries(turkishToEnglish)) {
+            if (name.startsWith(tr)) {
+              name = name.replace(tr, en);
+              needsMigration = true;
+              break;
+            }
+          }
+          if (needsMigration || !r.program) {
+            return { ...r, name, program: r.program || "Guray Baba's Hypertrophy Program" };
+          }
+          return r;
+        });
+
         return {
           ...currentState,
           ...persisted,
-          // If no routines in storage, use default routines
-          routines: persisted?.routines?.length ? persisted.routines : defaultRoutines,
+          routines,
           // Always use latest exercises from code
           exercises: currentState.exercises,
         };
