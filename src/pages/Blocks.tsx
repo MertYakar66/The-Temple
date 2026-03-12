@@ -1,16 +1,39 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronDown, Info, Repeat, Dumbbell, Clock, AlertTriangle } from 'lucide-react';
 import { minMaxProgram } from '../data/minMaxProgram';
 import type { BlockExercise } from '../data/minMaxProgram';
 
 export function Blocks() {
   const navigate = useNavigate();
-  const [selectedBlockIdx, setSelectedBlockIdx] = useState(0);
-  const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
+  const [searchParams] = useSearchParams();
+
+  const initBlock = Number(searchParams.get('block') || 0);
+  const initWeek = Number(searchParams.get('week') || 0);
+  const initDay = searchParams.get('day') || null;
+
+  const [selectedBlockIdx, setSelectedBlockIdx] = useState(initBlock);
+  const [selectedWeekIdx, setSelectedWeekIdx] = useState(initWeek);
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [showNotes, setShowNotes] = useState(false);
+
+  // Auto-expand day from query params
+  useEffect(() => {
+    if (initDay) {
+      const program = minMaxProgram;
+      const block = program.blocks[initBlock];
+      if (block) {
+        const week = block.weeks[initWeek];
+        if (week) {
+          const dayIdx = week.days.findIndex((d) => d.dayName === initDay);
+          if (dayIdx >= 0) {
+            setExpandedDay(`${dayIdx}`);
+          }
+        }
+      }
+    }
+  }, [initBlock, initWeek, initDay]);
 
   const program = minMaxProgram;
   const block = program.blocks[selectedBlockIdx];
