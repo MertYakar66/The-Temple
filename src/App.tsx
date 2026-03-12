@@ -13,6 +13,7 @@ import { Progress } from './pages/Progress';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
 import { WorkoutTemplates } from './pages/WorkoutTemplates';
+import { Blocks } from './pages/Blocks';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 // Diet Module
@@ -89,6 +90,7 @@ function AppRoutes() {
       <Route path="/routines/:id/edit" element={<RoutineEditor />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/templates" element={<WorkoutTemplates />} />
+      <Route path="/blocks" element={<Blocks />} />
 
       {/* TDEE Calculator */}
       <Route path="/tdee-calculator" element={<TDEECalculator />} />
