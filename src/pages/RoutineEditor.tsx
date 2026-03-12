@@ -19,6 +19,7 @@ export function RoutineEditor() {
   const existingRoutine = id ? routines.find((r) => r.id === id) : null;
 
   const [name, setName] = useState(existingRoutine?.name || '');
+  const [program, setProgram] = useState(existingRoutine?.program || '');
   const [description, setDescription] = useState(existingRoutine?.description || '');
   const [routineExercises, setRoutineExercises] = useState<RoutineExercise[]>(
     existingRoutine?.exercises || []
@@ -67,12 +68,14 @@ export function RoutineEditor() {
     if (isEditing && id) {
       updateRoutine(id, {
         name: name.trim(),
+        program: program.trim() || undefined,
         description: description.trim(),
         exercises: routineExercises,
       });
     } else {
       addRoutine({
         name: name.trim(),
+        program: program.trim() || undefined,
         description: description.trim(),
         exercises: routineExercises,
       });
@@ -94,7 +97,7 @@ export function RoutineEditor() {
             Back
           </button>
           <h1 className="font-semibold text-gray-900 dark:text-white">
-            {isEditing ? 'Edit Routine' : 'New Routine'}
+            {isEditing ? 'Edit Workout' : 'New Workout'}
           </h1>
           <button
             onClick={handleSave}
@@ -110,7 +113,7 @@ export function RoutineEditor() {
         {/* Basic Info */}
         <div className="space-y-4">
           <div>
-            <label className="input-label">Routine Name</label>
+            <label className="input-label">Workout Name</label>
             <input
               type="text"
               value={name}
@@ -121,6 +124,17 @@ export function RoutineEditor() {
             {errors.name && (
               <p className="text-red-500 text-sm mt-1">{errors.name}</p>
             )}
+          </div>
+
+          <div>
+            <label className="input-label">Routine Name (optional)</label>
+            <input
+              type="text"
+              value={program}
+              onChange={(e) => setProgram(e.target.value)}
+              placeholder="e.g., Guray Baba's Hypertrophy Program"
+              className="input"
+            />
           </div>
 
           <div>
