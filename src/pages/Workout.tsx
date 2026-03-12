@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, X, Clock, Save, Play } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, X, Clock, Save, Play, Layers } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import type { Exercise } from '../types';
 import { ExerciseSelector } from '../components/workout/ExerciseSelector';
@@ -161,6 +161,23 @@ export function Workout() {
             </button>
           </div>
         )}
+
+        {/* Blocks */}
+        <div className="mt-6">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Blocks</h2>
+          <Link
+            to="/blocks"
+            className="w-full card flex items-center gap-4 hover:shadow-md transition-shadow"
+          >
+            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+              <Layers className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Jeff Nippard Min Max Program</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">5x Per Week &middot; 12 Weeks &middot; 2 Blocks</p>
+            </div>
+          </Link>
+        </div>
       </div>
     );
   }
