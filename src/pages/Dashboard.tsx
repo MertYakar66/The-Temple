@@ -13,6 +13,7 @@ import {
   Wheat,
   Droplet,
   Calculator,
+  Layers,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
@@ -140,6 +141,21 @@ export function Dashboard() {
               <p className="font-semibold text-gray-900 dark:text-white">Routines</p>
               <p className="text-sm text-gray-500 dark:text-gray-400">{routines.length} saved</p>
             </div>
+          </div>
+        </Link>
+        <Link
+          to="/blocks"
+          className="card hover:shadow-md transition-shadow col-span-2"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+              <Layers className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900 dark:text-white">Training Blocks</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Jeff Nippard Min Max Program</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
           </div>
         </Link>
       </div>

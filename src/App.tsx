@@ -81,6 +81,7 @@ function AppRoutes() {
         <Route path="/exercises" element={<Exercises />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/history" element={<History />} />
+        <Route path="/blocks" element={<Blocks />} />
       </Route>
 
       {/* Routes without bottom nav */}
@@ -90,7 +91,6 @@ function AppRoutes() {
       <Route path="/routines/:id/edit" element={<RoutineEditor />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/templates" element={<WorkoutTemplates />} />
-      <Route path="/blocks" element={<Blocks />} />
 
       {/* TDEE Calculator */}
       <Route path="/tdee-calculator" element={<TDEECalculator />} />

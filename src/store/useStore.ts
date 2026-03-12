@@ -67,6 +67,7 @@ interface AppState {
   // Body Weight Tracking
   weightEntries: WeightEntry[];
   addWeightEntry: (weight: number, notes?: string, date?: string) => void;
+  updateWeightEntry: (id: string, updates: { weight?: number; date?: string; notes?: string }) => void;
   deleteWeightEntry: (id: string) => void;
   getLatestWeight: () => WeightEntry | null;
   getWeightHistory: (days?: number) => WeightEntry[];
@@ -525,6 +526,32 @@ export const useStore = create<AppState>()(
         if (user) {
           get().updateUser({ weight });
         }
+      },
+
+      updateWeightEntry: (id, updates) => {
+        set((state) => {
+          const updated = state.weightEntries.map((e) => {
+            if (e.id !== id) return e;
+            return { ...e, ...updates };
+          });
+          // If date changed, remove any other entry with the same date
+          if (updates.date) {
+            const target = updated.find((e) => e.id === id);
+            if (target) {
+              const deduped = updated.filter((e) => e.id === id || e.date !== target.date);
+              return {
+                weightEntries: deduped.sort(
+                  (a, b) => parseDateStamp(b.date).getTime() - parseDateStamp(a.date).getTime()
+                ),
+              };
+            }
+          }
+          return {
+            weightEntries: updated.sort(
+              (a, b) => parseDateStamp(b.date).getTime() - parseDateStamp(a.date).getTime()
+            ),
+          };
+        });
       },
 
       deleteWeightEntry: (id) => {

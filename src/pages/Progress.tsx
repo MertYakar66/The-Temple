@@ -12,6 +12,9 @@ import {
   Plus,
   Trash2,
   MessageSquare,
+  Edit2,
+  Check,
+  X,
 } from 'lucide-react';
 import {
   LineChart,
@@ -42,6 +45,7 @@ export function Progress() {
   const getExerciseHistory = useStore((state) => state.getExerciseHistory);
   const weightEntries = useStore((state) => state.weightEntries);
   const addWeightEntry = useStore((state) => state.addWeightEntry);
+  const updateWeightEntry = useStore((state) => state.updateWeightEntry);
   const deleteWeightEntry = useStore((state) => state.deleteWeightEntry);
   const user = useStore((state) => state.user);
 
@@ -60,6 +64,34 @@ export function Progress() {
   const [weightNotes, setWeightNotes] = useState('');
   const [showWeightNotes, setShowWeightNotes] = useState(false);
   const [showWeightHistory, setShowWeightHistory] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<string | null>(null);
+  const [editWeight, setEditWeight] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+
+  const handleStartEdit = (entry: { id: string; weight: number; date: string; notes?: string }) => {
+    setEditingEntry(entry.id);
+    setEditWeight(String(Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10));
+    setEditDate(entry.date);
+    setEditNotes(entry.notes || '');
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingEntry) return;
+    const w = parseFloat(editWeight);
+    if (w > 0 && editDate) {
+      updateWeightEntry(editingEntry, {
+        weight: displayToKg(w, unitSystem),
+        date: editDate,
+        notes: editNotes.trim() || undefined,
+      });
+    }
+    setEditingEntry(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEntry(null);
+  };
 
   const handleAddWeight = () => {
     const displayWeight = parseFloat(newWeight);
@@ -726,33 +758,93 @@ export function Progress() {
             </button>
 
             {showWeightHistory && weightEntries.length > 0 && (
-              <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
+              <div className="mt-3 space-y-2 max-h-80 overflow-y-auto">
                 {weightEntries.map((entry) => (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                    className="py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10} {weightUnit}
-                        </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {format(parseISO(entry.date), 'MMM d, yyyy')}
-                        </span>
+                    {editingEntry === entry.id ? (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-0.5 block">Date</label>
+                            <input
+                              type="date"
+                              value={editDate}
+                              onChange={(e) => setEditDate(e.target.value)}
+                              className="input text-sm py-1.5"
+                            />
+                          </div>
+                          <div className="w-28">
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-0.5 block">Weight ({weightUnit})</label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={editWeight}
+                              onChange={(e) => setEditWeight(e.target.value)}
+                              className="input text-sm py-1.5"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500 dark:text-gray-400 mb-0.5 block">Notes</label>
+                          <input
+                            type="text"
+                            value={editNotes}
+                            onChange={(e) => setEditNotes(e.target.value)}
+                            placeholder="Optional notes..."
+                            className="input text-sm py-1.5"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={handleCancelEdit}
+                            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleSaveEdit}
+                            className="p-1.5 text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      {entry.notes && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                          {entry.notes}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => deleteWeightEntry(entry.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors ml-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10} {weightUnit}
+                            </span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {format(parseISO(entry.date), 'MMM d, yyyy')}
+                            </span>
+                          </div>
+                          {entry.notes && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                              {entry.notes}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 ml-2">
+                          <button
+                            onClick={() => handleStartEdit(entry)}
+                            className="p-1.5 text-gray-400 hover:text-primary-500 transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteWeightEntry(entry.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
