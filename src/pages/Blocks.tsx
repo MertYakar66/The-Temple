@@ -154,26 +154,24 @@ export function Blocks() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 z-10">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-          >
-            <ChevronLeft className="w-5 h-5 mr-1" />
-            Home
-          </button>
-          <h1 className="font-semibold text-gray-900 dark:text-white">Blocks</h1>
-          <button
-            onClick={() => setShowNotes(!showNotes)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-          >
-            <Info className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          </button>
-        </div>
-      </header>
+    <div>
+      {/* Sub-header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+        >
+          <ChevronLeft className="w-5 h-5 mr-1" />
+          Back
+        </button>
+        <h1 className="font-semibold text-gray-900 dark:text-white">Blocks</h1>
+        <button
+          onClick={() => setShowNotes(!showNotes)}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+        >
+          <Info className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+        </button>
+      </div>
 
       {/* Program Notes Modal */}
       {showNotes && (
