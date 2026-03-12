@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Plus, X, Clock, Save, Play, Layers, Dumbbell, ChevronDown, ChevronRight, Edit2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, X, Clock, Save, Play, Layers, Dumbbell, ChevronDown, ChevronRight, Edit2, Calendar } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { minMaxProgram } from '../data/minMaxProgram';
 import type { Exercise, Routine } from '../types';
 import { ExerciseSelector } from '../components/workout/ExerciseSelector';
 import { WorkoutExerciseCard } from '../components/workout/WorkoutExerciseCard';
@@ -85,6 +86,125 @@ function ProgramAccordion({
                 </p>
               </div>
             </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BlockAccordion() {
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
+  const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
+
+  const program = minMaxProgram;
+  const totalWeeks = program.blocks.reduce((sum, b) => sum + b.weeks.length, 0);
+
+  const toggleWeek = (key: string) => {
+    setExpandedWeek(expandedWeek === key ? null : key);
+  };
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      {/* Program Header */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-3 px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+      >
+        <div
+          onClick={(e) => { e.stopPropagation(); navigate('/blocks'); }}
+          className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+        >
+          <Layers className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+        </div>
+        <div className="flex-1 text-left">
+          <h3 className="font-bold text-gray-900 dark:text-white text-base">
+            {program.name}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {program.frequency} &middot; {totalWeeks} Weeks &middot; {program.blocks.length} Blocks
+          </p>
+        </div>
+        <div className="p-1">
+          {expanded ? (
+            <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          ) : (
+            <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          )}
+        </div>
+      </button>
+
+      {/* Expanded: Blocks > Weeks > Days */}
+      {expanded && (
+        <div className="px-4 pb-4 space-y-3">
+          {program.blocks.map((block, blockIdx) => (
+            <div key={block.blockNumber}>
+              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2 px-1">
+                {block.blockName}
+              </p>
+              <div className="space-y-1">
+                {block.weeks.map((week, weekIdx) => {
+                  const weekKey = `${blockIdx}-${weekIdx}`;
+                  const isWeekExpanded = expandedWeek === weekKey;
+                  const trainingDays = week.days.filter((d) => d.exercises.length > 0);
+
+                  return (
+                    <div key={weekKey} className="rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
+                      <button
+                        onClick={() => toggleWeek(weekKey)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-md bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center flex-shrink-0">
+                          <Calendar className="w-4 h-4 text-primary-500 dark:text-primary-400" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
+                            Week {week.weekNumber}
+                            {week.label !== `Week ${week.weekNumber}` && (
+                              <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">
+                                ({week.label})
+                              </span>
+                            )}
+                          </h4>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {trainingDays.length} training days
+                          </p>
+                        </div>
+                        {isWeekExpanded ? (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+
+                      {/* Days inside each week */}
+                      {isWeekExpanded && (
+                        <div className="px-3 pb-2 space-y-1">
+                          {trainingDays.map((day, dayIdx) => (
+                            <button
+                              key={dayIdx}
+                              onClick={() => navigate(`/blocks?block=${blockIdx}&week=${weekIdx}&day=${day.dayName}`)}
+                              className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              <div className="w-8 h-8 bg-accent-100 dark:bg-accent-900/30 rounded-md flex items-center justify-center">
+                                <Dumbbell className="w-4 h-4 text-accent-600 dark:text-accent-400" />
+                              </div>
+                              <div className="text-left flex-1">
+                                <h5 className="font-medium text-gray-900 dark:text-white text-sm">{day.dayName}</h5>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {day.exercises.length} exercises
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -285,18 +405,7 @@ export function Workout() {
         {/* Blocks */}
         <div className="mt-6">
           <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Blocks</h2>
-          <Link
-            to="/blocks"
-            className="w-full card flex items-center gap-4 hover:shadow-md transition-shadow"
-          >
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
-              <Layers className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="text-left flex-1">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Jeff Nippard Min Max Program</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">5x Per Week &middot; 12 Weeks &middot; 2 Blocks</p>
-            </div>
-          </Link>
+          <BlockAccordion />
         </div>
       </div>
     );
