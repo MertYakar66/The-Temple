@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronDown, Info, Repeat, Dumbbell, Clock, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronDown, Info, Repeat, Dumbbell, Clock, AlertTriangle, Play } from 'lucide-react';
 import { minMaxProgram } from '../data/minMaxProgram';
 import type { BlockExercise } from '../data/minMaxProgram';
+import { useStore } from '../store/useStore';
 
 export function Blocks() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const startWorkoutFromBlock = useStore((state) => state.startWorkoutFromBlock);
+  const currentSession = useStore((state) => state.currentSession);
 
   const initBlock = Number(searchParams.get('block') || 0);
   const initWeek = Number(searchParams.get('week') || 0);
@@ -17,6 +20,16 @@ export function Blocks() {
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [showNotes, setShowNotes] = useState(false);
+
+  const handleStartFromBlock = (dayName: string, exercises: BlockExercise[]) => {
+    if (currentSession) {
+      if (!window.confirm('You have an active workout. Start a new one? Current progress will be lost.')) {
+        return;
+      }
+    }
+    startWorkoutFromBlock(dayName, exercises);
+    navigate('/workout');
+  };
 
   // Auto-expand day from query params
   useEffect(() => {
@@ -291,6 +304,15 @@ export function Blocks() {
                 {isExpanded && (
                   <div className="border-t border-gray-100 dark:border-gray-700">
                     {day.exercises.map((exercise, exIdx) => renderExerciseRow(exercise, dayIdx, exIdx))}
+                    <div className="px-3 py-3">
+                      <button
+                        onClick={() => handleStartFromBlock(day.dayName, day.exercises)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium text-sm transition-colors"
+                      >
+                        <Play className="w-4 h-4" />
+                        Start Workout
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
