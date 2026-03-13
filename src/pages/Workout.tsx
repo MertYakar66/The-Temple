@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, X, Clock, Save, Play, Layers, Dumbbell, ChevronDown, ChevronRight, Edit2, Calendar } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { minMaxProgram } from '../data/minMaxProgram';
+import type { BlockExercise } from '../data/minMaxProgram';
 import type { Exercise, Routine } from '../types';
 import { ExerciseSelector } from '../components/workout/ExerciseSelector';
 import { WorkoutExerciseCard } from '../components/workout/WorkoutExerciseCard';
@@ -93,7 +94,7 @@ function ProgramAccordion({
   );
 }
 
-function BlockAccordion() {
+function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: string, exercises: BlockExercise[]) => void }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
@@ -182,21 +183,29 @@ function BlockAccordion() {
                       {isWeekExpanded && (
                         <div className="px-3 pb-2 space-y-1">
                           {trainingDays.map((day, dayIdx) => (
-                            <button
-                              key={dayIdx}
-                              onClick={() => navigate(`/blocks?block=${blockIdx}&week=${weekIdx}&day=${day.dayName}`)}
-                              className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            >
-                              <div className="w-8 h-8 bg-accent-100 dark:bg-accent-900/30 rounded-md flex items-center justify-center">
-                                <Dumbbell className="w-4 h-4 text-accent-600 dark:text-accent-400" />
-                              </div>
-                              <div className="text-left flex-1">
-                                <h5 className="font-medium text-gray-900 dark:text-white text-sm">{day.dayName}</h5>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {day.exercises.length} exercises
-                                </p>
-                              </div>
-                            </button>
+                            <div key={dayIdx} className="flex items-center gap-2">
+                              <button
+                                onClick={() => navigate(`/blocks?block=${blockIdx}&week=${weekIdx}&day=${day.dayName}`)}
+                                className="flex-1 flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <div className="w-8 h-8 bg-accent-100 dark:bg-accent-900/30 rounded-md flex items-center justify-center">
+                                  <Dumbbell className="w-4 h-4 text-accent-600 dark:text-accent-400" />
+                                </div>
+                                <div className="text-left flex-1">
+                                  <h5 className="font-medium text-gray-900 dark:text-white text-sm">{day.dayName}</h5>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {day.exercises.length} exercises
+                                  </p>
+                                </div>
+                              </button>
+                              <button
+                                onClick={() => onStartFromBlock(day.dayName, day.exercises)}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30 hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
+                                title="Start Workout"
+                              >
+                                <Play className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                              </button>
+                            </div>
                           ))}
                         </div>
                       )}
@@ -227,6 +236,7 @@ export function Workout() {
   const removeSet = useStore((state) => state.removeSet);
   const toggleSetComplete = useStore((state) => state.toggleSetComplete);
   const startWorkoutFromRoutine = useStore((state) => state.startWorkoutFromRoutine);
+  const startWorkoutFromBlock = useStore((state) => state.startWorkoutFromBlock);
 
   // Get user's preferred unit system, default to metric
   const unitSystem = user?.unitSystem || 'metric';
@@ -250,6 +260,10 @@ export function Workout() {
 
   const handleStartFromRoutine = (routineId: string) => {
     startWorkoutFromRoutine(routineId);
+  };
+
+  const handleStartFromBlock = (dayName: string, exercises: BlockExercise[]) => {
+    startWorkoutFromBlock(dayName, exercises);
   };
 
   const handleAddExercise = (exercise: Exercise) => {
@@ -405,7 +419,7 @@ export function Workout() {
         {/* Blocks */}
         <div className="mt-6">
           <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Blocks</h2>
-          <BlockAccordion />
+          <BlockAccordion onStartFromBlock={handleStartFromBlock} />
         </div>
       </div>
     );

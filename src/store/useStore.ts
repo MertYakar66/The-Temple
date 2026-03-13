@@ -15,6 +15,7 @@ import type {
 } from '../types';
 import { defaultExercises } from '../data/exercises';
 import { defaultRoutines } from '../data/defaultRoutines';
+import type { BlockExercise } from '../data/minMaxProgram';
 import { getDateStamp, isDateStampInRange, parseDateStamp } from '../utils/date';
 
 interface AppState {
@@ -49,6 +50,7 @@ interface AppState {
   addExerciseToRoutine: (routineId: string, exercise: Omit<RoutineExercise, 'id'>) => void;
   removeExerciseFromRoutine: (routineId: string, exerciseId: string) => void;
   startWorkoutFromRoutine: (routineId: string) => void;
+  startWorkoutFromBlock: (dayName: string, exercises: BlockExercise[]) => void;
 
   // Personal Records
   personalRecords: PersonalRecord[];
@@ -395,6 +397,91 @@ export const useStore = create<AppState>()(
         if (routine) {
           get().startWorkout(routine.name, routineId);
         }
+      },
+
+      startWorkoutFromBlock: (dayName, blockExercises) => {
+        const allExercises = get().exercises;
+
+        // Helper: find best matching exercise by name
+        const findExercise = (name: string): Exercise | undefined => {
+          const lower = name.toLowerCase();
+          // Exact match first
+          const exact = allExercises.find((e) => e.name.toLowerCase() === lower);
+          if (exact) return exact;
+          // Contains match
+          return allExercises.find(
+            (e) => e.name.toLowerCase().includes(lower) || lower.includes(e.name.toLowerCase())
+          );
+        };
+
+        // Parse rest string like "3-5 min" or "1-2 min" to seconds (use lower bound)
+        const parseRest = (rest: string): number => {
+          const match = rest.match(/(\d+)/);
+          return match ? parseInt(match[1]) * 60 : 90;
+        };
+
+        // Parse rep range like "6-8" to a number (use upper bound as target)
+        const parseReps = (repRange: string): number => {
+          const parts = repRange.split('-');
+          return parseInt(parts[parts.length - 1]) || 10;
+        };
+
+        const session: WorkoutSession = {
+          id: uuidv4(),
+          name: dayName,
+          date: getDateStamp(),
+          startTime: new Date().toISOString(),
+          exercises: [],
+          completed: false,
+        };
+
+        const workoutExercises: WorkoutExercise[] = [];
+
+        blockExercises.forEach((be) => {
+          const matched = findExercise(be.name);
+          const exercise: Exercise = matched || {
+            id: `block-${be.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+            name: be.name,
+            description: '',
+            muscleGroups: [],
+            equipment: [],
+            instructions: [],
+            tips: [],
+          };
+
+          const targetReps = parseReps(be.repRange);
+          const restSeconds = parseRest(be.rest);
+
+          // Build notes from block metadata
+          const notes: string[] = [];
+          if (be.rirS1 !== 'N/A') {
+            const rir = be.rirS2 !== 'N/A' ? `${be.rirS1}-${be.rirS2}` : be.rirS1;
+            notes.push(`RIR: ${rir}`);
+          }
+          if (be.lastSetIntensity !== 'N/A') {
+            notes.push(`Last set: ${be.lastSetIntensity}`);
+          }
+          if (be.note) {
+            notes.push(be.note);
+          }
+
+          workoutExercises.push({
+            id: uuidv4(),
+            exerciseId: exercise.id,
+            exercise,
+            sets: Array.from({ length: be.sets }, () => ({
+              id: uuidv4(),
+              reps: targetReps,
+              weight: 0,
+              completed: false,
+            })),
+            restSeconds,
+            notes: notes.length > 0 ? notes.join(' | ') : undefined,
+          });
+        });
+
+        session.exercises = workoutExercises;
+        set({ currentSession: session });
       },
 
       // Personal Records
