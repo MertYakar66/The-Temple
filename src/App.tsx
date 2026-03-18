@@ -25,6 +25,14 @@ import { DietWeekly } from './pages/DietWeekly';
 import { DietSettings } from './pages/DietSettings';
 import { DietFoodNew } from './pages/DietFoodNew';
 import { TDEECalculator } from './pages/TDEECalculator';
+// Calendar Module
+import { Calendar } from './pages/Calendar';
+import { CalendarEventEditor } from './pages/CalendarEventEditor';
+import { CalendarEventDetail } from './pages/CalendarEventDetail';
+import { CalendarManage } from './pages/CalendarManage';
+import { CalendarSearch } from './pages/CalendarSearch';
+import { CalendarSettings as CalendarSettingsPage } from './pages/CalendarSettings';
+import { CalendarInvitations } from './pages/CalendarInvitations';
 // Components
 import { PRCelebration } from './components/PRCelebration';
 import { Dumbbell } from 'lucide-react';
@@ -78,6 +86,7 @@ function AppRoutes() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/workout" element={<Workout />} />
         <Route path="/diet" element={<Diet />} />
+        <Route path="/calendar" element={<Calendar />} />
         <Route path="/exercises" element={<Exercises />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/history" element={<History />} />
@@ -91,6 +100,14 @@ function AppRoutes() {
       <Route path="/routines/:id/edit" element={<RoutineEditor />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/templates" element={<WorkoutTemplates />} />
+
+      {/* Calendar routes without bottom nav */}
+      <Route path="/calendar/event" element={<CalendarEventDetail />} />
+      <Route path="/calendar/event/edit" element={<CalendarEventEditor />} />
+      <Route path="/calendar/manage" element={<CalendarManage />} />
+      <Route path="/calendar/search" element={<CalendarSearch />} />
+      <Route path="/calendar/settings" element={<CalendarSettingsPage />} />
+      <Route path="/calendar/invitations" element={<CalendarInvitations />} />
 
       {/* TDEE Calculator */}
       <Route path="/tdee-calculator" element={<TDEECalculator />} />

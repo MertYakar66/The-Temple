@@ -4,6 +4,7 @@ import { db } from './firebase';
 // Debounce timer references
 let workoutSyncTimer: ReturnType<typeof setTimeout> | null = null;
 let dietSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let calendarSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
 const SYNC_DEBOUNCE_MS = 2000;
 
@@ -77,13 +78,48 @@ export function debouncedSaveDietData(uid: string, data: SyncData): void {
   }, SYNC_DEBOUNCE_MS);
 }
 
+// ---------- Calendar Store ----------
+
+export async function loadCalendarData(uid: string): Promise<SyncData | null> {
+  try {
+    const ref = doc(db, 'users', uid, 'data', 'calendar');
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      return snap.data() as SyncData;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to load calendar data from Firestore:', error);
+    return null;
+  }
+}
+
+export async function saveCalendarData(uid: string, data: SyncData): Promise<void> {
+  try {
+    const ref = doc(db, 'users', uid, 'data', 'calendar');
+    await setDoc(ref, data, { merge: true });
+  } catch (error) {
+    console.error('Failed to save calendar data to Firestore:', error);
+  }
+}
+
+export function debouncedSaveCalendarData(uid: string, data: SyncData): void {
+  if (calendarSyncTimer) {
+    clearTimeout(calendarSyncTimer);
+  }
+  calendarSyncTimer = setTimeout(() => {
+    saveCalendarData(uid, data);
+  }, SYNC_DEBOUNCE_MS);
+}
+
 // ---------- Delete User Data ----------
 
 export async function deleteUserCloudData(uid: string): Promise<void> {
   try {
     const workoutRef = doc(db, 'users', uid, 'data', 'workout');
     const dietRef = doc(db, 'users', uid, 'data', 'diet');
-    await Promise.all([deleteDoc(workoutRef), deleteDoc(dietRef)]);
+    const calendarRef = doc(db, 'users', uid, 'data', 'calendar');
+    await Promise.all([deleteDoc(workoutRef), deleteDoc(dietRef), deleteDoc(calendarRef)]);
   } catch (error) {
     console.error('Failed to delete user cloud data:', error);
     throw error;
@@ -100,5 +136,9 @@ export function cancelPendingSyncs(): void {
   if (dietSyncTimer) {
     clearTimeout(dietSyncTimer);
     dietSyncTimer = null;
+  }
+  if (calendarSyncTimer) {
+    clearTimeout(calendarSyncTimer);
+    calendarSyncTimer = null;
   }
 }
