@@ -10,9 +10,9 @@ import {
 const navItems = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/workout', icon: Dumbbell, label: 'Workout' },
+  { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/diet', icon: Utensils, label: 'Nutrition' },
   { to: '/progress', icon: BarChart3, label: 'Progress' },
-  { to: '/history', icon: Calendar, label: 'History' },
 ];
 
 export function BottomNav() {

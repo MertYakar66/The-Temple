@@ -12,14 +12,18 @@ import type { User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
+import { useCalendarStore } from '../store/useCalendarStore';
 import {
   loadWorkoutData,
   loadDietData,
+  loadCalendarData,
   debouncedSaveWorkoutData,
   debouncedSaveDietData,
+  debouncedSaveCalendarData,
   cancelPendingSyncs,
   saveWorkoutData,
   saveDietData,
+  saveCalendarData,
 } from '../lib/firestoreSync';
 
 interface AuthContextType {
@@ -51,6 +55,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const unsubWorkoutRef = useRef<(() => void) | null>(null);
   const unsubDietRef = useRef<(() => void) | null>(null);
+  const unsubCalendarRef = useRef<(() => void) | null>(null);
 
   const startSync = useCallback((uid: string) => {
     // Subscribe to workout store changes → save to Firestore
@@ -64,6 +69,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const data = useDietStore.getState().getCloudSyncData();
       debouncedSaveDietData(uid, data);
     });
+
+    // Subscribe to calendar store changes → save to Firestore
+    unsubCalendarRef.current = useCalendarStore.subscribe(() => {
+      const data = useCalendarStore.getState().getCloudSyncData();
+      debouncedSaveCalendarData(uid, data);
+    });
   }, []);
 
   const stopSync = useCallback(() => {
@@ -76,6 +87,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       unsubDietRef.current();
       unsubDietRef.current = null;
     }
+    if (unsubCalendarRef.current) {
+      unsubCalendarRef.current();
+      unsubCalendarRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
@@ -86,12 +101,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Clear any existing data from previous user before loading new user's data
         useStore.getState().resetStore();
         useDietStore.getState().resetStore();
+        useCalendarStore.getState().resetStore();
 
         // Load data from Firestore
         try {
-          const [workoutData, dietData] = await Promise.all([
+          const [workoutData, dietData, calendarData] = await Promise.all([
             loadWorkoutData(user.uid),
             loadDietData(user.uid),
+            loadCalendarData(user.uid),
           ]);
 
           if (workoutData) {
@@ -99,6 +116,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           if (dietData) {
             useDietStore.getState().loadFromCloud(dietData);
+          }
+          if (calendarData) {
+            useCalendarStore.getState().loadFromCloud(calendarData);
           }
         } catch (error) {
           console.error('Failed to load cloud data:', error);
@@ -111,6 +131,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         stopSync();
         useStore.getState().resetStore();
         useDietStore.getState().resetStore();
+        useCalendarStore.getState().resetStore();
       }
 
       setLoading(false);
@@ -139,6 +160,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await Promise.all([
           saveWorkoutData(user.uid, useStore.getState().getCloudSyncData()),
           saveDietData(user.uid, useDietStore.getState().getCloudSyncData()),
+          saveCalendarData(user.uid, useCalendarStore.getState().getCloudSyncData()),
         ]);
       } catch (error) {
         console.error('Failed to save data before logout:', error);
@@ -148,6 +170,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Clear persisted localStorage data on logout
     localStorage.removeItem('workout-tracker-storage');
     localStorage.removeItem('diet-tracker-storage');
+    localStorage.removeItem('calendar-storage');
   };
 
   const loginWithGoogle = async () => {
