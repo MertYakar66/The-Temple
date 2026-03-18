@@ -15,10 +15,14 @@ export function MonthView({ onSelectDate, onSelectEvent, onCreateEvent }: MonthV
   const events = useCalendarStore((s) => s.events);
   const calendars = useCalendarStore((s) => s.calendars);
   const settings = useCalendarStore((s) => s.settings);
-  const visibleIds = useCalendarStore((s) => s.getVisibleCalendarIds());
 
   const date = parseISO(selectedDate);
   const weekStartsOn = settings.startOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+  const visibleIds = useMemo(
+    () => new Set(calendars.filter((c) => c.isVisible).map((c) => c.id)),
+    [calendars]
+  );
 
   const gridDates = useMemo(
     () => getMonthGridDates(date.getFullYear(), date.getMonth(), weekStartsOn),
