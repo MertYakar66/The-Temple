@@ -11,6 +11,7 @@ import {
   Repeat,
   Clock,
   Globe,
+  Car,
 } from 'lucide-react';
 import { useCalendarStore } from '../store/useCalendarStore';
 import type {
@@ -101,8 +102,38 @@ export function CalendarEventEditor() {
   const [recurrenceInterval, setRecurrenceInterval] = useState(
     existingEvent?.recurrenceRule?.interval || 1
   );
+  const [travelTime, setTravelTime] = useState(existingEvent?.travelTime || 0);
+  const [recurrenceEndType, setRecurrenceEndType] = useState<'never' | 'on_date' | 'after_count'>(
+    existingEvent?.recurrenceRule?.endType || 'never'
+  );
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState(
+    existingEvent?.recurrenceRule?.endDate ? format(parseISO(existingEvent.recurrenceRule.endDate), 'yyyy-MM-dd') : ''
+  );
+  const [recurrenceEndCount, setRecurrenceEndCount] = useState(
+    existingEvent?.recurrenceRule?.endCount || 10
+  );
+  const [recurrenceDaysOfWeek, setRecurrenceDaysOfWeek] = useState<number[]>(
+    existingEvent?.recurrenceRule?.daysOfWeek || []
+  );
   const [availability, setAvailability] = useState(existingEvent?.availabilityStatus || 'busy');
   const [showDelete, setShowDelete] = useState(false);
+
+  const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const TRAVEL_OPTIONS = [
+    { label: 'None', value: 0 },
+    { label: '5 minutes', value: 5 },
+    { label: '15 minutes', value: 15 },
+    { label: '30 minutes', value: 30 },
+    { label: '1 hour', value: 60 },
+    { label: '1.5 hours', value: 90 },
+    { label: '2 hours', value: 120 },
+  ];
+
+  const toggleWeekday = (day: number) => {
+    setRecurrenceDaysOfWeek((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
+    );
+  };
 
   // For recurring events, ask scope
   const isRecurring = existingEvent?.recurrenceRule || existingEvent?.seriesMasterId;
@@ -119,9 +150,14 @@ export function CalendarEventEditor() {
         ? {
             frequency: recurrence,
             interval: recurrenceInterval,
-            endType: 'never',
+            daysOfWeek: recurrence === 'weekly' && recurrenceDaysOfWeek.length > 0 ? recurrenceDaysOfWeek : undefined,
+            endType: recurrenceEndType,
+            endDate: recurrenceEndType === 'on_date' && recurrenceEndDate ? new Date(recurrenceEndDate).toISOString() : undefined,
+            endCount: recurrenceEndType === 'after_count' ? recurrenceEndCount : undefined,
           }
         : undefined;
+
+    const tz = settings.timeZoneOverride || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const eventData = {
       calendarId,
@@ -132,13 +168,13 @@ export function CalendarEventEditor() {
       location: location.trim() || undefined,
       videoCallUrl: videoCallUrl.trim() || undefined,
       notes: notes.trim() || undefined,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timezone: existingEvent?.timezone || tz,
       alerts,
       recurrenceRule,
       attendees: existingEvent?.attendees || [],
       organizer: existingEvent?.organizer,
       availabilityStatus: availability as CalendarEvent['availabilityStatus'],
-      travelTime: existingEvent?.travelTime,
+      travelTime: travelTime > 0 ? travelTime : undefined,
     };
 
     if (isEditing && eventId) {
@@ -340,21 +376,101 @@ export function CalendarEventEditor() {
             </div>
           </div>
           {recurrence !== 'none' && (
-            <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 dark:border-gray-700">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Every</span>
-              <input
-                type="number"
-                min={1}
-                max={99}
-                value={recurrenceInterval}
-                onChange={(e) => setRecurrenceInterval(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-16 text-sm bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-gray-900 dark:text-white outline-none text-center"
-              />
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {recurrence === 'daily' ? 'day(s)' : recurrence === 'weekly' ? 'week(s)' : recurrence === 'monthly' ? 'month(s)' : 'year(s)'}
-              </span>
-            </div>
+            <>
+              <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 dark:border-gray-700">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Every</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={recurrenceInterval}
+                  onChange={(e) => setRecurrenceInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-16 text-sm bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-gray-900 dark:text-white outline-none text-center"
+                />
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {recurrence === 'daily' ? 'day(s)' : recurrence === 'weekly' ? 'week(s)' : recurrence === 'monthly' ? 'month(s)' : 'year(s)'}
+                </span>
+              </div>
+
+              {/* Weekly day selection */}
+              {recurrence === 'weekly' && (
+                <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">On days</p>
+                  <div className="flex gap-1.5">
+                    {WEEKDAY_LABELS.map((label, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => toggleWeekday(idx)}
+                        className={`w-9 h-9 rounded-full text-xs font-medium transition-colors ${
+                          recurrenceDaysOfWeek.includes(idx)
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recurrence end */}
+              <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700">
+                <label className="text-xs text-gray-500 dark:text-gray-400">Ends</label>
+                <select
+                  value={recurrenceEndType}
+                  onChange={(e) => setRecurrenceEndType(e.target.value as 'never' | 'on_date' | 'after_count')}
+                  className="w-full text-sm bg-transparent text-gray-900 dark:text-white outline-none mt-1"
+                >
+                  <option value="never">Never</option>
+                  <option value="on_date">On date</option>
+                  <option value="after_count">After occurrences</option>
+                </select>
+              </div>
+              {recurrenceEndType === 'on_date' && (
+                <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700">
+                  <input
+                    type="date"
+                    value={recurrenceEndDate}
+                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                    className="w-full text-sm bg-transparent text-gray-900 dark:text-white outline-none"
+                  />
+                </div>
+              )}
+              {recurrenceEndType === 'after_count' && (
+                <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-700">
+                  <input
+                    type="number"
+                    min={1}
+                    max={999}
+                    value={recurrenceEndCount}
+                    onChange={(e) => setRecurrenceEndCount(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-20 text-sm bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-gray-900 dark:text-white outline-none text-center"
+                  />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">occurrences</span>
+                </div>
+              )}
+            </>
           )}
+        </div>
+
+        {/* Travel Time */}
+        <div className="bg-white dark:bg-gray-800 mt-3 mx-4 rounded-xl">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <Car className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="flex-1">
+              <label className="text-xs text-gray-500 dark:text-gray-400">Travel Time</label>
+              <select
+                value={travelTime}
+                onChange={(e) => setTravelTime(Number(e.target.value))}
+                className="w-full text-sm bg-transparent text-gray-900 dark:text-white outline-none"
+              >
+                {TRAVEL_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Availability */}

@@ -30,6 +30,10 @@ export function Calendar() {
       case 'month':
         setSelectedDate(subMonths(d, 1).toISOString());
         break;
+      case 'upcoming':
+        // Scroll back by a week in upcoming view
+        setSelectedDate(subWeeks(d, 1).toISOString());
+        break;
     }
   }, [currentView, selectedDate, setSelectedDate]);
 
@@ -44,6 +48,9 @@ export function Calendar() {
         break;
       case 'month':
         setSelectedDate(addMonths(d, 1).toISOString());
+        break;
+      case 'upcoming':
+        setSelectedDate(addWeeks(d, 1).toISOString());
         break;
     }
   }, [currentView, selectedDate, setSelectedDate]);
@@ -81,6 +88,7 @@ export function Calendar() {
         onAddEvent={handleAddEvent}
         onSearch={() => navigate('/calendar/search')}
         onManageCalendars={() => navigate('/calendar/manage')}
+        onSettings={() => navigate('/calendar/settings')}
         onInbox={() => navigate('/calendar/invitations')}
         onPrev={handlePrev}
         onNext={handleNext}

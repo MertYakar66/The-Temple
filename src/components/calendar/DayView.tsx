@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect } from 'react';
-import { format, parseISO, isToday, differenceInMinutes } from 'date-fns';
+import { format, parseISO, isToday, differenceInMinutes, setHours as setDateHours, setMinutes as setDateMinutes, setSeconds as setDateSeconds } from 'date-fns';
 import { useCalendarStore } from '../../store/useCalendarStore';
 import { getEventsForDate, formatEventTime } from '../../utils/calendar';
 
@@ -93,7 +93,7 @@ export function DayView({ onSelectEvent, onCreateEvent }: DayViewProps) {
               style={{ top: hour * HOUR_HEIGHT }}
             >
               <span className="text-[10px] text-gray-400 dark:text-gray-500 w-12 text-right pr-2 -mt-2 flex-shrink-0">
-                {format(new Date().setHours(hour, 0), settings.use24HourTime ? 'HH:mm' : 'h a')}
+                {format(setDateSeconds(setDateMinutes(setDateHours(new Date(), hour), 0), 0), settings.use24HourTime ? 'HH:mm' : 'h a')}
               </span>
               <button
                 onClick={() => onCreateEvent(date, hour)}

@@ -2,6 +2,18 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { useCalendarStore } from '../store/useCalendarStore';
 
+const COMMON_TIMEZONES = [
+  'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'America/Anchorage', 'Pacific/Honolulu', 'America/Toronto', 'America/Vancouver',
+  'America/Sao_Paulo', 'America/Argentina/Buenos_Aires', 'America/Mexico_City',
+  'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Rome', 'Europe/Madrid',
+  'Europe/Amsterdam', 'Europe/Moscow', 'Europe/Istanbul',
+  'Asia/Dubai', 'Asia/Kolkata', 'Asia/Bangkok', 'Asia/Shanghai', 'Asia/Tokyo',
+  'Asia/Seoul', 'Asia/Singapore', 'Asia/Hong_Kong',
+  'Australia/Sydney', 'Australia/Melbourne', 'Australia/Perth',
+  'Pacific/Auckland', 'Africa/Cairo', 'Africa/Johannesburg',
+];
+
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DURATIONS = [15, 30, 45, 60, 90, 120];
 const ALERT_OPTIONS = [
@@ -164,12 +176,17 @@ export function CalendarSettings() {
             <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">Time Zone</p>
           </div>
           <div className="px-4 py-3">
-            <p className="text-sm text-gray-900 dark:text-white">
-              {settings.timeZoneOverride || Intl.DateTimeFormat().resolvedOptions().timeZone}
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              {settings.timeZoneOverride ? 'Override active' : 'Using device time zone'}
-            </p>
+            <label className="text-xs text-gray-500 dark:text-gray-400">Time Zone Override</label>
+            <select
+              value={settings.timeZoneOverride || ''}
+              onChange={(e) => updateSettings({ timeZoneOverride: e.target.value || undefined })}
+              className="w-full text-sm bg-transparent text-gray-900 dark:text-white outline-none mt-1"
+            >
+              <option value="">Device Default ({Intl.DateTimeFormat().resolvedOptions().timeZone})</option>
+              {COMMON_TIMEZONES.map((tz) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
           </div>
         </div>
 

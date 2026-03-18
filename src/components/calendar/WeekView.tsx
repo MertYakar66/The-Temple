@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect } from 'react';
-import { format, parseISO, isSameDay, isToday, differenceInMinutes } from 'date-fns';
+import { format, parseISO, isSameDay, isToday, differenceInMinutes, setHours as setDateHours, setMinutes as setDateMinutes, setSeconds as setDateSeconds } from 'date-fns';
 import { useCalendarStore } from '../../store/useCalendarStore';
 import { getWeekDates, getEventsForDate, formatEventTime } from '../../utils/calendar';
 
@@ -111,7 +111,7 @@ export function WeekView({ onSelectEvent, onSelectDate, onCreateEvent }: WeekVie
               style={{ top: hour * HOUR_HEIGHT }}
             >
               <span className="absolute left-0 text-[10px] text-gray-400 dark:text-gray-500 w-12 text-right pr-1 -mt-2">
-                {format(new Date().setHours(hour, 0), settings.use24HourTime ? 'HH:mm' : 'h a')}
+                {format(setDateSeconds(setDateMinutes(setDateHours(new Date(), hour), 0), 0), settings.use24HourTime ? 'HH:mm' : 'h a')}
               </span>
             </div>
           ))}

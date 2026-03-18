@@ -10,6 +10,7 @@ export function CalendarSearch() {
   const events = useCalendarStore((s) => s.events);
   const calendars = useCalendarStore((s) => s.calendars);
   const settings = useCalendarStore((s) => s.settings);
+  const visibleIds = useCalendarStore((s) => s.getVisibleCalendarIds());
   const [query, setQuery] = useState('');
 
   const calMap = useMemo(() => {
@@ -20,10 +21,10 @@ export function CalendarSearch() {
 
   const results = useMemo(() => {
     if (query.length < 2) return [];
-    return searchEvents(events, query).sort(
-      (a, b) => parseISO(a.startDate).getTime() - parseISO(b.startDate).getTime()
-    );
-  }, [events, query]);
+    return searchEvents(events, query)
+      .filter((ev) => visibleIds.has(ev.calendarId))
+      .sort((a, b) => parseISO(a.startDate).getTime() - parseISO(b.startDate).getTime());
+  }, [events, query, visibleIds]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

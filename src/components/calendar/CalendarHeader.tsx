@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus, Search, Calendar as CalendarIcon, Inbox } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Search, Calendar as CalendarIcon, Inbox, Settings } from 'lucide-react';
 import { useCalendarStore } from '../../store/useCalendarStore';
 import type { CalendarViewType } from '../../types/calendar';
 
@@ -7,6 +7,7 @@ interface CalendarHeaderProps {
   onAddEvent: () => void;
   onSearch: () => void;
   onManageCalendars: () => void;
+  onSettings: () => void;
   onInbox: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -24,6 +25,7 @@ export function CalendarHeader({
   onAddEvent,
   onSearch,
   onManageCalendars,
+  onSettings,
   onInbox,
   onPrev,
   onNext,
@@ -70,6 +72,12 @@ export function CalendarHeader({
                 {unreadCount}
               </span>
             )}
+          </button>
+          <button
+            onClick={onSettings}
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <Settings className="w-4 h-4" />
           </button>
         </div>
         <div className="flex items-center gap-1">

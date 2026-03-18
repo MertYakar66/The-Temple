@@ -12,6 +12,7 @@ import {
   Calendar as CalendarIcon,
   Trash2,
   ExternalLink,
+  Car,
 } from 'lucide-react';
 import { useCalendarStore } from '../store/useCalendarStore';
 import { formatEventTime } from '../utils/calendar';
@@ -130,6 +131,20 @@ export function CalendarEventDetail() {
             <div className="flex items-start gap-3">
               <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
               <p className="text-sm text-gray-900 dark:text-white">{event.location}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Travel time */}
+        {(event.travelTime ?? 0) > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <Car className="w-5 h-5 text-gray-400" />
+              <p className="text-sm text-gray-900 dark:text-white">
+                {(event.travelTime ?? 0) >= 60
+                  ? `${Math.floor((event.travelTime ?? 0) / 60)}h ${(event.travelTime ?? 0) % 60 > 0 ? `${(event.travelTime ?? 0) % 60}m` : ''}`
+                  : `${event.travelTime} min`} travel time
+              </p>
             </div>
           </div>
         )}
