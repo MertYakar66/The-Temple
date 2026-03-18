@@ -9,6 +9,7 @@ import { ExerciseSelector } from '../components/workout/ExerciseSelector';
 import { WorkoutExerciseCard } from '../components/workout/WorkoutExerciseCard';
 import { RestTimer } from '../components/workout/RestTimer';
 import { getCompletedSetCount, getTotalSetCount } from '../utils/workoutMetrics';
+import { RoutineGroupEditModal } from '../components/workout/RoutineGroupEditModal';
 
 function ProgramAccordion({
   programName,
@@ -20,18 +21,12 @@ function ProgramAccordion({
   onStartRoutine: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const updateRoutine = useStore((state) => state.updateRoutine);
+  const [isEditing, setIsEditing] = useState(false);
   const totalExercises = routines.reduce((sum, r) => sum + r.exercises.length, 0);
 
   const handleEditProgram = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newName = window.prompt('Rename Routine:', programName);
-    if (newName !== null && newName !== programName) {
-      const trimmed = newName.trim();
-      routines.forEach((r) => {
-        updateRoutine(r.id, { program: trimmed || undefined });
-      });
-    }
+    setIsEditing(true);
   };
 
   return (
@@ -89,6 +84,14 @@ function ProgramAccordion({
             </button>
           ))}
         </div>
+      )}
+
+      {isEditing && (
+        <RoutineGroupEditModal
+          programName={programName}
+          routines={routines}
+          onClose={() => setIsEditing(false)}
+        />
       )}
     </div>
   );

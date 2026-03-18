@@ -10,14 +10,24 @@ interface SetRowProps {
   onRemove: () => void;
   onToggleComplete: () => void;
   unitSystem: UnitSystem;
+  previousSet?: WorkoutSet;
 }
 
-export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitSystem }: SetRowProps) {
+export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitSystem, previousSet }: SetRowProps) {
   const [showNotes, setShowNotes] = useState(false);
 
   // Convert stored kg to display unit
   const displayWeight = set.weight ? Math.round(kgToDisplay(set.weight, unitSystem) * 10) / 10 : '';
   const weightUnit = getWeightUnit(unitSystem);
+
+  // Previous set display values for placeholders
+  const prevWeight = previousSet?.weight
+    ? (Math.round(kgToDisplay(previousSet.weight, unitSystem) * 10) / 10).toString()
+    : '0';
+  const prevReps = previousSet?.reps?.toString() || '0';
+  const prevRir = previousSet?.rir !== undefined && previousSet?.rir !== null
+    ? previousSet.rir.toString()
+    : '-';
 
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const displayValue = parseFloat(e.target.value) || 0;
@@ -29,9 +39,8 @@ export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitS
   return (
     <div className="py-2">
       <div
-        className={`flex items-center gap-1.5 ${
-          set.completed ? 'opacity-60' : ''
-        }`}
+        className={`flex items-center gap-1.5 ${set.completed ? 'opacity-60' : ''
+          }`}
       >
         <span className="w-6 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
           {index + 1}
@@ -41,7 +50,7 @@ export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitS
           type="number"
           value={displayWeight}
           onChange={handleWeightChange}
-          placeholder="0"
+          placeholder={prevWeight}
           className="w-14 px-1 py-2 text-center border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
           disabled={set.completed}
         />
@@ -51,7 +60,7 @@ export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitS
           type="number"
           value={set.reps || ''}
           onChange={(e) => onUpdate({ reps: parseInt(e.target.value) || 0 })}
-          placeholder="0"
+          placeholder={prevReps}
           className="w-12 px-1 py-2 text-center border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
           disabled={set.completed}
         />
@@ -61,7 +70,7 @@ export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitS
           type="number"
           value={set.rir ?? ''}
           onChange={(e) => onUpdate({ rir: e.target.value === '' ? undefined : parseInt(e.target.value) })}
-          placeholder="-"
+          placeholder={prevRir}
           min="0"
           max="5"
           className="w-10 px-1 py-2 text-center border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
@@ -71,11 +80,10 @@ export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitS
 
         <button
           onClick={() => setShowNotes(!showNotes)}
-          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-            set.notes
+          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${set.notes
               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-600 dark:hover:text-gray-300'
-          }`}
+            }`}
           title="Add note"
         >
           <MessageSquare className="w-3.5 h-3.5" />
@@ -85,11 +93,10 @@ export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitS
 
         <button
           onClick={onToggleComplete}
-          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-            set.completed
+          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${set.completed
               ? 'bg-success-500 text-white'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-          }`}
+            }`}
         >
           <Check className="w-4 h-4" />
         </button>
@@ -123,6 +130,13 @@ export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitS
           onClick={() => setShowNotes(true)}
         >
           "{set.notes}"
+        </div>
+      )}
+
+      {/* Previous set note hint */}
+      {previousSet?.notes && !set.notes && !showNotes && (
+        <div className="mt-1 ml-6 text-xs text-blue-400 dark:text-blue-500 italic truncate">
+          Previous: "{previousSet.notes}"
         </div>
       )}
     </div>
