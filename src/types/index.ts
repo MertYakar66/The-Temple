@@ -290,6 +290,34 @@ export interface DietStreak {
   lastLogDate: string | null;
 }
 
+// ============================================
+// Block Customization Types
+// ============================================
+
+export interface CustomBlockExercise {
+  name: string;
+  lastSetIntensity: string;
+  warmup: string;
+  sets: number;
+  repRange: string;
+  rirS1: string;
+  rirS2: string;
+  rest: string;
+  substitutions?: { sub1?: string; sub2?: string };
+  note?: string;
+}
+
+export interface CustomBlockDay {
+  dayName: string;
+  exercises: CustomBlockExercise[];
+  isCustom?: boolean;
+}
+
+export interface BlockCustomizations {
+  weekOverrides: Record<string, CustomBlockDay[]>;
+  updatedAt: string;
+}
+
 export interface WeeklyDietStats {
   weekStart: string;
   avgCalories: number;
