@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, X, Clock, Save, Play, Layers, Dumbbell, ChevronDown, ChevronRight, Edit2, Calendar } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { minMaxProgram } from '../data/minMaxProgram';
-import type { BlockExercise } from '../data/minMaxProgram';
-import type { Exercise, Routine } from '../types';
+import type { Exercise, Routine, CustomBlockExercise } from '../types';
 import { ExerciseSelector } from '../components/workout/ExerciseSelector';
 import { WorkoutExerciseCard } from '../components/workout/WorkoutExerciseCard';
 import { RestTimer } from '../components/workout/RestTimer';
@@ -97,10 +96,11 @@ function ProgramAccordion({
   );
 }
 
-function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: string, exercises: BlockExercise[]) => void }) {
+function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: string, exercises: CustomBlockExercise[]) => void }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
+  const getBlockWeekDays = useStore((s) => s.getBlockWeekDays);
 
   const program = minMaxProgram;
   const totalWeeks = program.blocks.reduce((sum, b) => sum + b.weeks.length, 0);
@@ -151,7 +151,8 @@ function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: stri
                 {block.weeks.map((week, weekIdx) => {
                   const weekKey = `${blockIdx}-${weekIdx}`;
                   const isWeekExpanded = expandedWeek === weekKey;
-                  const trainingDays = week.days.filter((d) => d.exercises.length > 0);
+                  const customDays = getBlockWeekDays(blockIdx, weekIdx);
+                  const trainingDays = customDays.filter((d) => d.exercises.length > 0);
 
                   return (
                     <div key={weekKey} className="rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700">
@@ -265,7 +266,7 @@ export function Workout() {
     startWorkoutFromRoutine(routineId);
   };
 
-  const handleStartFromBlock = (dayName: string, exercises: BlockExercise[]) => {
+  const handleStartFromBlock = (dayName: string, exercises: CustomBlockExercise[]) => {
     startWorkoutFromBlock(dayName, exercises);
   };
 

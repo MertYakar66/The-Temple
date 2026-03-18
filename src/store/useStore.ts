@@ -12,10 +12,14 @@ import type {
   Exercise,
   WeightEntry,
   ExerciseGoal,
+  BlockCustomizations,
+  CustomBlockExercise,
+  CustomBlockDay,
 } from '../types';
 import { defaultExercises } from '../data/exercises';
 import { defaultRoutines } from '../data/defaultRoutines';
 import type { BlockExercise } from '../data/minMaxProgram';
+import { minMaxProgram } from '../data/minMaxProgram';
 import { getDateStamp, isDateStampInRange, parseDateStamp } from '../utils/date';
 
 interface AppState {
@@ -50,7 +54,7 @@ interface AppState {
   addExerciseToRoutine: (routineId: string, exercise: Omit<RoutineExercise, 'id'>) => void;
   removeExerciseFromRoutine: (routineId: string, exerciseId: string) => void;
   startWorkoutFromRoutine: (routineId: string) => void;
-  startWorkoutFromBlock: (dayName: string, exercises: BlockExercise[]) => void;
+  startWorkoutFromBlock: (dayName: string, exercises: BlockExercise[] | CustomBlockExercise[]) => void;
 
   // Personal Records
   personalRecords: PersonalRecord[];
@@ -83,6 +87,18 @@ interface AppState {
   setExerciseGoal: (goal: Omit<ExerciseGoal, 'createdAt' | 'updatedAt'>) => void;
   getExerciseGoal: (exerciseId: string) => ExerciseGoal | undefined;
   getLastWorkoutForExercise: (exerciseId: string) => WorkoutExercise | undefined;
+
+  // Block Customizations
+  blockCustomizations: BlockCustomizations;
+  getBlockWeekDays: (blockIdx: number, weekIdx: number) => CustomBlockDay[];
+  addDayToWeek: (blockIdx: number, weekIdx: number, afterDayIdx: number, day: CustomBlockDay) => void;
+  removeDayFromWeek: (blockIdx: number, weekIdx: number, dayIdx: number) => void;
+  updateDayInWeek: (blockIdx: number, weekIdx: number, dayIdx: number, updates: Partial<CustomBlockDay>) => void;
+  addExerciseToDay: (blockIdx: number, weekIdx: number, dayIdx: number, exercise: CustomBlockExercise) => void;
+  removeExerciseFromDay: (blockIdx: number, weekIdx: number, dayIdx: number, exerciseIdx: number) => void;
+  updateExerciseInDay: (blockIdx: number, weekIdx: number, dayIdx: number, exerciseIdx: number, updates: Partial<CustomBlockExercise>) => void;
+  reorderExercisesInDay: (blockIdx: number, weekIdx: number, dayIdx: number, fromIdx: number, toIdx: number) => void;
+  resetWeekToDefault: (blockIdx: number, weekIdx: number) => void;
 
   // Cloud sync
   loadFromCloud: (data: Record<string, unknown>) => void;
@@ -716,6 +732,130 @@ export const useStore = create<AppState>()(
         return undefined;
       },
 
+      // Block Customizations
+      blockCustomizations: { weekOverrides: {}, updatedAt: new Date().toISOString() },
+
+      getBlockWeekDays: (blockIdx, weekIdx) => {
+        const key = `${blockIdx}-${weekIdx}`;
+        const overrides = get().blockCustomizations.weekOverrides[key];
+        if (overrides) return overrides;
+        // Fall back to default program
+        const block = minMaxProgram.blocks[blockIdx];
+        if (!block) return [];
+        const week = block.weeks[weekIdx];
+        if (!week) return [];
+        return week.days.map((d) => ({
+          dayName: d.dayName,
+          exercises: d.exercises.map((e) => ({ ...e })),
+        }));
+      },
+
+      addDayToWeek: (blockIdx, weekIdx, afterDayIdx, day) => {
+        const days = [...get().getBlockWeekDays(blockIdx, weekIdx)];
+        days.splice(afterDayIdx + 1, 0, { ...day, isCustom: true });
+        const key = `${blockIdx}-${weekIdx}`;
+        set((state) => ({
+          blockCustomizations: {
+            ...state.blockCustomizations,
+            weekOverrides: { ...state.blockCustomizations.weekOverrides, [key]: days },
+            updatedAt: new Date().toISOString(),
+          },
+        }));
+      },
+
+      removeDayFromWeek: (blockIdx, weekIdx, dayIdx) => {
+        const days = [...get().getBlockWeekDays(blockIdx, weekIdx)];
+        days.splice(dayIdx, 1);
+        const key = `${blockIdx}-${weekIdx}`;
+        set((state) => ({
+          blockCustomizations: {
+            ...state.blockCustomizations,
+            weekOverrides: { ...state.blockCustomizations.weekOverrides, [key]: days },
+            updatedAt: new Date().toISOString(),
+          },
+        }));
+      },
+
+      updateDayInWeek: (blockIdx, weekIdx, dayIdx, updates) => {
+        const days = [...get().getBlockWeekDays(blockIdx, weekIdx)];
+        days[dayIdx] = { ...days[dayIdx], ...updates };
+        const key = `${blockIdx}-${weekIdx}`;
+        set((state) => ({
+          blockCustomizations: {
+            ...state.blockCustomizations,
+            weekOverrides: { ...state.blockCustomizations.weekOverrides, [key]: days },
+            updatedAt: new Date().toISOString(),
+          },
+        }));
+      },
+
+      addExerciseToDay: (blockIdx, weekIdx, dayIdx, exercise) => {
+        const days = get().getBlockWeekDays(blockIdx, weekIdx).map((d) => ({ ...d, exercises: [...d.exercises] }));
+        days[dayIdx].exercises.push(exercise);
+        const key = `${blockIdx}-${weekIdx}`;
+        set((state) => ({
+          blockCustomizations: {
+            ...state.blockCustomizations,
+            weekOverrides: { ...state.blockCustomizations.weekOverrides, [key]: days },
+            updatedAt: new Date().toISOString(),
+          },
+        }));
+      },
+
+      removeExerciseFromDay: (blockIdx, weekIdx, dayIdx, exerciseIdx) => {
+        const days = get().getBlockWeekDays(blockIdx, weekIdx).map((d) => ({ ...d, exercises: [...d.exercises] }));
+        days[dayIdx].exercises.splice(exerciseIdx, 1);
+        const key = `${blockIdx}-${weekIdx}`;
+        set((state) => ({
+          blockCustomizations: {
+            ...state.blockCustomizations,
+            weekOverrides: { ...state.blockCustomizations.weekOverrides, [key]: days },
+            updatedAt: new Date().toISOString(),
+          },
+        }));
+      },
+
+      updateExerciseInDay: (blockIdx, weekIdx, dayIdx, exerciseIdx, updates) => {
+        const days = get().getBlockWeekDays(blockIdx, weekIdx).map((d) => ({ ...d, exercises: [...d.exercises] }));
+        days[dayIdx].exercises[exerciseIdx] = { ...days[dayIdx].exercises[exerciseIdx], ...updates };
+        const key = `${blockIdx}-${weekIdx}`;
+        set((state) => ({
+          blockCustomizations: {
+            ...state.blockCustomizations,
+            weekOverrides: { ...state.blockCustomizations.weekOverrides, [key]: days },
+            updatedAt: new Date().toISOString(),
+          },
+        }));
+      },
+
+      reorderExercisesInDay: (blockIdx, weekIdx, dayIdx, fromIdx, toIdx) => {
+        const days = get().getBlockWeekDays(blockIdx, weekIdx).map((d) => ({ ...d, exercises: [...d.exercises] }));
+        const exercises = days[dayIdx].exercises;
+        const [moved] = exercises.splice(fromIdx, 1);
+        exercises.splice(toIdx, 0, moved);
+        const key = `${blockIdx}-${weekIdx}`;
+        set((state) => ({
+          blockCustomizations: {
+            ...state.blockCustomizations,
+            weekOverrides: { ...state.blockCustomizations.weekOverrides, [key]: days },
+            updatedAt: new Date().toISOString(),
+          },
+        }));
+      },
+
+      resetWeekToDefault: (blockIdx, weekIdx) => {
+        const key = `${blockIdx}-${weekIdx}`;
+        set((state) => {
+          const { [key]: _, ...rest } = state.blockCustomizations.weekOverrides;
+          return {
+            blockCustomizations: {
+              weekOverrides: rest,
+              updatedAt: new Date().toISOString(),
+            },
+          };
+        });
+      },
+
       // Cloud sync
       loadFromCloud: (data) => {
         // Check if cloud routines are stale (missing program field = old Turkish data)
@@ -733,6 +873,7 @@ export const useStore = create<AppState>()(
           personalRecords: (data.personalRecords as PersonalRecord[]) ?? get().personalRecords,
           weightEntries: (data.weightEntries as WeightEntry[]) ?? get().weightEntries,
           exerciseGoals: (data.exerciseGoals as ExerciseGoal[]) ?? get().exerciseGoals,
+          blockCustomizations: (data.blockCustomizations as BlockCustomizations) ?? get().blockCustomizations,
         });
       },
 
@@ -746,6 +887,7 @@ export const useStore = create<AppState>()(
           personalRecords: state.personalRecords,
           weightEntries: state.weightEntries,
           exerciseGoals: state.exerciseGoals,
+          blockCustomizations: state.blockCustomizations,
         };
       },
 
@@ -760,6 +902,7 @@ export const useStore = create<AppState>()(
           weightEntries: [],
           exerciseGoals: [],
           newPRs: [],
+          blockCustomizations: { weekOverrides: {}, updatedAt: new Date().toISOString() },
         });
       },
     }),
