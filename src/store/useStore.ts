@@ -846,10 +846,11 @@ export const useStore = create<AppState>()(
       resetWeekToDefault: (blockIdx, weekIdx) => {
         const key = `${blockIdx}-${weekIdx}`;
         set((state) => {
-          const { [key]: _, ...rest } = state.blockCustomizations.weekOverrides;
+          const overrides = { ...state.blockCustomizations.weekOverrides };
+          delete overrides[key];
           return {
             blockCustomizations: {
-              weekOverrides: rest,
+              weekOverrides: overrides,
               updatedAt: new Date().toISOString(),
             },
           };

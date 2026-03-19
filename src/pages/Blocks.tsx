@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft, ChevronDown, ChevronUp, Info, Repeat, Dumbbell, Clock,
@@ -31,7 +31,18 @@ export function Blocks() {
 
   const [selectedBlockIdx, setSelectedBlockIdx] = useState(initBlock);
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(initWeek);
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  // Auto-expand day from query params
+  const initExpandedDay = (() => {
+    if (!initDay) return null;
+    const block = minMaxProgram.blocks[initBlock];
+    if (!block) return null;
+    const week = block.weeks[initWeek];
+    if (!week) return null;
+    const idx = week.days.findIndex((d) => d.dayName === initDay);
+    return idx >= 0 ? `${idx}` : null;
+  })();
+
+  const [expandedDay, setExpandedDay] = useState<string | null>(initExpandedDay);
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -49,22 +60,6 @@ export function Blocks() {
     startWorkoutFromBlock(dayName, exercises);
     navigate('/workout');
   };
-
-  // Auto-expand day from query params
-  useEffect(() => {
-    if (initDay) {
-      const block = minMaxProgram.blocks[initBlock];
-      if (block) {
-        const week = block.weeks[initWeek];
-        if (week) {
-          const dayIdx = week.days.findIndex((d) => d.dayName === initDay);
-          if (dayIdx >= 0) {
-            setExpandedDay(`${dayIdx}`);
-          }
-        }
-      }
-    }
-  }, [initBlock, initWeek, initDay]);
 
   const program = minMaxProgram;
   const block = program.blocks[selectedBlockIdx];
