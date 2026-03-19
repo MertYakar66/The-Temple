@@ -79,8 +79,7 @@ async function runBackup() {
             // For user documents, also grab subcollections
             if (name === 'users') {
                 backup.collections[name] = await backupSubcollections(name, [
-                    'workoutData',
-                    'dietData',
+                    'data',
                 ]);
             } else {
                 backup.collections[name] = await backupCollection(name);
