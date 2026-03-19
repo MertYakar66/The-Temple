@@ -90,10 +90,12 @@ export function WeekView({ onSelectEvent, onSelectDate, onQuickCreate }: WeekVie
     setDragEnd(mins);
   }, [getMinutesFromY, dragColIdx]);
 
-  const handleColPointerUp = useCallback((_e: React.PointerEvent, colIdx: number) => {
+  const handleColPointerUp = useCallback((e: React.PointerEvent, colIdx: number) => {
     if (!dragActiveRef.current || colIdx !== dragColIdx) return;
     dragActiveRef.current = false;
     setDragging(false);
+    e.preventDefault();
+    e.stopPropagation();
 
     const startMins = Math.min(dragStart, dragEnd);
     let endMins = Math.max(dragStart, dragEnd);

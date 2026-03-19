@@ -27,13 +27,18 @@ export function QuickEventCreate({
   onClose,
 }: QuickEventCreateProps) {
   const [title, setTitle] = useState('');
+  const [ready, setReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const addEvent = useCalendarStore((s) => s.addEvent);
   const settings = useCalendarStore((s) => s.settings);
 
   useEffect(() => {
-    // Focus immediately
-    setTimeout(() => inputRef.current?.focus(), 50);
+    // Delay to prevent the backdrop from catching stale pointer/click events
+    const id = requestAnimationFrame(() => {
+      setReady(true);
+      inputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
   const sh = startHour ?? new Date().getHours();
@@ -79,7 +84,7 @@ export function QuickEventCreate({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="fixed inset-0 z-40" onClick={ready ? onClose : undefined} />
 
       <div
         style={style}
