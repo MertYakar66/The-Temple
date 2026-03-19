@@ -17,11 +17,15 @@ export function WeekView({ onSelectEvent, onSelectDate, onCreateEvent }: WeekVie
   const events = useCalendarStore((s) => s.events);
   const calendars = useCalendarStore((s) => s.calendars);
   const settings = useCalendarStore((s) => s.settings);
-  const visibleIds = useCalendarStore((s) => s.getVisibleCalendarIds());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const date = parseISO(selectedDate);
   const weekStartsOn = settings.startOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+  const visibleIds = useMemo(
+    () => new Set(calendars.filter((c) => c.isVisible).map((c) => c.id)),
+    [calendars]
+  );
   const weekDates = useMemo(() => getWeekDates(date, weekStartsOn), [date, weekStartsOn]);
 
   const calMap = useMemo(() => {

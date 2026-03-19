@@ -10,7 +10,11 @@ export function CalendarSearch() {
   const events = useCalendarStore((s) => s.events);
   const calendars = useCalendarStore((s) => s.calendars);
   const settings = useCalendarStore((s) => s.settings);
-  const visibleIds = useCalendarStore((s) => s.getVisibleCalendarIds());
+
+  const visibleIds = useMemo(
+    () => new Set(calendars.filter((c) => c.isVisible).map((c) => c.id)),
+    [calendars]
+  );
   const [query, setQuery] = useState('');
 
   const calMap = useMemo(() => {
