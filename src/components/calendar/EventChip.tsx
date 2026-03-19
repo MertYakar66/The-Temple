@@ -5,7 +5,7 @@ interface EventChipProps {
   event: CalendarEvent;
   calendar?: CalendarContainer;
   compact?: boolean;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 export function EventChip({ event, calendar, compact = false, onClick }: EventChipProps) {

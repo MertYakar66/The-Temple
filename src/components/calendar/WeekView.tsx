@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { format, parseISO, isSameDay, isToday, differenceInMinutes, setHours as setDateHours, setMinutes as setDateMinutes, setSeconds as setDateSeconds } from 'date-fns';
 import { useCalendarStore } from '../../store/useCalendarStore';
 import { getWeekDates, getEventsForDate, formatEventTime } from '../../utils/calendar';
@@ -7,12 +7,17 @@ const HOUR_HEIGHT = 48;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 interface WeekViewProps {
-  onSelectEvent: (eventId: string) => void;
+  onSelectEvent: (eventId: string, rect: DOMRect) => void;
   onSelectDate: (date: Date) => void;
+  onQuickCreate: (date: Date, startHour: number, endHour: number, startMin: number, endMin: number, rect: DOMRect) => void;
   onCreateEvent: (date: Date, hour?: number) => void;
 }
 
-export function WeekView({ onSelectEvent, onSelectDate, onCreateEvent }: WeekViewProps) {
+function snapToQuarter(minutes: number): number {
+  return Math.round(minutes / 15) * 15;
+}
+
+export function WeekView({ onSelectEvent, onSelectDate, onQuickCreate }: WeekViewProps) {
   const selectedDate = useCalendarStore((s) => s.selectedDate);
   const events = useCalendarStore((s) => s.events);
   const calendars = useCalendarStore((s) => s.calendars);
@@ -34,7 +39,6 @@ export function WeekView({ onSelectEvent, onSelectDate, onCreateEvent }: WeekVie
     return m;
   }, [calendars]);
 
-  // Per-day events
   const dayEventsList = useMemo(() => {
     return weekDates.map((d) => ({
       date: d,
@@ -52,11 +56,67 @@ export function WeekView({ onSelectEvent, onSelectDate, onCreateEvent }: WeekVie
 
   const currentTimeTop = ((new Date().getHours() * 60 + new Date().getMinutes()) / 60) * HOUR_HEIGHT;
 
+  // Drag-to-create state
+  const [dragging, setDragging] = useState(false);
+  const [dragColIdx, setDragColIdx] = useState(-1);
+  const [dragStart, setDragStart] = useState(0);
+  const [dragEnd, setDragEnd] = useState(0);
+  const dragActiveRef = useRef(false);
+  const colRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const getMinutesFromY = useCallback((clientY: number, colEl: HTMLElement | null) => {
+    if (!colEl || !scrollRef.current) return 0;
+    const rect = colEl.getBoundingClientRect();
+    const scrollTop = scrollRef.current.scrollTop;
+    const y = clientY - rect.top + scrollTop;
+    const minutes = (y / (24 * HOUR_HEIGHT)) * 1440;
+    return Math.max(0, Math.min(1440, snapToQuarter(minutes)));
+  }, []);
+
+  const handleColPointerDown = useCallback((e: React.PointerEvent, colIdx: number) => {
+    if ((e.target as HTMLElement).closest('[data-event]')) return;
+    const mins = getMinutesFromY(e.clientY, colRefs.current[colIdx]);
+    setDragColIdx(colIdx);
+    setDragStart(mins);
+    setDragEnd(mins + 30);
+    setDragging(true);
+    dragActiveRef.current = true;
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  }, [getMinutesFromY]);
+
+  const handleColPointerMove = useCallback((e: React.PointerEvent, colIdx: number) => {
+    if (!dragActiveRef.current || colIdx !== dragColIdx) return;
+    const mins = getMinutesFromY(e.clientY, colRefs.current[colIdx]);
+    setDragEnd(mins);
+  }, [getMinutesFromY, dragColIdx]);
+
+  const handleColPointerUp = useCallback((_e: React.PointerEvent, colIdx: number) => {
+    if (!dragActiveRef.current || colIdx !== dragColIdx) return;
+    dragActiveRef.current = false;
+    setDragging(false);
+
+    const startMins = Math.min(dragStart, dragEnd);
+    let endMins = Math.max(dragStart, dragEnd);
+    if (endMins - startMins < 15) endMins = startMins + 30;
+
+    const sh = Math.floor(startMins / 60);
+    const sm = startMins % 60;
+    const eh = Math.floor(endMins / 60);
+    const em = endMins % 60;
+
+    const colEl = colRefs.current[colIdx];
+    if (colEl) {
+      const rect = colEl.getBoundingClientRect();
+      const popoverRect = new DOMRect(rect.left, Math.min(rect.top + 40, window.innerHeight - 200), rect.width, 0);
+      onQuickCreate(weekDates[colIdx], sh, eh, sm, em, popoverRect);
+    }
+  }, [dragStart, dragEnd, dragColIdx, weekDates, onQuickCreate]);
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Day headers */}
       <div className="grid grid-cols-[3rem_repeat(7,1fr)] border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div /> {/* spacer for time column */}
+        <div />
         {weekDates.map((d, i) => {
           const today = isToday(d);
           const selected = isSameDay(d, date);
@@ -91,7 +151,8 @@ export function WeekView({ onSelectEvent, onSelectDate, onCreateEvent }: WeekVie
                 return (
                   <button
                     key={ev.id}
-                    onClick={() => onSelectEvent(ev.id)}
+                    data-event
+                    onClick={(e) => onSelectEvent(ev.id, (e.target as HTMLElement).getBoundingClientRect())}
                     className="w-full text-[10px] px-1 py-0.5 rounded truncate font-medium text-left"
                     style={{ backgroundColor: `${color}20`, color }}
                   >
@@ -111,7 +172,7 @@ export function WeekView({ onSelectEvent, onSelectDate, onCreateEvent }: WeekVie
           {HOURS.map((hour) => (
             <div
               key={hour}
-              className="absolute left-0 right-0 border-t border-gray-100 dark:border-gray-700/30"
+              className="absolute left-0 right-0 border-t border-gray-100 dark:border-gray-700/30 pointer-events-none"
               style={{ top: hour * HOUR_HEIGHT }}
             >
               <span className="absolute left-0 text-[10px] text-gray-400 dark:text-gray-500 w-12 text-right pr-1 -mt-2">
@@ -120,29 +181,35 @@ export function WeekView({ onSelectEvent, onSelectDate, onCreateEvent }: WeekVie
             </div>
           ))}
 
-          {/* Day columns with events */}
+          {/* Day columns */}
           {dayEventsList.map((dayData, colIdx) => {
             const isCurrentDay = isToday(dayData.date);
+            const isDragCol = dragging && colIdx === dragColIdx;
+            const dTop = (Math.min(dragStart, dragEnd) / 60) * HOUR_HEIGHT;
+            const dHeight = Math.max((Math.abs(dragEnd - dragStart) / 60) * HOUR_HEIGHT, 12);
+
             return (
               <div
                 key={colIdx}
-                className="relative border-l border-gray-100 dark:border-gray-700/50"
+                ref={(el) => { colRefs.current[colIdx] = el; }}
+                className="relative border-l border-gray-100 dark:border-gray-700/50 select-none"
                 style={{ gridColumn: colIdx + 2 }}
+                onPointerDown={(e) => handleColPointerDown(e, colIdx)}
+                onPointerMove={(e) => handleColPointerMove(e, colIdx)}
+                onPointerUp={(e) => handleColPointerUp(e, colIdx)}
               >
-                {/* Click zones for creating events */}
-                {HOURS.map((hour) => (
-                  <button
-                    key={hour}
-                    onClick={() => onCreateEvent(dayData.date, hour)}
-                    className="absolute left-0 right-0 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors"
-                    style={{ top: hour * HOUR_HEIGHT, height: HOUR_HEIGHT }}
+                {/* Drag preview */}
+                {isDragCol && (
+                  <div
+                    className="absolute left-0.5 right-0.5 rounded border-2 border-dashed border-primary-400 bg-primary-100/50 dark:bg-primary-900/30 z-30 pointer-events-none"
+                    style={{ top: dTop, height: dHeight }}
                   />
-                ))}
+                )}
 
                 {/* Current time line */}
                 {isCurrentDay && (
                   <div
-                    className="absolute left-0 right-0 z-20 h-0.5 bg-red-500"
+                    className="absolute left-0 right-0 z-20 h-0.5 bg-red-500 pointer-events-none"
                     style={{ top: currentTimeTop }}
                   >
                     <div className="absolute -left-1 -top-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
@@ -163,7 +230,11 @@ export function WeekView({ onSelectEvent, onSelectDate, onCreateEvent }: WeekVie
                   return (
                     <button
                       key={ev.id}
-                      onClick={() => onSelectEvent(ev.id)}
+                      data-event
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectEvent(ev.id, (e.currentTarget as HTMLElement).getBoundingClientRect());
+                      }}
                       className="absolute left-0.5 right-0.5 rounded px-1 py-0.5 overflow-hidden text-left hover:opacity-90 transition-opacity z-10"
                       style={{
                         top,
