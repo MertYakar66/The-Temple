@@ -10,11 +10,14 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "backup": "node scripts/backup.cjs",
+    "restore": "node scripts/restore.cjs"
   },
   "dependencies": {
     "date-fns": "^4.1.0",
     "firebase": "^12.9.0",
+    "firebase-admin": "^13.7.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

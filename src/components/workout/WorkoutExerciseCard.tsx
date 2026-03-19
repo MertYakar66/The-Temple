@@ -25,7 +25,7 @@ export function WorkoutExerciseCard({
   unitSystem,
 }: WorkoutExerciseCardProps) {
   const [expanded, setExpanded] = useState(true);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
   const [showGoalEditor, setShowGoalEditor] = useState(false);
 
   const getLastWorkoutForExercise = useStore((state) => state.getLastWorkoutForExercise);
@@ -97,6 +97,30 @@ export function WorkoutExerciseCard({
               <div className="flex items-center gap-2">
                 <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                 <span className="text-sm text-amber-800 dark:text-amber-200">{workoutExercise.notes}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Previous Session Notes (reminders from past workout) */}
+          {lastWorkout?.notes && !workoutExercise.notes && (
+            <div className="mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-2">
+                <History className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 block mb-0.5">Note from last session</span>
+                  <span className="text-sm text-blue-800 dark:text-blue-200">{lastWorkout.notes}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {lastWorkout?.notes && workoutExercise.notes && (
+            <div className="mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-2">
+                <History className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 block mb-0.5">Note from last session</span>
+                  <span className="text-sm text-blue-800 dark:text-blue-200">{lastWorkout.notes}</span>
+                </div>
               </div>
             </div>
           )}
@@ -296,6 +320,7 @@ export function WorkoutExerciseCard({
                   onRemove={() => onRemoveSet(set.id)}
                   onToggleComplete={() => onToggleSetComplete(set.id)}
                   unitSystem={unitSystem}
+                  previousSet={lastWorkout?.sets[index]}
                 />
               ))}
             </div>

@@ -2,25 +2,20 @@ import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Play, Trash2, Edit2, MoreVertical, ChevronLeft, ChevronDown, ChevronRight, Dumbbell } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { RoutineGroupEditModal } from '../components/workout/RoutineGroupEditModal';
 
 export function Routines() {
   const navigate = useNavigate();
   const routines = useStore((state) => state.routines);
   const deleteRoutine = useStore((state) => state.deleteRoutine);
-  const updateRoutine = useStore((state) => state.updateRoutine);
   const startWorkoutFromRoutine = useStore((state) => state.startWorkoutFromRoutine);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [expandedPrograms, setExpandedPrograms] = useState<Set<string>>(new Set());
+  const [editingProgram, setEditingProgram] = useState<string | null>(null);
 
-  const handleEditProgram = (e: React.MouseEvent, programName: string, programRoutines: typeof routines) => {
+  const handleEditProgram = (e: React.MouseEvent, programName: string) => {
     e.stopPropagation();
-    const newName = window.prompt('Rename Routine:', programName);
-    if (newName !== null && newName !== programName) {
-      const trimmed = newName.trim();
-      programRoutines.forEach((r) => {
-        updateRoutine(r.id, { program: trimmed || undefined });
-      });
-    }
+    setEditingProgram(programName);
   };
 
   // Group routines by program
@@ -198,7 +193,7 @@ export function Routines() {
                     </div>
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={(e) => handleEditProgram(e, programName, programRoutines)}
+                        onClick={(e) => handleEditProgram(e, programName)}
                         className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                         title="Edit Routine Name"
                       >
@@ -240,6 +235,14 @@ export function Routines() {
           </div>
         )}
       </div>
+
+      {editingProgram && programGroups[editingProgram] && (
+        <RoutineGroupEditModal
+          programName={editingProgram}
+          routines={programGroups[editingProgram]}
+          onClose={() => setEditingProgram(null)}
+        />
+      )}
     </div>
   );
 }
