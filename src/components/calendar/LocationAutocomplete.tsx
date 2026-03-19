@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
-import { MapPin } from 'lucide-react';
+import { MapPin, ExternalLink } from 'lucide-react';
+import { getGoogleMapsUrl } from '../../utils/location';
 
 interface Prediction {
   placeId: string;
@@ -19,21 +20,23 @@ interface LocationAutocompleteProps {
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+let placesLib: any = null;
 let placesReady: Promise<void> | null = null;
 
 function ensurePlacesLoaded(): Promise<void> {
   if (!API_KEY) return Promise.reject(new Error('No API key'));
   if (placesReady) return placesReady;
   const loader = new Loader({ apiKey: API_KEY, libraries: ['places'] });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  placesReady = (loader as any).importLibrary('places').then(() => {}) as Promise<void>;
+  placesReady = (loader as any).importLibrary('places').then((lib: any) => {
+    placesLib = lib;
+  }) as Promise<void>;
   return placesReady;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export function LocationAutocomplete({
   value,
+  placeId,
   onChange,
   className = '',
   placeholder = 'Add location',
@@ -44,14 +47,17 @@ export function LocationAutocomplete({
   const [apiAvailable, setApiAvailable] = useState(false);
   const autocompleteService = useRef<any>(null);
   const sessionToken = useRef<any>(null);
-  const placesNs = useRef<any>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     ensurePlacesLoaded()
       .then(() => {
-        const places = (window as any).google.maps.places;
-        placesNs.current = places;
+        // Try the returned library first, fall back to global
+        const places = placesLib || (window as any).google?.maps?.places;
+        if (!places) {
+          setApiAvailable(false);
+          return;
+        }
         autocompleteService.current = new places.AutocompleteService();
         sessionToken.current = new places.AutocompleteSessionToken();
         setApiAvailable(true);
@@ -119,8 +125,9 @@ export function LocationAutocomplete({
     setPredictions([]);
     setOpen(false);
     // Refresh session token after selection
-    if (placesNs.current) {
-      sessionToken.current = new placesNs.current.AutocompleteSessionToken();
+    const places = placesLib || (window as any).google?.maps?.places;
+    if (places) {
+      sessionToken.current = new places.AutocompleteSessionToken();
     }
   };
 
@@ -130,24 +137,39 @@ export function LocationAutocomplete({
     }
   };
 
-  // No API key → plain text input
+  const showMapLink = input.trim().length > 0;
+
+  // No API key → plain text input with map link
   if (!API_KEY) {
     return (
-      <input
-        type="text"
-        value={input}
-        onChange={(e) => {
-          setInput(e.target.value);
-          onChange(e.target.value, undefined);
-        }}
-        placeholder={placeholder}
-        className={className}
-      />
+      <div className="relative flex items-center flex-1 gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            onChange(e.target.value, undefined);
+          }}
+          placeholder={placeholder}
+          className={className}
+        />
+        {showMapLink && (
+          <a
+            href={getGoogleMapsUrl(input.trim(), placeId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-500 transition-colors"
+            title="Show on Google Maps"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        )}
+      </div>
     );
   }
 
   return (
-    <div ref={wrapperRef} className="relative flex-1">
+    <div ref={wrapperRef} className="relative flex items-center flex-1 gap-2">
       <input
         type="text"
         value={input}
@@ -155,8 +177,19 @@ export function LocationAutocomplete({
         onFocus={() => { if (predictions.length > 0) setOpen(true); }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className={className}
+        className={`${className} flex-1`}
       />
+      {showMapLink && (
+        <a
+          href={getGoogleMapsUrl(input.trim(), placeId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-shrink-0 p-1 text-gray-400 hover:text-blue-500 transition-colors"
+          title="Show on Google Maps"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </a>
+      )}
 
       {open && predictions.length > 0 && (
         <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden max-h-60 overflow-y-auto">
