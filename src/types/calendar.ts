@@ -63,6 +63,7 @@ export interface CalendarEvent {
   endDate: string; // ISO datetime
   isAllDay: boolean;
   location?: string;
+  locationPlaceId?: string;
   videoCallUrl?: string;
   notes?: string;
   timezone: string;

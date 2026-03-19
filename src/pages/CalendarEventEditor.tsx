@@ -14,6 +14,7 @@ import {
   Car,
 } from 'lucide-react';
 import { useCalendarStore } from '../store/useCalendarStore';
+import { LocationAutocomplete } from '../components/calendar/LocationAutocomplete';
 import type {
   CalendarEvent,
   CalendarAlert,
@@ -82,6 +83,7 @@ export function CalendarEventEditor() {
   const [endDate, setEndDate] = useState(format(parseISO(defaultEnd), "yyyy-MM-dd'T'HH:mm"));
   const [isAllDay, setIsAllDay] = useState(existingEvent?.isAllDay || false);
   const [location, setLocation] = useState(existingEvent?.location || '');
+  const [locationPlaceId, setLocationPlaceId] = useState(existingEvent?.locationPlaceId);
   const [videoCallUrl, setVideoCallUrl] = useState(existingEvent?.videoCallUrl || '');
   const [notes, setNotes] = useState(existingEvent?.notes || '');
   const [calendarId, setCalendarId] = useState(
@@ -166,6 +168,7 @@ export function CalendarEventEditor() {
       endDate: new Date(endDate).toISOString(),
       isAllDay,
       location: location.trim() || undefined,
+      locationPlaceId: location.trim() ? locationPlaceId : undefined,
       videoCallUrl: videoCallUrl.trim() || undefined,
       notes: notes.trim() || undefined,
       timezone: existingEvent?.timezone || tz,
@@ -319,10 +322,10 @@ export function CalendarEventEditor() {
         <div className="bg-white dark:bg-gray-800 mt-3 mx-4 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
           <div className="flex items-center gap-3 px-4 py-3">
             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            <input
-              type="text"
+            <LocationAutocomplete
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              placeId={locationPlaceId}
+              onChange={(loc, pid) => { setLocation(loc); setLocationPlaceId(pid); }}
               placeholder="Add location"
               className="flex-1 text-sm bg-transparent text-gray-900 dark:text-white placeholder-gray-400 outline-none"
             />

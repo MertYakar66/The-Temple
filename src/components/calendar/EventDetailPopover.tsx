@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { MapPin, Edit2, Trash2, X, Clock } from 'lucide-react';
+import { MapPin, Edit2, Trash2, X, Clock, ExternalLink } from 'lucide-react';
 import { useCalendarStore } from '../../store/useCalendarStore';
+import { getGoogleMapsUrl } from '../../utils/location';
 
 interface EventDetailPopoverProps {
   eventId: string;
@@ -75,10 +76,17 @@ export function EventDetailPopover({ eventId, position, onEdit, onClose }: Event
 
           {/* Location */}
           {event.location && (
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+            <a
+              href={getGoogleMapsUrl(event.location, event.locationPlaceId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 mb-1 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
               <MapPin className="w-3.5 h-3.5" />
               <span className="truncate">{event.location}</span>
-            </div>
+              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+            </a>
           )}
 
           {/* Calendar name */}
