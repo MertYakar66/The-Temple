@@ -84,8 +84,13 @@ export function SiriSetup() {
     }
   }, [currentUser]);
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (isRegenerate = false) => {
     if (!currentUser?.uid) return;
+    if (isRegenerate) {
+      if (!window.confirm('This will invalidate your current token. All existing Siri shortcuts will stop working until you update them with the new token. Continue?')) {
+        return;
+      }
+    }
     setGenerating(true);
     try {
       const newConfig = await generateSiriToken(currentUser.uid, userTimezone);
@@ -108,6 +113,7 @@ export function SiriSetup() {
       setConfig(null);
     } catch (error) {
       console.error('Failed to revoke token:', error);
+      alert('Failed to revoke token. Please try again.');
     }
   }, [currentUser]);
 
@@ -209,7 +215,7 @@ export function SiriSetup() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={handleGenerate}
+                    onClick={() => handleGenerate(true)}
                     disabled={generating}
                     className="flex-1 flex items-center justify-center gap-2 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
@@ -230,7 +236,7 @@ export function SiriSetup() {
                   Generate a secure token that connects Siri to your data. This token is private — only share it with your own Apple Shortcuts.
                 </p>
                 <button
-                  onClick={handleGenerate}
+                  onClick={() => handleGenerate()}
                   disabled={generating}
                   className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-medium rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all shadow-md"
                 >

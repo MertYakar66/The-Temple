@@ -15,15 +15,17 @@ import { db } from './firebase';
 
 function generateToken(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const randomValues = new Uint8Array(32);
+  crypto.getRandomValues(randomValues);
   const segments: string[] = [];
   for (let s = 0; s < 4; s++) {
     let segment = '';
     for (let i = 0; i < 8; i++) {
-      segment += chars.charAt(Math.floor(Math.random() * chars.length));
+      segment += chars.charAt(randomValues[s * 8 + i] % chars.length);
     }
     segments.push(segment);
   }
-  return segments.join('-'); // e.g. "AbCdEfGh-IjKlMnOp-QrStUvWx-YzAbCdEf"
+  return segments.join('-');
 }
 
 export interface SiriConfig {

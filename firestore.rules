@@ -8,10 +8,12 @@ service cloud.firestore {
     }
 
     // Siri token lookup index
-    // Users can create/delete their own token entries
+    // Users can only manage tokens that belong to them.
+    // Cloud Functions use Admin SDK and bypass these rules entirely.
     match /siriTokens/{token} {
       allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId', 'createdAt']);
       allow read, delete: if request.auth != null
         && resource.data.userId == request.auth.uid;
     }
