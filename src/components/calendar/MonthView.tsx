@@ -6,11 +6,11 @@ import { EventChip } from './EventChip';
 
 interface MonthViewProps {
   onSelectDate: (date: Date) => void;
-  onSelectEvent: (eventId: string) => void;
-  onCreateEvent: (date: Date) => void;
+  onSelectEvent: (eventId: string, rect: DOMRect) => void;
+  onQuickCreate: (date: Date, rect: DOMRect) => void;
 }
 
-export function MonthView({ onSelectDate, onSelectEvent, onCreateEvent }: MonthViewProps) {
+export function MonthView({ onSelectDate, onSelectEvent, onQuickCreate }: MonthViewProps) {
   const selectedDate = useCalendarStore((s) => s.selectedDate);
   const events = useCalendarStore((s) => s.events);
   const calendars = useCalendarStore((s) => s.calendars);
@@ -37,6 +37,17 @@ export function MonthView({ onSelectDate, onSelectEvent, onCreateEvent }: MonthV
     return m;
   }, [calendars]);
 
+  const handleDayClick = (d: Date, e: React.MouseEvent) => {
+    const isAlreadySelected = isSameDay(d, date);
+    if (isAlreadySelected) {
+      // Second tap on selected date → open quick create
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      onQuickCreate(d, new DOMRect(rect.left, rect.bottom, rect.width, 0));
+    } else {
+      onSelectDate(d);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Weekday headers */}
@@ -57,11 +68,10 @@ export function MonthView({ onSelectDate, onSelectEvent, onCreateEvent }: MonthV
           const dayEvents = getEventsForDate(events, d, visibleIds);
 
           return (
-            <button
+            <div
               key={idx}
-              onClick={() => onSelectDate(d)}
-              onDoubleClick={() => onCreateEvent(d)}
-              className={`relative border-b border-r border-gray-100 dark:border-gray-700/50 p-1 text-left flex flex-col min-h-[4.5rem] transition-colors ${
+              onClick={(e) => handleDayClick(d, e)}
+              className={`relative border-b border-r border-gray-100 dark:border-gray-700/50 p-1 text-left flex flex-col min-h-[4.5rem] transition-colors cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 ${
                 isCurrentMonth
                   ? 'bg-white dark:bg-gray-800'
                   : 'bg-gray-50 dark:bg-gray-850'
@@ -86,9 +96,9 @@ export function MonthView({ onSelectDate, onSelectEvent, onCreateEvent }: MonthV
                     event={ev}
                     calendar={calMap.get(ev.calendarId)}
                     compact
-                    onClick={() => {
-                      // stop propagation is not possible on nested buttons, use event id
-                      onSelectEvent(ev.id);
+                    onClick={(clickEvent) => {
+                      clickEvent.stopPropagation();
+                      onSelectEvent(ev.id, (clickEvent.currentTarget as HTMLElement).getBoundingClientRect());
                     }}
                   />
                 ))}
@@ -98,7 +108,7 @@ export function MonthView({ onSelectDate, onSelectEvent, onCreateEvent }: MonthV
                   </span>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

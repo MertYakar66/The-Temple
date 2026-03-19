@@ -4,7 +4,7 @@ import { useCalendarStore } from '../../store/useCalendarStore';
 import { getEventsInRange, formatEventTime } from '../../utils/calendar';
 
 interface UpcomingViewProps {
-  onSelectEvent: (eventId: string) => void;
+  onSelectEvent: (eventId: string, rect: DOMRect) => void;
 }
 
 export function UpcomingView({ onSelectEvent }: UpcomingViewProps) {
@@ -90,7 +90,7 @@ export function UpcomingView({ onSelectEvent }: UpcomingViewProps) {
                 return (
                   <button
                     key={ev.id}
-                    onClick={() => onSelectEvent(ev.id)}
+                    onClick={(e) => onSelectEvent(ev.id, (e.currentTarget as HTMLElement).getBoundingClientRect())}
                     className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-start gap-3"
                   >
                     <div
