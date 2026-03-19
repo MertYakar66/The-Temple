@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
+import { useCalendarStore } from '../store/useCalendarStore';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useAuth } from '../contexts/AuthContext';
 import { kgToDisplay, displayToKg, getWeightUnit } from '../utils/weight';
@@ -67,8 +68,9 @@ export function Settings() {
   const weightEntries = useStore((state) => state.weightEntries);
   const personalRecords = useStore((state) => state.personalRecords);
 
-  // Diet store data for export
+  // Diet & Calendar store data for export
   const dietStore = useDietStore.getState();
+  const calendarStore = useCalendarStore.getState();
 
   // Dark mode
   const { theme, setTheme, isDark } = useDarkMode();
@@ -138,8 +140,13 @@ export function Settings() {
         customFoods: dietStore.customFoods,
         dietSettings: dietStore.dietSettings,
       },
+      calendar: {
+        events: calendarStore.events,
+        calendars: calendarStore.calendars,
+        settings: calendarStore.settings,
+      },
       exportedAt: new Date().toISOString(),
-      version: '1.1.0',
+      version: '1.2.0',
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -167,6 +174,7 @@ export function Settings() {
         // Clear local storage
         localStorage.removeItem('workout-tracker-storage');
         localStorage.removeItem('diet-tracker-storage');
+        localStorage.removeItem('calendar-storage');
         window.location.reload();
       } catch (error) {
         console.error('Failed to clear data:', error);

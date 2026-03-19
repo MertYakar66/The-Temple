@@ -24,6 +24,7 @@ import { DietMealNew } from './pages/DietMealNew';
 import { DietWeekly } from './pages/DietWeekly';
 import { DietSettings } from './pages/DietSettings';
 import { DietFoodNew } from './pages/DietFoodNew';
+import { DietRecipeEditor } from './pages/DietRecipeEditor';
 import { TDEECalculator } from './pages/TDEECalculator';
 // Calendar Module
 import { Calendar } from './pages/Calendar';
@@ -119,6 +120,8 @@ function AppRoutes() {
       <Route path="/diet/weekly" element={<DietWeekly />} />
       <Route path="/diet/settings" element={<DietSettings />} />
       <Route path="/diet/food/new" element={<DietFoodNew />} />
+      <Route path="/diet/recipes/new" element={<DietRecipeEditor />} />
+      <Route path="/diet/recipes/:id/edit" element={<DietRecipeEditor />} />
 
       {/* Auth routes - redirect if already logged in */}
       <Route path="/login" element={<Navigate to="/" replace />} />

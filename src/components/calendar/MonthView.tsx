@@ -26,7 +26,7 @@ export function MonthView({ onSelectDate, onSelectEvent, onQuickCreate }: MonthV
 
   const gridDates = useMemo(
     () => getMonthGridDates(date.getFullYear(), date.getMonth(), weekStartsOn),
-    [date.getFullYear(), date.getMonth(), weekStartsOn]
+    [date, weekStartsOn]
   );
 
   const weekHeaders = useMemo(() => getWeekdayHeaders(weekStartsOn), [weekStartsOn]);
