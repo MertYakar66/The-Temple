@@ -14,6 +14,7 @@ export function EventChip({ event, calendar, compact = false, onClick }: EventCh
   if (compact) {
     return (
       <button
+        data-event-chip
         onClick={onClick}
         className="w-full flex items-center gap-1 text-left px-1 py-0.5 rounded text-xs truncate hover:opacity-80 transition-opacity"
         style={{ backgroundColor: `${color}20`, color }}

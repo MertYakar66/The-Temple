@@ -5,6 +5,8 @@ import { useCalendarStore } from '../../store/useCalendarStore';
 
 interface QuickEventCreateProps {
   date: Date;
+  endDate?: Date;
+  isAllDay?: boolean;
   startHour?: number;
   endHour?: number;
   startMinute?: number;
@@ -17,6 +19,8 @@ interface QuickEventCreateProps {
 
 export function QuickEventCreate({
   date,
+  endDate: endDateProp,
+  isAllDay = false,
   startHour,
   endHour,
   startMinute = 0,
@@ -43,12 +47,28 @@ export function QuickEventCreate({
 
   const sh = startHour ?? new Date().getHours();
   const eh = endHour ?? sh + 1;
-  const startDate = setMinutes(setHours(new Date(date), sh), startMinute);
-  const endDate = setMinutes(setHours(new Date(date), eh), endMinute);
 
-  const timeLabel = settings.use24HourTime
-    ? `${format(startDate, 'HH:mm')} – ${format(endDate, 'HH:mm')}`
-    : `${format(startDate, 'h:mm a')} – ${format(endDate, 'h:mm a')}`;
+  let startDate: Date;
+  let endDate: Date;
+  let timeLabel: string;
+
+  if (isAllDay && endDateProp) {
+    // All-day event (possibly multi-day from drag)
+    startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(endDateProp);
+    endDate.setHours(23, 59, 59, 999);
+    const sameDay = date.toDateString() === endDateProp.toDateString();
+    timeLabel = sameDay
+      ? 'All day'
+      : `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`;
+  } else {
+    startDate = setMinutes(setHours(new Date(date), sh), startMinute);
+    endDate = setMinutes(setHours(new Date(date), eh), endMinute);
+    timeLabel = settings.use24HourTime
+      ? `${format(startDate, 'HH:mm')} – ${format(endDate, 'HH:mm')}`
+      : `${format(startDate, 'h:mm a')} – ${format(endDate, 'h:mm a')}`;
+  }
 
   const handleSubmit = () => {
     const t = title.trim() || 'New Event';
@@ -57,7 +77,7 @@ export function QuickEventCreate({
       title: t,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
-      isAllDay: false,
+      isAllDay,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       alerts: settings.defaultAlertMinutes > 0
         ? [{ id: 'default', amount: settings.defaultAlertMinutes, unit: 'minutes' as const }]

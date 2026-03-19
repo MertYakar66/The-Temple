@@ -15,6 +15,8 @@ interface PopoverState {
   type: 'create' | 'detail';
   // create-specific
   date?: Date;
+  endDate?: Date;
+  isAllDay?: boolean;
   startHour?: number;
   endHour?: number;
   startMinute?: number;
@@ -107,21 +109,32 @@ export function Calendar() {
     });
   }, []);
 
-  // Quick create from MonthView (date click)
-  const handleMonthQuickCreate = useCallback((d: Date, rect: DOMRect) => {
-    const now = new Date();
-    const sh = now.getHours();
+  // Quick create from MonthView (click or drag)
+  const handleMonthQuickCreate = useCallback((startDate: Date, endDate: Date, rect: DOMRect) => {
     const left = Math.min(rect.x, window.innerWidth - 288);
     const top = Math.min(rect.y + rect.height, window.innerHeight - 200);
-    setPopover({
-      type: 'create',
-      date: d,
-      startHour: sh,
-      endHour: sh + 1,
-      startMinute: 0,
-      endMinute: 0,
-      position: { top: Math.max(top, 10), left: Math.max(left, 8) },
-    });
+    const multiDay = startDate.toDateString() !== endDate.toDateString();
+    if (multiDay) {
+      setPopover({
+        type: 'create',
+        date: startDate,
+        endDate,
+        isAllDay: true,
+        position: { top: Math.max(top, 10), left: Math.max(left, 8) },
+      });
+    } else {
+      const now = new Date();
+      const sh = now.getHours();
+      setPopover({
+        type: 'create',
+        date: startDate,
+        startHour: sh,
+        endHour: sh + 1,
+        startMinute: 0,
+        endMinute: 0,
+        position: { top: Math.max(top, 10), left: Math.max(left, 8) },
+      });
+    }
   }, []);
 
   // Full editor navigation
@@ -205,6 +218,8 @@ export function Calendar() {
       {popover?.type === 'create' && popover.date && (
         <QuickEventCreate
           date={popover.date}
+          endDate={popover.endDate}
+          isAllDay={popover.isAllDay}
           startHour={popover.startHour}
           endHour={popover.endHour}
           startMinute={popover.startMinute}
