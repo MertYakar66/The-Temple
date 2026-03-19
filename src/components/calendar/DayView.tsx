@@ -78,10 +78,12 @@ export function DayView({ onSelectEvent, onQuickCreate }: DayViewProps) {
     setDragEnd(mins);
   }, [getMinutesFromY]);
 
-  const handlePointerUp = useCallback((_e: React.PointerEvent) => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!dragActiveRef.current) return;
     dragActiveRef.current = false;
     setDragging(false);
+    e.preventDefault();
+    e.stopPropagation();
 
     const startMins = Math.min(dragStart, dragEnd);
     let endMins = Math.max(dragStart, dragEnd);
