@@ -37,7 +37,7 @@ export function EventDetailPopover({ eventId, position, onEdit, onClose }: Event
   };
 
   const style: React.CSSProperties = position
-    ? { position: 'absolute', top: position.top, left: position.left, zIndex: 50 }
+    ? { position: 'fixed', top: position.top, left: position.left, zIndex: 50 }
     : {};
 
   return (
