@@ -34,6 +34,7 @@ import { CalendarManage } from './pages/CalendarManage';
 import { CalendarSearch } from './pages/CalendarSearch';
 import { CalendarSettings as CalendarSettingsPage } from './pages/CalendarSettings';
 import { CalendarInvitations } from './pages/CalendarInvitations';
+import { SiriSetup } from './pages/SiriSetup';
 // Components
 import { PRCelebration } from './components/PRCelebration';
 import { Dumbbell } from 'lucide-react';
@@ -100,6 +101,7 @@ function AppRoutes() {
       <Route path="/routines/:id" element={<RoutineDetail />} />
       <Route path="/routines/:id/edit" element={<RoutineEditor />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/settings/siri" element={<SiriSetup />} />
       <Route path="/templates" element={<WorkoutTemplates />} />
 
       {/* Calendar routes without bottom nav */}

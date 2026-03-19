@@ -17,6 +17,7 @@ import {
   Library,
   LogOut,
   Mail,
+  Mic,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
@@ -365,6 +366,28 @@ export function Settings() {
                 <div className="text-left">
                   <span className="text-gray-900 dark:text-white block">Workout Templates</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">Browse pre-built programs</span>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </div>
+          </button>
+        </div>
+
+        {/* Integrations */}
+        <div>
+          <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+            Integrations
+          </h2>
+          <button
+            onClick={() => navigate('/settings/siri')}
+            className="w-full card dark:bg-gray-800 dark:border-gray-700 p-0 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-3">
+                <Mic className="w-5 h-5 text-purple-500" />
+                <div className="text-left">
+                  <span className="text-gray-900 dark:text-white block">Siri Integration</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Ask Siri about your day</span>
                 </div>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
