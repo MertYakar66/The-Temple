@@ -8,9 +8,30 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, resetPassword } = useAuth();
+
+  const handleResetPassword = async () => {
+    if (!email.trim()) {
+      setError('Enter your email address first, then tap "Forgot Password".');
+      return;
+    }
+    setError('');
+    setSuccess('');
+    setResetLoading(true);
+    try {
+      await resetPassword(email.trim());
+      setSuccess('Password reset email sent. Check your inbox.');
+    } catch {
+      // Don't reveal whether the email exists
+      setSuccess('If an account exists with that email, a reset link has been sent.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +85,12 @@ export function Login() {
             {error}
           </div>
         )}
+        {/* Success Message */}
+        {success && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-600 dark:text-green-400 text-sm">
+            {success}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -106,6 +133,17 @@ export function Login() {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleResetPassword}
+              disabled={resetLoading}
+              className="text-sm text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50"
+            >
+              {resetLoading ? 'Sending...' : 'Forgot Password?'}
+            </button>
           </div>
 
           <button

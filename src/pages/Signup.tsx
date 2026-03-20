@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Dumbbell, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { validatePassword } from '../lib/passwordValidation';
 
 export function Signup() {
   const [email, setEmail] = useState('');
@@ -22,13 +23,9 @@ export function Signup() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-
-    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-      setError('Password must contain at least one uppercase letter and one number');
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
@@ -114,7 +111,7 @@ export function Signup() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="At least 8 characters"
+                placeholder="Min 10 chars, upper, lower, number, symbol"
                 required
               />
               <button
