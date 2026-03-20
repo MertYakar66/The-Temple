@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Lock, X, AlertTriangle } from 'lucide-react';
+import { getAuthErrorMessage, getFirebaseErrorCode } from '../lib/authErrors';
 
 interface ReauthModalProps {
   title: string;
@@ -28,19 +29,13 @@ export function ReauthModal({
       setError('Please enter your password');
       return;
     }
+    if (loading) return;
     setError('');
     setLoading(true);
     try {
       await onConfirm(password);
     } catch (err: unknown) {
-      const firebaseErr = err as { code?: string };
-      if (firebaseErr.code === 'auth/wrong-password' || firebaseErr.code === 'auth/invalid-credential') {
-        setError('Incorrect password');
-      } else if (firebaseErr.code === 'auth/too-many-requests') {
-        setError('Too many attempts. Please try again later.');
-      } else {
-        setError('Something went wrong. Please try again.');
-      }
+      setError(getAuthErrorMessage(getFirebaseErrorCode(err)));
     } finally {
       setLoading(false);
     }

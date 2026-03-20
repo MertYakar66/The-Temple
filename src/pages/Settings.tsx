@@ -117,22 +117,13 @@ export function Settings() {
   };
 
   const handleChangePassword = async (currentPassword: string) => {
-    setPasswordError('');
-    const validationError = validatePassword(newPassword);
-    if (validationError) {
-      setPasswordError(validationError);
-      throw new Error(validationError);
-    }
-    if (newPassword !== confirmNewPassword) {
-      setPasswordError('Passwords do not match');
-      throw new Error('Passwords do not match');
-    }
     // Re-authenticate, then change password
     await reauthenticate(currentPassword);
     await changePassword(newPassword);
-    setShowChangePassword(false);
+    setShowReauthForPassword(false);
     setNewPassword('');
     setConfirmNewPassword('');
+    setPasswordError('');
     setPasswordSuccess('Password changed successfully');
     setTimeout(() => setPasswordSuccess(''), 3000);
   };
