@@ -166,6 +166,11 @@ export const useStore = create<AppState>()(
                   })),
                   restSeconds: re.restSeconds,
                   notes: re.notes,
+                  routineTarget: {
+                    sets: re.targetSets,
+                    reps: re.targetReps,
+                    weight: re.targetWeight,
+                  },
                 });
               }
             });
@@ -493,6 +498,10 @@ export const useStore = create<AppState>()(
             })),
             restSeconds,
             notes: notes.length > 0 ? notes.join(' | ') : undefined,
+            routineTarget: {
+              sets: be.sets,
+              reps: targetReps,
+            },
           });
         });
 

@@ -77,6 +77,12 @@ export interface WorkoutExercise {
   sets: WorkoutSet[];
   restSeconds: number;
   notes?: string;
+  routineTarget?: {
+    sets: number;
+    reps: number;
+    weight?: number;
+    rir?: number;
+  };
 }
 
 export interface WorkoutSession {
