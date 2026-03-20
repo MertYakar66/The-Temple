@@ -32,14 +32,24 @@ async function authenticateToken(
 // Formatting helpers
 // ============================================
 
-function formatTime(isoDate: string): string {
+function formatTime(isoDate: string, tz?: string): string {
   const d = new Date(isoDate);
   if (isNaN(d.getTime())) return "Unknown time";
-  const h = d.getHours();
-  const m = d.getMinutes().toString().padStart(2, "0");
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return `${hour}:${m} ${ampm}`;
+  try {
+    return d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      ...(tz ? { timeZone: tz } : {}),
+    });
+  } catch {
+    // invalid timezone, fall back to UTC formatting
+    const h = d.getUTCHours();
+    const m = d.getUTCMinutes().toString().padStart(2, "0");
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hour = h % 12 || 12;
+    return `${hour}:${m} ${ampm}`;
+  }
 }
 
 function todayDateString(tz?: string): string {
@@ -192,7 +202,7 @@ export const siriDailyBriefing = onRequest({ cors: true }, async (req, res) => {
 
     if (events.length > 0) {
       const eventLines = events.map((e) => {
-        const time = e.isAllDay ? "All day" : formatTime(e.startDate);
+        const time = e.isAllDay ? "All day" : formatTime(e.startDate, tz);
         return `${time} — ${e.title || "Untitled"}${e.location ? ` at ${e.location}` : ""}`;
       });
       parts.push(
@@ -285,7 +295,7 @@ export const siriSchedule = onRequest({ cors: true }, async (req, res) => {
     }
 
     const lines = events.map((e) => {
-      const time = e.isAllDay ? "All day" : formatTime(e.startDate);
+      const time = e.isAllDay ? "All day" : formatTime(e.startDate, tz);
       return `${time} — ${e.title || "Untitled"}${e.location ? ` at ${e.location}` : ""}`;
     });
 

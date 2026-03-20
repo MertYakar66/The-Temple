@@ -885,6 +885,7 @@ export const useStore = create<AppState>()(
           workoutSessions: state.workoutSessions,
           currentSession: state.currentSession,
           routines: state.routines,
+          exercises: state.exercises,
           personalRecords: state.personalRecords,
           weightEntries: state.weightEntries,
           exerciseGoals: state.exerciseGoals,
