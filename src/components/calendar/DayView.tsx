@@ -29,16 +29,21 @@ export function DayView({ onSelectEvent, onQuickCreate }: DayViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const date = parseISO(selectedDate);
+  // Memoize the parsed date — a fresh Date each render would invalidate
+  // downstream useMemo deps unnecessarily.
+  const date = useMemo(() => parseISO(selectedDate), [selectedDate]);
   const dayIsToday = isToday(date);
 
-  const dayEvents = useMemo(
-    () => getEventsForDate(events, date, visibleIds),
-    [events, date, visibleIds]
-  );
-
-  const allDayEvents = dayEvents.filter((e) => e.isAllDay);
-  const timedEvents = dayEvents.filter((e) => !e.isAllDay);
+  // Partition events into all-day/timed in one pass instead of two filters.
+  const { allDayEvents, timedEvents } = useMemo(() => {
+    const all = getEventsForDate(events, date, visibleIds);
+    const allDay: typeof all = [];
+    const timed: typeof all = [];
+    for (const ev of all) {
+      (ev.isAllDay ? allDay : timed).push(ev);
+    }
+    return { allDayEvents: allDay, timedEvents: timed };
+  }, [events, date, visibleIds]);
 
   const calMap = useMemo(() => {
     const m = new Map<string, typeof calendars[0]>();

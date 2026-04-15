@@ -22,7 +22,9 @@ export function MonthView({ onSelectDate, onSelectEvent, onQuickCreate }: MonthV
   const calendars = useCalendarStore((s) => s.calendars);
   const settings = useCalendarStore((s) => s.settings);
 
-  const date = parseISO(selectedDate);
+  // Memoize the parsed date — a fresh `new Date()` each render invalidates
+  // downstream useMemo deps unnecessarily.
+  const date = useMemo(() => parseISO(selectedDate), [selectedDate]);
   const weekStartsOn = settings.startOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
   const [dragStart, setDragStart] = useState<Date | null>(null);
@@ -47,6 +49,14 @@ export function MonthView({ onSelectDate, onSelectEvent, onQuickCreate }: MonthV
     calendars.forEach((c) => m.set(c.id, c));
     return m;
   }, [calendars]);
+
+  // Pre-compute events per grid cell once per (events, visibleIds, gridDates)
+  // change — previously this was 42 unmemoized `getEventsForDate` calls per
+  // render, re-parsing every event's ISO dates on each drag/hover.
+  const eventsByCell = useMemo(
+    () => gridDates.map((d) => getEventsForDate(events, d, visibleIds)),
+    [gridDates, events, visibleIds]
+  );
 
   const handlePointerDown = useCallback((d: Date, e: React.PointerEvent) => {
     // Ignore if clicking on an event chip
@@ -123,7 +133,7 @@ export function MonthView({ onSelectDate, onSelectEvent, onQuickCreate }: MonthV
           const isCurrentMonth = isSameMonth(d, date);
           const isSelected = isSameDay(d, date);
           const isCurrentDay = isToday(d);
-          const dayEvents = getEventsForDate(events, d, visibleIds);
+          const dayEvents = eventsByCell[idx];
           const inDragRange = dragStart && dragEnd && isInRange(d, dragStart, dragEnd);
 
           return (
