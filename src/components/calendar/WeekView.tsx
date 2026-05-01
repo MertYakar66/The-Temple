@@ -24,7 +24,9 @@ export function WeekView({ onSelectEvent, onSelectDate, onQuickCreate }: WeekVie
   const settings = useCalendarStore((s) => s.settings);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const date = parseISO(selectedDate);
+  // Memoize the parsed date — a fresh `new Date()` each render invalidates
+  // downstream useMemo deps unnecessarily.
+  const date = useMemo(() => parseISO(selectedDate), [selectedDate]);
   const weekStartsOn = settings.startOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
   const visibleIds = useMemo(
@@ -39,12 +41,18 @@ export function WeekView({ onSelectEvent, onSelectDate, onQuickCreate }: WeekVie
     return m;
   }, [calendars]);
 
+  // Compute events per day once — the previous version iterated events twice
+  // (once for allDay, once for timed) for every day in the week (14 scans).
   const dayEventsList = useMemo(() => {
-    return weekDates.map((d) => ({
-      date: d,
-      allDay: getEventsForDate(events, d, visibleIds).filter((e) => e.isAllDay),
-      timed: getEventsForDate(events, d, visibleIds).filter((e) => !e.isAllDay),
-    }));
+    return weekDates.map((d) => {
+      const all = getEventsForDate(events, d, visibleIds);
+      const allDay: typeof all = [];
+      const timed: typeof all = [];
+      for (const ev of all) {
+        (ev.isAllDay ? allDay : timed).push(ev);
+      }
+      return { date: d, allDay, timed };
+    });
   }, [weekDates, events, visibleIds]);
 
   useEffect(() => {

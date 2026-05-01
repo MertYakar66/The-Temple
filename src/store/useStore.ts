@@ -889,12 +889,17 @@ export const useStore = create<AppState>()(
 
       getCloudSyncData: () => {
         const state = get();
+        // `exercises` is static default data (120+ entries). `loadFromCloud`
+        // never restores it — the app always uses the in-code defaults. The
+        // only consumer in the cloud is the Siri function, which only reads
+        // `id` and `name`. Ship a lean projection to cut sync payload size.
+        const leanExercises = state.exercises.map((e) => ({ id: e.id, name: e.name }));
         return {
           user: state.user,
           workoutSessions: state.workoutSessions,
           currentSession: state.currentSession,
           routines: state.routines,
-          exercises: state.exercises,
+          exercises: leanExercises,
           personalRecords: state.personalRecords,
           weightEntries: state.weightEntries,
           exerciseGoals: state.exerciseGoals,

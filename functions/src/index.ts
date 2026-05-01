@@ -10,6 +10,32 @@ const db = admin.firestore();
 
 const TOKEN_PATTERN = /^[A-Za-z0-9]{8}-[A-Za-z0-9]{8}-[A-Za-z0-9]{8}-[A-Za-z0-9]{8}$/;
 
+// In-process token → userId cache with TTL. Warm function instances reuse this
+// map across requests, saving one Firestore read per call on hot paths. A
+// 60-second TTL is short enough that revoked tokens stop working quickly.
+const TOKEN_CACHE_TTL_MS = 60 * 1000;
+const TOKEN_CACHE_MAX = 128;
+const tokenCache = new Map<string, { userId: string; expiresAt: number }>();
+
+function cacheGet(token: string): string | null {
+  const entry = tokenCache.get(token);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    tokenCache.delete(token);
+    return null;
+  }
+  return entry.userId;
+}
+
+function cacheSet(token: string, userId: string): void {
+  if (tokenCache.size >= TOKEN_CACHE_MAX) {
+    // Evict the oldest entry. Map preserves insertion order.
+    const oldestKey = tokenCache.keys().next().value;
+    if (oldestKey !== undefined) tokenCache.delete(oldestKey);
+  }
+  tokenCache.set(token, { userId, expiresAt: Date.now() + TOKEN_CACHE_TTL_MS });
+}
+
 async function authenticateToken(
   req: { headers: Record<string, unknown>; query: Record<string, unknown> }
 ): Promise<string | null> {
@@ -18,10 +44,15 @@ async function authenticateToken(
     (req.query.token as string);
   if (!token || !TOKEN_PATTERN.test(token)) return null;
 
+  const cached = cacheGet(token);
+  if (cached) return cached;
+
   try {
     const snap = await db.collection("siriTokens").doc(token).get();
     if (!snap.exists) return null;
-    return (snap.data()?.userId as string) || null;
+    const userId = (snap.data()?.userId as string) || null;
+    if (userId) cacheSet(token, userId);
+    return userId;
   } catch (err) {
     console.error("Token lookup failed:", err);
     return null;
@@ -113,6 +144,30 @@ function safeArray<T>(data: Record<string, unknown> | undefined, key: string): T
   return Array.isArray(val) ? val as T[] : [];
 }
 
+// Build a Map<id, name> for O(1) lookups — previously each routine exercise
+// triggered a linear scan across the full exercise list per render.
+function buildExerciseNameMap(exercises: Exercise[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const ex of exercises) {
+    if (ex?.id && ex?.name) map.set(ex.id, ex.name);
+  }
+  return map;
+}
+
+// Shared "today" filter: same event shape logic used across endpoints.
+function filterTodayEvents(events: CalendarEvent[], today: string): CalendarEvent[] {
+  return events
+    .filter((e) => !e.isDeleted && typeof e.startDate === "string" && e.startDate.startsWith(today))
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+}
+
+// Routines whose dayOfWeek array covers the given weekday.
+function filterTodayRoutines(routines: Routine[], dayOfWeek: number): Routine[] {
+  return routines.filter(
+    (r) => Array.isArray(r.dayOfWeek) && r.dayOfWeek.includes(dayOfWeek)
+  );
+}
+
 // ============================================
 // Interfaces matching Firestore data shapes
 // ============================================
@@ -196,9 +251,10 @@ export const siriDailyBriefing = onRequest({ cors: true }, async (req, res) => {
     const parts: string[] = [];
 
     // --- Schedule ---
-    const events = safeArray<CalendarEvent>(calendarSnap.data(), "events")
-      .filter((e) => !e.isDeleted && typeof e.startDate === "string" && e.startDate.startsWith(today))
-      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+    const events = filterTodayEvents(
+      safeArray<CalendarEvent>(calendarSnap.data(), "events"),
+      today
+    );
 
     if (events.length > 0) {
       const eventLines = events.map((e) => {
@@ -215,19 +271,14 @@ export const siriDailyBriefing = onRequest({ cors: true }, async (req, res) => {
     // --- Workout ---
     const wData = workoutSnap.data();
     const routines = safeArray<Routine>(wData, "routines");
-    const exercises = safeArray<Exercise>(wData, "exercises");
-    const todayRoutines = routines.filter(
-      (r) => Array.isArray(r.dayOfWeek) && r.dayOfWeek.includes(dayOfWeek)
-    );
+    const exerciseMap = buildExerciseNameMap(safeArray<Exercise>(wData, "exercises"));
+    const todayRoutines = filterTodayRoutines(routines, dayOfWeek);
 
     if (todayRoutines.length > 0) {
       const routineParts = todayRoutines.map((r) => {
         const rExercises = r.exercises || [];
         const exerciseNames = rExercises
-          .map((re) => {
-            const ex = exercises.find((e) => e.id === re.exerciseId);
-            return ex ? ex.name : "Unknown exercise";
-          })
+          .map((re) => exerciseMap.get(re.exerciseId) || "Unknown exercise")
           .slice(0, 5);
         const suffix = rExercises.length > 5
           ? ` and ${rExercises.length - 5} more`
@@ -285,9 +336,10 @@ export const siriSchedule = onRequest({ cors: true }, async (req, res) => {
     const today = todayDateString(tz);
 
     const calendarSnap = await db.doc(`users/${userId}/data/calendar`).get();
-    const events = safeArray<CalendarEvent>(calendarSnap.data(), "events")
-      .filter((e) => !e.isDeleted && typeof e.startDate === "string" && e.startDate.startsWith(today))
-      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+    const events = filterTodayEvents(
+      safeArray<CalendarEvent>(calendarSnap.data(), "events"),
+      today
+    );
 
     if (events.length === 0) {
       res.json({ text: "You have no events scheduled for today." });
@@ -326,11 +378,9 @@ export const siriWorkout = onRequest({ cors: true }, async (req, res) => {
     const workoutSnap = await db.doc(`users/${userId}/data/workout`).get();
     const wData = workoutSnap.data();
     const routines = safeArray<Routine>(wData, "routines");
-    const exercises = safeArray<Exercise>(wData, "exercises");
+    const exerciseMap = buildExerciseNameMap(safeArray<Exercise>(wData, "exercises"));
 
-    const todayRoutines = routines.filter(
-      (r) => Array.isArray(r.dayOfWeek) && r.dayOfWeek.includes(dayOfWeek)
-    );
+    const todayRoutines = filterTodayRoutines(routines, dayOfWeek);
 
     if (todayRoutines.length === 0) {
       res.json({ text: "No workout scheduled for today. It's a rest day. Enjoy your recovery!" });
@@ -340,8 +390,7 @@ export const siriWorkout = onRequest({ cors: true }, async (req, res) => {
     const parts = todayRoutines.map((r) => {
       const rExercises = r.exercises || [];
       const exerciseDetails = rExercises.map((re) => {
-        const ex = exercises.find((e) => e.id === re.exerciseId);
-        const name = ex ? ex.name : "Unknown exercise";
+        const name = exerciseMap.get(re.exerciseId) || "Unknown exercise";
         return `${name}, ${re.targetSets || 0} sets of ${re.targetReps || 0} reps`;
       });
       return `${r.name}: ${exerciseDetails.join(". ")}`;

@@ -71,22 +71,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const unsubCalendarRef = useRef<(() => void) | null>(null);
 
   const startSync = useCallback((uid: string) => {
-    // Subscribe to workout store changes → save to Firestore
-    unsubWorkoutRef.current = useStore.subscribe(() => {
-      const data = useStore.getState().getCloudSyncData();
-      debouncedSaveWorkoutData(uid, data);
+    // Zustand `subscribe` fires on EVERY state change, including ephemeral UI
+    // state (`currentView`, `selectedDate`, `newPRs`, etc.) that we don't sync.
+    // Compare slice references against the previous state and skip writes when
+    // nothing relevant changed — avoids wasted Firestore writes during calendar
+    // navigation, PR celebration clears, etc.
+    unsubWorkoutRef.current = useStore.subscribe((state, prevState) => {
+      if (
+        state.user === prevState.user &&
+        state.workoutSessions === prevState.workoutSessions &&
+        state.currentSession === prevState.currentSession &&
+        state.routines === prevState.routines &&
+        state.exercises === prevState.exercises &&
+        state.personalRecords === prevState.personalRecords &&
+        state.weightEntries === prevState.weightEntries &&
+        state.exerciseGoals === prevState.exerciseGoals &&
+        state.blockCustomizations === prevState.blockCustomizations
+      ) return;
+      debouncedSaveWorkoutData(uid, state.getCloudSyncData());
     });
 
-    // Subscribe to diet store changes → save to Firestore
-    unsubDietRef.current = useDietStore.subscribe(() => {
-      const data = useDietStore.getState().getCloudSyncData();
-      debouncedSaveDietData(uid, data);
+    unsubDietRef.current = useDietStore.subscribe((state, prevState) => {
+      if (
+        state.customFoods === prevState.customFoods &&
+        state.recipes === prevState.recipes &&
+        state.meals === prevState.meals &&
+        state.foodLog === prevState.foodLog &&
+        state.recentFoodIds === prevState.recentFoodIds &&
+        state.dietSettings === prevState.dietSettings &&
+        state.streaks === prevState.streaks
+      ) return;
+      debouncedSaveDietData(uid, state.getCloudSyncData());
     });
 
-    // Subscribe to calendar store changes → save to Firestore
-    unsubCalendarRef.current = useCalendarStore.subscribe(() => {
-      const data = useCalendarStore.getState().getCloudSyncData();
-      debouncedSaveCalendarData(uid, data);
+    unsubCalendarRef.current = useCalendarStore.subscribe((state, prevState) => {
+      if (
+        state.events === prevState.events &&
+        state.calendars === prevState.calendars &&
+        state.settings === prevState.settings &&
+        state.invitations === prevState.invitations
+      ) return;
+      debouncedSaveCalendarData(uid, state.getCloudSyncData());
     });
   }, []);
 
