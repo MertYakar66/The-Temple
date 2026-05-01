@@ -166,6 +166,11 @@ export const useStore = create<AppState>()(
                   })),
                   restSeconds: re.restSeconds,
                   notes: re.notes,
+                  routineTarget: {
+                    sets: re.targetSets,
+                    reps: re.targetReps,
+                    weight: re.targetWeight,
+                  },
                 });
               }
             });
@@ -493,6 +498,10 @@ export const useStore = create<AppState>()(
             })),
             restSeconds,
             notes: notes.length > 0 ? notes.join(' | ') : undefined,
+            routineTarget: {
+              sets: be.sets,
+              reps: targetReps,
+            },
           });
         });
 
@@ -885,6 +894,7 @@ export const useStore = create<AppState>()(
           workoutSessions: state.workoutSessions,
           currentSession: state.currentSession,
           routines: state.routines,
+          exercises: state.exercises,
           personalRecords: state.personalRecords,
           weightEntries: state.weightEntries,
           exerciseGoals: state.exerciseGoals,
@@ -899,6 +909,7 @@ export const useStore = create<AppState>()(
           workoutSessions: [],
           currentSession: null,
           routines: defaultRoutines,
+          exercises: defaultExercises,
           personalRecords: [],
           weightEntries: [],
           exerciseGoals: [],

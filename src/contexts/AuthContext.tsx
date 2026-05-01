@@ -7,6 +7,12 @@ import {
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword,
+  deleteUser,
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
@@ -24,7 +30,9 @@ import {
   saveWorkoutData,
   saveDietData,
   saveCalendarData,
+  deleteUserCloudData,
 } from '../lib/firestoreSync';
+import { revokeSiriToken } from '../lib/siriToken';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -33,6 +41,11 @@ interface AuthContextType {
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  sendVerificationEmail: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  reauthenticate: (password: string) => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -148,7 +161,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const signup = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    // Send verification email immediately after signup
+    await sendEmailVerification(credential.user);
   };
 
   const logout = async () => {
@@ -178,6 +193,59 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await signInWithPopup(auth, provider);
   };
 
+  const sendVerificationEmail = async () => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not signed in');
+    await sendEmailVerification(user);
+  };
+
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
+  const reauthenticate = async (password: string) => {
+    const user = auth.currentUser;
+    if (!user || !user.email) throw new Error('Not signed in');
+    const credential = EmailAuthProvider.credential(user.email, password);
+    await reauthenticateWithCredential(user, credential);
+  };
+
+  const changePassword = async (newPassword: string) => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not signed in');
+    await updatePassword(user, newPassword);
+  };
+
+  const deleteAccount = async (password: string) => {
+    const user = auth.currentUser;
+    if (!user || !user.email) throw new Error('Not signed in');
+
+    // Re-authenticate first (required by Firebase for account deletion)
+    const credential = EmailAuthProvider.credential(user.email, password);
+    await reauthenticateWithCredential(user, credential);
+
+    const uid = user.uid;
+
+    // Stop syncing before deletion
+    stopSync();
+
+    // Delete all user data: Firestore, Siri tokens, then the auth account
+    try {
+      await revokeSiriToken(uid);
+    } catch {
+      // Siri token may not exist — continue
+    }
+    await deleteUserCloudData(uid);
+
+    // Delete the Firebase Auth account (point of no return)
+    await deleteUser(user);
+
+    // Clear local data
+    localStorage.removeItem('workout-tracker-storage');
+    localStorage.removeItem('diet-tracker-storage');
+    localStorage.removeItem('calendar-storage');
+  };
+
   const value: AuthContextType = {
     currentUser,
     loading,
@@ -185,6 +253,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signup,
     logout,
     loginWithGoogle,
+    sendVerificationEmail,
+    resetPassword,
+    reauthenticate,
+    changePassword,
+    deleteAccount,
   };
 
   return (

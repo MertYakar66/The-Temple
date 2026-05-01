@@ -3,12 +3,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCbDcVRBe7W-IWmermgST9NvZ182HBZ2Ko",
-  authDomain: "the-temple-f195e.firebaseapp.com",
-  projectId: "the-temple-f195e",
-  storageBucket: "the-temple-f195e.firebasestorage.app",
-  messagingSenderId: "1033735189666",
-  appId: "1:1033735189666:web:66a872ec49915d6e7f93fb"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);

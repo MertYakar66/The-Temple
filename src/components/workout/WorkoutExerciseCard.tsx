@@ -91,29 +91,29 @@ export function WorkoutExerciseCard({
 
       {expanded && (
         <>
-          {/* Routine Notes (target from routine) */}
-          {workoutExercise.notes && (
+          {/* Routine Prescription + Notes */}
+          {(workoutExercise.routineTarget || workoutExercise.notes) && (
             <div className="mb-3 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-              <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                <span className="text-sm text-amber-800 dark:text-amber-200">{workoutExercise.notes}</span>
-              </div>
+              {workoutExercise.routineTarget && (
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                  <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    Routine: {workoutExercise.routineTarget.sets} sets x {workoutExercise.routineTarget.reps} reps
+                    {workoutExercise.routineTarget.weight ? ` x ${Math.round(kgToDisplay(workoutExercise.routineTarget.weight, unitSystem) * 10) / 10}${weightUnit}` : ''}
+                  </span>
+                </div>
+              )}
+              {workoutExercise.notes && (
+                <div className={`flex items-center gap-2 ${workoutExercise.routineTarget ? 'mt-1' : ''}`}>
+                  <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                  <span className="text-sm text-amber-800 dark:text-amber-200">{workoutExercise.notes}</span>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Previous Session Notes (reminders from past workout) */}
-          {lastWorkout?.notes && !workoutExercise.notes && (
-            <div className="mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="flex items-start gap-2">
-                <History className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 block mb-0.5">Note from last session</span>
-                  <span className="text-sm text-blue-800 dark:text-blue-200">{lastWorkout.notes}</span>
-                </div>
-              </div>
-            </div>
-          )}
-          {lastWorkout?.notes && workoutExercise.notes && (
+          {/* Previous Session Notes — only if different from routine notes */}
+          {lastWorkout?.notes && lastWorkout.notes !== workoutExercise.notes && (
             <div className="mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <div className="flex items-start gap-2">
                 <History className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
