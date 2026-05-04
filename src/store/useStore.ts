@@ -868,18 +868,11 @@ export const useStore = create<AppState>()(
 
       // Cloud sync
       loadFromCloud: (data) => {
-        // Check if cloud routines are stale (missing program field = old Turkish data)
-        const cloudRoutines = data.routines as Routine[] | undefined;
-        const hasStaleRoutines = cloudRoutines?.some((r) => !r.program);
-        const routinesToUse = (!cloudRoutines?.length || hasStaleRoutines)
-          ? defaultRoutines
-          : cloudRoutines;
-
         set({
           user: (data.user as UserProfile) ?? get().user,
           workoutSessions: (data.workoutSessions as WorkoutSession[]) ?? get().workoutSessions,
           currentSession: (data.currentSession as WorkoutSession | null) ?? get().currentSession,
-          routines: routinesToUse,
+          routines: (data.routines as Routine[]) ?? get().routines,
           personalRecords: (data.personalRecords as PersonalRecord[]) ?? get().personalRecords,
           weightEntries: (data.weightEntries as WeightEntry[]) ?? get().weightEntries,
           exerciseGoals: (data.exerciseGoals as ExerciseGoal[]) ?? get().exerciseGoals,
