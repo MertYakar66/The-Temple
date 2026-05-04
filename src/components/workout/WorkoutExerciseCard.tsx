@@ -52,8 +52,8 @@ export function WorkoutExerciseCard({
       exerciseId: workoutExercise.exerciseId,
       targetWeight: weightInKg,
       targetReps: parseInt(goalReps) || 0,
-      targetRIR: goalRIR ? parseInt(goalRIR) : undefined,
-      targetSets: goalSets ? parseInt(goalSets) : undefined,
+      targetRIR: goalRIR ? parseInt(goalRIR) : null,
+      targetSets: goalSets ? parseInt(goalSets) : null,
       notes: goalNotes,
     });
     setShowGoalEditor(false);
@@ -154,7 +154,7 @@ export function WorkoutExerciseCard({
               <div className="text-sm text-primary-800 dark:text-primary-200">
                 <span className="font-semibold">{Math.round(kgToDisplay(currentGoal.targetWeight, unitSystem) * 10) / 10}{weightUnit}</span> x{' '}
                 <span className="font-semibold">{currentGoal.targetReps} reps</span>
-                {currentGoal.targetRIR !== undefined && (
+                {currentGoal.targetRIR != null && (
                   <span> @ RIR {currentGoal.targetRIR}</span>
                 )}
                 {currentGoal.targetSets && (

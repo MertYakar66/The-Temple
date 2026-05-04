@@ -63,8 +63,8 @@ export interface ExerciseGoal {
   exerciseId: string;
   targetWeight: number;
   targetReps: number;
-  targetRIR?: number;
-  targetSets?: number;
+  targetRIR?: number | null;
+  targetSets?: number | null;
   notes: string; // explanation about the goal
   createdAt: string;
   updatedAt: string;
