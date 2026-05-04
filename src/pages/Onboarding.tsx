@@ -44,7 +44,7 @@ export function Onboarding() {
     const user: UserProfile = {
       id: uuidv4(),
       name: profileData.name,
-      email: currentUser?.email || undefined,
+      ...(currentUser?.email ? { email: currentUser.email } : {}),
       sex: profileData.sex,
       age: profileData.age,
       height: profileData.height,

@@ -162,7 +162,9 @@ export function Settings() {
       updateUser({ name: trimmed });
     } else if (field === 'weight') {
       const val = parseFloat(editValue);
-      if (isNaN(val) || val <= 0 || val > 660) return;
+      const min = unitSystem === 'imperial' ? 66 : 30;
+      const max = unitSystem === 'imperial' ? 660 : 300;
+      if (isNaN(val) || val < min || val > max) return;
       const weightInKg = displayToKg(val, unitSystem);
       updateUser({ weight: weightInKg });
     } else if (field === 'height') {

@@ -623,6 +623,13 @@ export const useStore = create<AppState>()(
           entry.notes = notes;
         }
 
+        // Determine "is latest" before mutating the store, so back-filling
+        // an older date never overwrites the user's current profile weight.
+        const otherEntries = get().weightEntries.filter((e) => e.date !== entry.date);
+        const isLatest = otherEntries.every(
+          (e) => parseDateStamp(entry.date).getTime() >= parseDateStamp(e.date).getTime()
+        );
+
         set((state) => {
           // Remove existing entry for the same date if exists
           const filtered = state.weightEntries.filter((e) => e.date !== entry.date);
@@ -633,10 +640,11 @@ export const useStore = create<AppState>()(
           };
         });
 
-        // Also update user's current weight
-        const user = get().user;
-        if (user) {
-          get().updateUser({ weight });
+        if (isLatest) {
+          const user = get().user;
+          if (user) {
+            get().updateUser({ weight });
+          }
         }
       },
 
@@ -868,18 +876,11 @@ export const useStore = create<AppState>()(
 
       // Cloud sync
       loadFromCloud: (data) => {
-        // Check if cloud routines are stale (missing program field = old Turkish data)
-        const cloudRoutines = data.routines as Routine[] | undefined;
-        const hasStaleRoutines = cloudRoutines?.some((r) => !r.program);
-        const routinesToUse = (!cloudRoutines?.length || hasStaleRoutines)
-          ? defaultRoutines
-          : cloudRoutines;
-
         set({
           user: (data.user as UserProfile) ?? get().user,
           workoutSessions: (data.workoutSessions as WorkoutSession[]) ?? get().workoutSessions,
           currentSession: (data.currentSession as WorkoutSession | null) ?? get().currentSession,
-          routines: routinesToUse,
+          routines: (data.routines as Routine[]) ?? get().routines,
           personalRecords: (data.personalRecords as PersonalRecord[]) ?? get().personalRecords,
           weightEntries: (data.weightEntries as WeightEntry[]) ?? get().weightEntries,
           exerciseGoals: (data.exerciseGoals as ExerciseGoal[]) ?? get().exerciseGoals,
