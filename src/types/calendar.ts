@@ -110,7 +110,7 @@ export interface CalendarSettings {
   defaultAllDayAlertMinutes: number;
   startOfWeek: number; // 0=Sun..6=Sat
   showWeekNumbers: boolean;
-  timeZoneOverride?: string;
+  timeZoneOverride?: string | null;
   use24HourTime: boolean;
   weekViewStartsToday: boolean;
 }

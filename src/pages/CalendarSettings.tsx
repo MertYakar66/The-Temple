@@ -179,7 +179,7 @@ export function CalendarSettings() {
             <label className="text-xs text-gray-500 dark:text-gray-400">Time Zone Override</label>
             <select
               value={settings.timeZoneOverride || ''}
-              onChange={(e) => updateSettings({ timeZoneOverride: e.target.value || undefined })}
+              onChange={(e) => updateSettings({ timeZoneOverride: e.target.value || null })}
               className="w-full text-sm bg-transparent text-gray-900 dark:text-white outline-none mt-1"
             >
               <option value="">Device Default ({Intl.DateTimeFormat().resolvedOptions().timeZone})</option>
