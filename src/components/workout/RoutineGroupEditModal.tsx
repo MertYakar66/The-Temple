@@ -20,7 +20,7 @@ export function RoutineGroupEditModal({ programName, routines, onClose }: Routin
         const trimmed = name.trim();
         if (trimmed !== programName) {
             routines.forEach((r) => {
-                updateRoutine(r.id, { program: trimmed || undefined });
+                updateRoutine(r.id, { program: trimmed || null });
             });
         }
         onClose();
