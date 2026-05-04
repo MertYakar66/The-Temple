@@ -111,7 +111,7 @@ export interface Routine {
   id: string;
   name: string;
   description?: string;
-  program?: string; // Group routines under a program name
+  program?: string | null; // Group routines under a program name; null clears
   exercises: RoutineExercise[];
   dayOfWeek?: number[]; // 0-6, Sunday-Saturday
   createdAt: string;

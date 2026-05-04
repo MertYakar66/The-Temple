@@ -68,14 +68,14 @@ export function RoutineEditor() {
     if (isEditing && id) {
       updateRoutine(id, {
         name: name.trim(),
-        program: program.trim() || undefined,
+        program: program.trim() || null,
         description: description.trim(),
         exercises: routineExercises,
       });
     } else {
       addRoutine({
         name: name.trim(),
-        program: program.trim() || undefined,
+        program: program.trim() || null,
         description: description.trim(),
         exercises: routineExercises,
       });
