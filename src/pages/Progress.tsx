@@ -69,7 +69,7 @@ export function Progress() {
   const [editDate, setEditDate] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
-  const handleStartEdit = (entry: { id: string; weight: number; date: string; notes?: string }) => {
+  const handleStartEdit = (entry: WeightEntry) => {
     setEditingEntry(entry.id);
     setEditWeight(String(Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10));
     setEditDate(entry.date);
@@ -83,7 +83,7 @@ export function Progress() {
       updateWeightEntry(editingEntry, {
         weight: displayToKg(w, unitSystem),
         date: editDate,
-        notes: editNotes.trim() || undefined,
+        notes: editNotes.trim() || null,
       });
     }
     setEditingEntry(null);

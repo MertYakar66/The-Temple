@@ -143,7 +143,7 @@ export interface WeightEntry {
   id: string;
   date: string; // YYYY-MM-DD
   weight: number; // in kg
-  notes?: string;
+  notes?: string | null;
   createdAt: string;
 }
 

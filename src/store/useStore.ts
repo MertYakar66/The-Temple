@@ -73,7 +73,7 @@ interface AppState {
   // Body Weight Tracking
   weightEntries: WeightEntry[];
   addWeightEntry: (weight: number, notes?: string, date?: string) => void;
-  updateWeightEntry: (id: string, updates: { weight?: number; date?: string; notes?: string }) => void;
+  updateWeightEntry: (id: string, updates: { weight?: number; date?: string; notes?: string | null }) => void;
   deleteWeightEntry: (id: string) => void;
   getLatestWeight: () => WeightEntry | null;
   getWeightHistory: (days?: number) => WeightEntry[];
