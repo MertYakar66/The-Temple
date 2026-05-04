@@ -69,7 +69,7 @@ export function SetRow({ set, index, onUpdate, onRemove, onToggleComplete, unitS
         <input
           type="number"
           value={set.rir ?? ''}
-          onChange={(e) => onUpdate({ rir: e.target.value === '' ? undefined : parseInt(e.target.value) })}
+          onChange={(e) => onUpdate({ rir: e.target.value === '' ? null : parseInt(e.target.value) })}
           placeholder={prevRir}
           min="0"
           max="5"

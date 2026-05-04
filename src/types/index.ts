@@ -54,7 +54,7 @@ export interface WorkoutSet {
   reps: number;
   weight: number; // in kg
   completed: boolean;
-  rir?: number; // Reps In Reserve (0-5)
+  rir?: number | null; // Reps In Reserve (0-5); null clears
   rpe?: number; // Rate of Perceived Exertion (1-10)
   notes?: string;
 }
@@ -63,8 +63,8 @@ export interface ExerciseGoal {
   exerciseId: string;
   targetWeight: number;
   targetReps: number;
-  targetRIR?: number;
-  targetSets?: number;
+  targetRIR?: number | null;
+  targetSets?: number | null;
   notes: string; // explanation about the goal
   createdAt: string;
   updatedAt: string;
@@ -111,7 +111,7 @@ export interface Routine {
   id: string;
   name: string;
   description?: string;
-  program?: string; // Group routines under a program name
+  program?: string | null; // Group routines under a program name; null clears
   exercises: RoutineExercise[];
   dayOfWeek?: number[]; // 0-6, Sunday-Saturday
   createdAt: string;
@@ -143,7 +143,7 @@ export interface WeightEntry {
   id: string;
   date: string; // YYYY-MM-DD
   weight: number; // in kg
-  notes?: string;
+  notes?: string | null;
   createdAt: string;
 }
 
@@ -309,8 +309,8 @@ export interface CustomBlockExercise {
   rirS1: string;
   rirS2: string;
   rest: string;
-  substitutions?: { sub1?: string; sub2?: string };
-  note?: string;
+  substitutions?: { sub1?: string; sub2?: string } | null;
+  note?: string | null;
 }
 
 export interface CustomBlockDay {

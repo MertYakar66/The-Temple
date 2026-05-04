@@ -23,6 +23,12 @@ export function BlockExerciseEditModal({ exercise, onSave, onClose }: Props) {
 
   const handleSave = () => {
     if (!name.trim()) return;
+    const trimmedSub1 = sub1.trim();
+    const trimmedSub2 = sub2.trim();
+    const subs = {
+      ...(trimmedSub1 ? { sub1: trimmedSub1 } : {}),
+      ...(trimmedSub2 ? { sub2: trimmedSub2 } : {}),
+    };
     onSave({
       name: name.trim(),
       sets,
@@ -32,10 +38,8 @@ export function BlockExerciseEditModal({ exercise, onSave, onClose }: Props) {
       rest,
       warmup,
       lastSetIntensity,
-      note: note.trim() || undefined,
-      substitutions: (sub1.trim() || sub2.trim())
-        ? { sub1: sub1.trim() || undefined, sub2: sub2.trim() || undefined }
-        : undefined,
+      note: note.trim() || null,
+      substitutions: trimmedSub1 || trimmedSub2 ? subs : null,
     });
   };
 

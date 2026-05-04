@@ -62,16 +62,16 @@ export interface CalendarEvent {
   startDate: string; // ISO datetime
   endDate: string; // ISO datetime
   isAllDay: boolean;
-  location?: string;
-  locationPlaceId?: string;
-  videoCallUrl?: string;
-  notes?: string;
+  location?: string | null;
+  locationPlaceId?: string | null;
+  videoCallUrl?: string | null;
+  notes?: string | null;
   timezone: string;
   alerts: CalendarAlert[];
-  travelTime?: number; // minutes before event
-  recurrenceRule?: RecurrenceRule;
+  travelTime?: number | null; // minutes before event; null clears
+  recurrenceRule?: RecurrenceRule | null;
   attendees: Attendee[];
-  organizer?: string;
+  organizer?: string | null;
   availabilityStatus: AvailabilityStatus;
   seriesMasterId?: string; // for recurring instance exceptions
   isRecurrenceException?: boolean;
@@ -110,7 +110,7 @@ export interface CalendarSettings {
   defaultAllDayAlertMinutes: number;
   startOfWeek: number; // 0=Sun..6=Sat
   showWeekNumbers: boolean;
-  timeZoneOverride?: string;
+  timeZoneOverride?: string | null;
   use24HourTime: boolean;
   weekViewStartsToday: boolean;
 }

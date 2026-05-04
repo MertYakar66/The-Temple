@@ -36,9 +36,8 @@ export function WorkoutTemplates() {
           exerciseId: ex.exerciseId,
           targetSets: ex.sets,
           targetReps: ex.repsMax,
-          targetWeight: undefined,
           restSeconds: ex.restSeconds,
-          notes: ex.repsMin !== ex.repsMax ? `${ex.repsMin}-${ex.repsMax} reps` : undefined,
+          ...(ex.repsMin !== ex.repsMax ? { notes: `${ex.repsMin}-${ex.repsMax} reps` } : {}),
         })),
       });
     });

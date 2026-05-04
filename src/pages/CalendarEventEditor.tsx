@@ -147,19 +147,29 @@ export function CalendarEventEditor() {
       ? [{ id: uuidv4(), amount: alertMinutes, unit: 'minutes' }]
       : [];
 
-    const recurrenceRule: RecurrenceRule | undefined =
+    // Build recurrenceRule with omit-on-empty for inner optional fields:
+    // the rule object replaces the prior one wholesale on save, so absent
+    // keys correctly clear daysOfWeek / endDate / endCount.
+    const recurrenceRule: RecurrenceRule | null =
       recurrence !== 'none'
         ? {
             frequency: recurrence,
             interval: recurrenceInterval,
-            daysOfWeek: recurrence === 'weekly' && recurrenceDaysOfWeek.length > 0 ? recurrenceDaysOfWeek : undefined,
+            ...(recurrence === 'weekly' && recurrenceDaysOfWeek.length > 0
+              ? { daysOfWeek: recurrenceDaysOfWeek }
+              : {}),
             endType: recurrenceEndType,
-            endDate: recurrenceEndType === 'on_date' && recurrenceEndDate ? new Date(recurrenceEndDate).toISOString() : undefined,
-            endCount: recurrenceEndType === 'after_count' ? recurrenceEndCount : undefined,
+            ...(recurrenceEndType === 'on_date' && recurrenceEndDate
+              ? { endDate: new Date(recurrenceEndDate).toISOString() }
+              : {}),
+            ...(recurrenceEndType === 'after_count' ? { endCount: recurrenceEndCount } : {}),
           }
-        : undefined;
+        : null;
 
     const tz = settings.timeZoneOverride || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const trimmedLocation = location.trim();
+    const trimmedVideoUrl = videoCallUrl.trim();
+    const trimmedNotes = notes.trim();
 
     const eventData = {
       calendarId,
@@ -167,17 +177,19 @@ export function CalendarEventEditor() {
       startDate: new Date(startDate).toISOString(),
       endDate: new Date(endDate).toISOString(),
       isAllDay,
-      location: location.trim() || undefined,
-      locationPlaceId: location.trim() ? locationPlaceId : undefined,
-      videoCallUrl: videoCallUrl.trim() || undefined,
-      notes: notes.trim() || undefined,
+      location: trimmedLocation || null,
+      locationPlaceId: trimmedLocation && locationPlaceId ? locationPlaceId : null,
+      videoCallUrl: trimmedVideoUrl || null,
+      notes: trimmedNotes || null,
       timezone: existingEvent?.timezone || tz,
       alerts,
       recurrenceRule,
       attendees: existingEvent?.attendees || [],
-      organizer: existingEvent?.organizer,
+      // organizer is read-only here; omit the key so updateEvent's merge
+      // preserves the existing organizer rather than writing undefined.
+      ...(existingEvent?.organizer ? { organizer: existingEvent.organizer } : {}),
       availabilityStatus: availability as CalendarEvent['availabilityStatus'],
-      travelTime: travelTime > 0 ? travelTime : undefined,
+      travelTime: travelTime > 0 ? travelTime : null,
     };
 
     if (isEditing && eventId) {
@@ -324,7 +336,7 @@ export function CalendarEventEditor() {
             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
             <LocationAutocomplete
               value={location}
-              placeId={locationPlaceId}
+              placeId={locationPlaceId ?? undefined}
               onChange={(loc, pid) => { setLocation(loc); setLocationPlaceId(pid); }}
               placeholder="Add location"
               className="flex-1 text-sm bg-transparent text-gray-900 dark:text-white placeholder-gray-400 outline-none"

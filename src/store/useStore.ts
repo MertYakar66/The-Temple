@@ -73,7 +73,7 @@ interface AppState {
   // Body Weight Tracking
   weightEntries: WeightEntry[];
   addWeightEntry: (weight: number, notes?: string, date?: string) => void;
-  updateWeightEntry: (id: string, updates: { weight?: number; date?: string; notes?: string }) => void;
+  updateWeightEntry: (id: string, updates: { weight?: number; date?: string; notes?: string | null }) => void;
   deleteWeightEntry: (id: string) => void;
   getLatestWeight: () => WeightEntry | null;
   getWeightHistory: (days?: number) => WeightEntry[];
@@ -497,7 +497,7 @@ export const useStore = create<AppState>()(
               completed: false,
             })),
             restSeconds,
-            notes: notes.length > 0 ? notes.join(' | ') : undefined,
+            ...(notes.length > 0 ? { notes: notes.join(' | ') } : {}),
             routineTarget: {
               sets: be.sets,
               reps: targetReps,
