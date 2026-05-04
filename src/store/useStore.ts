@@ -497,7 +497,7 @@ export const useStore = create<AppState>()(
               completed: false,
             })),
             restSeconds,
-            notes: notes.length > 0 ? notes.join(' | ') : undefined,
+            ...(notes.length > 0 ? { notes: notes.join(' | ') } : {}),
             routineTarget: {
               sets: be.sets,
               reps: targetReps,
