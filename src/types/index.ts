@@ -54,7 +54,7 @@ export interface WorkoutSet {
   reps: number;
   weight: number; // in kg
   completed: boolean;
-  rir?: number; // Reps In Reserve (0-5)
+  rir?: number | null; // Reps In Reserve (0-5); null clears
   rpe?: number; // Rate of Perceived Exertion (1-10)
   notes?: string;
 }
