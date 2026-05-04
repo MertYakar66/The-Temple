@@ -309,8 +309,8 @@ export interface CustomBlockExercise {
   rirS1: string;
   rirS2: string;
   rest: string;
-  substitutions?: { sub1?: string; sub2?: string };
-  note?: string;
+  substitutions?: { sub1?: string; sub2?: string } | null;
+  note?: string | null;
 }
 
 export interface CustomBlockDay {
