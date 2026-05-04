@@ -33,3 +33,8 @@ serviceAccountKey.json
 
 # Backup files
 backups/
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
