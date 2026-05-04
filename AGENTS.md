@@ -13,6 +13,7 @@ For deeper context, in roughly the order a new agent should consume them:
 - `docs/TESTING.md` — Vitest + Playwright + the blocked-test discipline.
 - `docs/COMMIT_STYLE.md` — commit/PR shape used in this repo.
 - `CHANGELOG.md` — human-readable summary of recent landings.
+- `docs/CLAUDE_CODE_WEB.md` — Claude Code cloud-session reference (only relevant if a task is being handed off to a cloud session).
 - `SIRI_INTEGRATION.md` — user-facing Siri setup guide.
 - `README.md` — user-facing project description.
 

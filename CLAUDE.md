@@ -15,8 +15,9 @@ new agent:
 9. `docs/TESTING.md` — Vitest + Playwright + the blocked-test discipline.
 10. `docs/COMMIT_STYLE.md` — commit/PR shape used in this repo.
 11. `CHANGELOG.md` — recent landings in human-readable form.
-12. `SIRI_INTEGRATION.md` — user-facing Siri setup guide.
-13. `README.md` — user-facing project description.
+12. `docs/CLAUDE_CODE_WEB.md` — Claude Code cloud-session reference (only relevant if a task is being handed off to a cloud session).
+13. `SIRI_INTEGRATION.md` — user-facing Siri setup guide.
+14. `README.md` — user-facing project description.
 
 ## Quick reminders for Claude Code sessions
 
