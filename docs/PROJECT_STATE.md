@@ -1,0 +1,101 @@
+# Project State
+
+The single page that answers "what is this project right now?" If you're a new agent and only
+have a minute, read this and then `AUDIT_STATE.md`.
+
+## What it is
+
+TheTemple — a personal fitness and life-management progressive web app. Live at
+[thetemple.web.app](https://thetemple.web.app). One owner; not a public product.
+
+Three product modules + one integration:
+- **Workout** — sessions, sets/reps/weight, routines, PRs, weight history, exercise goals,
+  Jeff Nippard "Min Max" 12-week block program with per-week customizations.
+- **Diet** — foods, recipes, saved meals, daily food log, macro goals, training-day adjustments,
+  streaks, TDEE calculator.
+- **Calendar** — events, multiple calendars, day/week/month/upcoming views, recurrence,
+  invitations, Google Places autocomplete.
+- **Siri** — Apple Shortcuts hit Firebase Cloud Functions for hands-free daily briefings,
+  schedule, workout, and nutrition queries.
+
+Plus body weight tracking with progress charts.
+
+## Stack
+
+React 19 + TypeScript + Vite. Zustand (with `persist` middleware) for state. Firebase Auth +
+Firestore for cloud. Tailwind for styling. Recharts. `react-router-dom` v7. `date-fns`. Cloud
+Functions in `functions/` (Node 20, firebase-admin). No backend server — everything is
+client + serverless.
+
+## Deploy state
+
+- **Hosting:** `the-temple-f195e` Firebase project, hosting target `myapp` →
+  `thetemple.web.app`. Deploy via `firebase deploy --only hosting:myapp`.
+- **Functions:** four endpoints in `us-central1` (`siriDailyBriefing`, `siriSchedule`,
+  `siriWorkout`, `siriNutrition`). Deploy via `cd functions && npm run deploy`.
+- **CI:** none. Lint/build/test run locally before each merge.
+- **Default branch:** `main`. Feature branches are `claude/<topic>-<suffix>`. Direct pushes to
+  main are forbidden.
+
+## What's implemented
+
+Roughly: everything described in `MODULES.md` is shipped and working. The gaps are listed in
+"What's in flight" and "Known risks".
+
+## What's in flight
+
+A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
+
+- **Batch 1 — Null-emit sweep.** ✅ Merged (`99cf9d4`). Replaced
+  `{field: undefined}` writes with `null` (or omitted keys) across the editors so that
+  `setDoc({merge:true})` actually clears optional fields when the user empties them.
+- **Batch 2 — Quick wins.** ✅ Merged (`11f2861`). Stop wiping cloud routines on missing
+  `program` field; preserve profile weight when back-filling older entries; unit-aware weight
+  bounds in Settings; omit onboarding email when sign-in provides none.
+- **E2E harness.** ✅ Added on `claude/setup-playwright-e2e` (not yet merged to main).
+  Playwright config, sign-in/sign-out helpers, one Calendar location round-trip spec
+  (`test.fixme()`'d, blocked by the AuthContext race), full e2e README, plus Vitest store-layer
+  null-emit invariant tests as the verification fallback.
+- **Repo foundation pass.** 🚧 In progress on `claude/repo-foundation-pass` (this branch).
+- **Batch 3 — Diet UX correctness.** ⏳ Pending. Scope: render custom mealTypes on the log page,
+  fix `/diet/meals/:id/edit`, replace `toISOString().split('T')[0]` with `getDateStamp()` in
+  `useDietStore`, decide on `mealReminders` feature, add Vitest tests for the date-stamp fix.
+- **Batches 4–6.** ⏳ Pending. Calendar recurrence; Cloud Functions Siri TZ + server-side
+  recurrence expansion; polish.
+
+## Known risks
+
+- **AuthContext race (active).** `onAuthStateChanged` callback isn't cancellation-safe. Fires
+  multiple times on initial load; each chain resets stores before awaiting cloud loads. Wipes
+  local writes that happen between the two chains under fast interaction. Blocks the e2e
+  harness. Detailed reproduction in `ARCHITECTURE.md` and `AUDIT_STATE.md`.
+- **Cloud Functions Siri TZ fallback (active).** When the `?tz=` query param is missing or
+  invalid, the function falls back to UTC, which gives wrong "today" for non-UTC users
+  (`functions/src/index.ts:99`). Batch 5 territory.
+- **Cloud Functions don't expand recurrence (active).** Stored recurring events are read raw,
+  not expanded. Siri speaks the original master event date instead of today's occurrence.
+  Batch 5 territory.
+- **`useDietStore` uses banned date pattern in two places** (`:441`, `:494`). Batch 3 territory.
+- **No CI.** Lint/build/test gates are local discipline only.
+- **Single-user product.** Test users live in the production Firebase project (no separate
+  staging). The `e2e-test@thetemple.test` user was created against prod. Be aware when running
+  destructive scripts.
+
+## Where to start
+
+If you're picking up next, the recommended next task is **audit Batch 3 — Diet UX correctness**.
+See `ROADMAP.md` for sequencing and `AUDIT_STATE.md` for the Batch 3 scope.
+
+If you're picking up the AuthContext race instead, see the "Known issues" section of
+`ARCHITECTURE.md` for the fix shape — and unblocking the e2e suite is the immediate payoff.
+
+## When to update this file
+
+Update PROJECT_STATE.md when any of these change:
+- Deploy targets, Firebase project, or hosting setup.
+- A batch lands (move from "in flight" to "implemented") or a new batch is added.
+- A known risk is resolved or a new one is introduced.
+- The recommended-next-task pointer becomes stale.
+
+Keep it short. If it's growing past ~150 lines, push detail into the topic-specific docs and
+leave one-line pointers here.
