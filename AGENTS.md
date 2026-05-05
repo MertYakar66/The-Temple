@@ -1,8 +1,20 @@
 # AGENTS.md — Read this first
 
 Token-efficient orientation for AI agents working on TheTemple. If you read only one file, read this one.
-For deeper context: `docs/ARCHITECTURE.md` (data flow + sync), `docs/MODULES.md` (per-module map),
-`SIRI_INTEGRATION.md` (user-facing Siri guide), `README.md` (user-facing).
+For deeper context, in roughly the order a new agent should consume them:
+
+- `docs/PROJECT_STATE.md` — what the project is right now, what's deployed, what's in-flight.
+- `docs/AUDIT_STATE.md` — per-batch audit progress (Batches 1–6) and current blockers.
+- `docs/ROADMAP.md` — what comes next and in what order.
+- `docs/ARCHITECTURE.md` — data flow + sync model + Cloud Functions.
+- `docs/MODULES.md` — per-module file map and gotchas.
+- `docs/DATA_POLICY.md` — hard invariants expanded with rationale.
+- `docs/DECISIONS.md` — architectural decisions and why.
+- `docs/TESTING.md` — Vitest + Playwright + the blocked-test discipline.
+- `docs/COMMIT_STYLE.md` — commit/PR shape used in this repo.
+- `CHANGELOG.md` — human-readable summary of recent landings.
+- `SIRI_INTEGRATION.md` — user-facing Siri setup guide.
+- `README.md` — user-facing project description.
 
 ## What this is
 
@@ -29,7 +41,7 @@ client + serverless.
 | Concern | File |
 |---|---|
 | Routes / app shell | `src/App.tsx` |
-| Auth + cloud sync wiring | `src/contexts/AuthContext.tsx` |
+| Auth + cloud sync wiring | `src/contexts/AuthContext.tsx` (⚠️ known race — see below) |
 | Workout state | `src/store/useStore.ts` (~950 lines, the big one) |
 | Diet state | `src/store/useDietStore.ts` |
 | Calendar state | `src/store/useCalendarStore.ts` |
@@ -40,6 +52,7 @@ client + serverless.
 | Type definitions | `src/types/index.ts`, `src/types/calendar.ts` |
 | Firestore security rules | `firestore.rules` |
 | Backup/restore | `scripts/backup.cjs`, `scripts/restore.cjs` |
+| E2E harness | `tests/e2e/`, `playwright.config.ts` (⚠️ blocked — see below) |
 
 ## Hard invariants — break these and things break silently
 
@@ -67,22 +80,42 @@ client + serverless.
    the Siri Cloud Functions bypass rules via Admin SDK.
 9. **Persisted store version migrations live in the store options.** See `useStore` `version: 2` and
    `migrate()`. If you change persisted shape, bump the version and write a migration.
+10. **Null-emit on clear, not undefined.** When the user empties an editor field that's optional,
+    write `null`, not `undefined`. `setDoc({merge:true})` preserves keys whose value is `undefined`,
+    so an undefined-on-clear silently keeps the prior value in the cloud doc. See Batch 1 commits
+    (e.g. `b484873`) and `docs/DATA_POLICY.md`. Editor-controlled fields use null; non-editor
+    pass-through fields (e.g. `organizer` in the event editor) use omit-the-key.
+
+## Known issues (active blockers)
+
+- **AuthContext race — cancellation-unsafe `onAuthStateChanged`.** The callback in
+  `AuthContext.tsx:135` calls `resetStore()` on all three Zustand stores before awaiting
+  `Promise.all` of the cloud loads. Firebase emits the listener more than once on initial page
+  load (cached-user fire, then a verified fire). If a chain whose `resetStore` lands AFTER user
+  interaction wins the race, it wipes local writes — and the wipe propagates to cloud on the
+  next debounced sync. Reproducible at ~300 ms post-click under bot-style fast interaction.
+  Blocks the e2e harness (see `tests/e2e/calendar-location-roundtrip.spec.ts` — currently
+  `test.fixme()`'d). Fix shape and audit-batch sequencing in `docs/AUDIT_STATE.md`.
 
 ## Repo conventions
 
 - Pages in `src/pages/`, reusable in `src/components/`, module-specific components in
   `src/components/{workout,calendar,blocks,onboarding,exercises,layout}/`.
 - Default seed data in `src/data/` (exercises, foods, default routines, Jeff Nippard program).
-- Tests are colocated `*.test.ts` next to the file they test (Vitest). Setup in `src/test/setup.ts`.
+- Unit tests are colocated `*.test.ts` next to the file they test (Vitest). Setup in
+  `src/test/setup.ts`. End-to-end tests live under `tests/e2e/` (Playwright). The single e2e spec
+  is currently `test.fixme()`'d — see `docs/TESTING.md` for the verification discipline.
 - Lint with `npm run lint`, build with `npm run build`, test with `npm test`. Run all three before
-  finishing.
+  finishing. `npm run test:e2e` is currently fixme'd; not a verification gate.
 - Don't add `firebase-admin` to the frontend deps — was removed in commit `9df1176`. It's only for
   `functions/` and `scripts/`.
 
 ## Branch & PR convention
 
-Feature branches are named `claude/<description>-<suffix>` and merged via PR to `main`. Past PRs are
-all from such branches. Don't push directly to `main`. Don't create PRs unless the user asks.
+Feature branches are named `claude/<description>-<suffix>` and merged via PR (or `git merge --no-ff`
+for grouped audit batches) to `main`. Past PRs are all from such branches. Don't push directly to
+`main`. Don't create PRs unless the user asks. Commit body shape is in `docs/COMMIT_STYLE.md` —
+the audit-batch commits in `git log` are the reference style.
 
 ## How the app boots
 
