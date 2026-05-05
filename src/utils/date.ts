@@ -7,8 +7,9 @@
  * docs/DATA_POLICY.md §2.
  *
  * Cloud Functions can't import this (server-side); they use
- * `Intl.DateTimeFormat` with the `?tz=` query param. The fallback path
- * in functions/src/index.ts:99 still uses the banned pattern (Batch 5).
+ * `Intl.DateTimeFormat` with the `?tz=` query param. The fallback in
+ * `todayDateString` in functions/src/index.ts still uses the banned
+ * pattern (Batch 5).
  *
  * Tests: src/utils/date.test.ts.
  */

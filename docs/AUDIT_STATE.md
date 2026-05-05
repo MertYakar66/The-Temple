@@ -43,7 +43,8 @@ e2e round-trip is fully written but `test.fixme()`'d (see "Cross-cutting blocker
 **Side findings flagged for later:**
 - `useStore.startWorkout` without `routineId` leaves `currentSession.routineId = undefined`.
   Same class as Batch 1 but not in the original audit scope.
-- `Settings.tsx:211` data-export filename uses the banned `toISOString().split('T')[0]`.
+- `Settings.tsx` data-export filename (in the JSON-export handler) uses the banned
+  `toISOString().split('T')[0]`.
 
 ## Batch 2 — Quick wins ✅ Merged
 
@@ -72,8 +73,9 @@ by future Vitest expansion.
 - Fix `/diet/meals/:id/edit`. The route exists but the page doesn't load the meal it's
   editing.
 - Replace `new Date().toISOString().split('T')[0]` with `getDateStamp()` in
-  `useDietStore.ts:441` and `:494`. Banned per `DATA_POLICY.md`; uses UTC and breaks for
-  non-UTC users (date stamps roll over at the wrong moment).
+  `useDietStore.ts` (call sites: `updateStreaks` action and `getWeeklyStats` action).
+  Banned per `DATA_POLICY.md`; uses UTC and breaks for non-UTC users (date stamps roll
+  over at the wrong moment).
 - Decide on `mealReminders` feature. The store has the type and CRUD, but no UI exposes it.
   Either ship a UI or strip the dead actions.
 - Add Vitest tests for the date-stamp fix and the meal-edit page.
@@ -99,7 +101,7 @@ unblocked.
 **Branch (planned):** `claude/audit-batch5-siri-tz`.
 
 **Scope:**
-- `functions/src/index.ts:99` — `todayDateString(tz)` falls back to UTC when `tz` is missing
+- `functions/src/index.ts` — `todayDateString(tz)` falls back to UTC when `tz` is missing
   or invalid. Should require `tz` (return 400) or use a configured per-user default from
   `users/{uid}/data/siriConfig.timezone`.
 - The functions read stored events without expanding recurrence, so a weekly event speaks
@@ -117,7 +119,7 @@ deploy.
 
 **Scope:** TBD. Will sweep up flagged side findings from earlier batches:
 - `useStore.startWorkout` undefined `routineId`,
-- `Settings.tsx:211` data-export filename,
+- `Settings.tsx` data-export filename,
 - bundle-size warning (1.4 MB; manualChunks),
 - whatever else gets flagged on the way through.
 
@@ -125,8 +127,8 @@ deploy.
 
 Not a batch of its own yet; will get sequenced once Batch 3 is closed.
 
-`AuthContext.tsx:135` — `onAuthStateChanged` callback runs `resetStore()` on all three Zustand
-stores before awaiting `Promise.all` of the cloud loads. Firebase emits the listener more than
+`AuthContext.tsx` — the `onAuthStateChanged` callback in `AuthProvider`'s `useEffect` runs
+`resetStore()` on all three Zustand stores before awaiting `Promise.all` of the cloud loads. Firebase emits the listener more than
 once on initial page load (cached-user fire, then a verified fire). Each chain runs
 reset → load → start sync. If a chain whose `resetStore` lands AFTER user interaction wins
 the race, it wipes the local write. Reproduced reliably under bot-style fast interaction (~300

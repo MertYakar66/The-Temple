@@ -86,8 +86,8 @@ Decision still holds; race fix is a refinement, not a re-architecture.
 risk is bounded — it would need to land within the debounce window of an unflushed save,
 and the user would have to kill the tab rather than navigate.
 
-**Reference:** `src/lib/firestoreSync.ts:9`. Equality-check coupling at
-`src/contexts/AuthContext.tsx:73-115`.
+**Reference:** `SYNC_DEBOUNCE_MS` in `src/lib/firestoreSync.ts`. Equality-check coupling
+in `startSync` in `src/contexts/AuthContext.tsx`.
 
 ---
 
@@ -170,7 +170,8 @@ actually run.
 
 **Reversal trigger:** when the AuthContext race is fixed (it's the deeper bug here — Strict
 Mode just exposed it), revert `webServer.command` to `npm run dev` for faster local
-iteration. See `playwright.config.ts:31` comment and `tests/e2e/README.md`.
+iteration. See the `webServer.command` comment in `playwright.config.ts` and
+`tests/e2e/README.md`.
 
 ---
 

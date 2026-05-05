@@ -44,14 +44,17 @@ which respects the local timezone.
 - Calendar events store full ISO datetimes (`startDate`, `endDate`), not date stamps —
   recurrence math needs the time-of-day component.
 - Cloud Functions are server-side and cannot use the client's `getDateStamp`. They use
-  `Intl.DateTimeFormat` with the `?tz=` query param. The fallback path at
-  `functions/src/index.ts:99` *currently uses* the banned pattern when `tz` is missing — that's
-  Batch 5 territory, not a license to do this elsewhere.
+  `Intl.DateTimeFormat` with the `?tz=` query param. The fallback in `todayDateString(tz)`
+  in `functions/src/index.ts` *currently uses* the banned pattern when `tz` is missing —
+  that's Batch 5 territory, not a license to do this elsewhere.
 
 **Active violations** (will be cleaned up — don't add more):
-- `src/store/useDietStore.ts:441` and `:494` — Batch 3.
-- `src/pages/Settings.tsx:211` — data-export filename. Batch 6.
-- `functions/src/index.ts:99` — Cloud Functions tz fallback. Batch 5.
+- `src/store/useDietStore.ts` — `updateStreaks` action (`yesterdayStr`) and
+  `getWeeklyStats` action (the 7-day loop). Batch 3.
+- `src/pages/Settings.tsx` — data-export filename in the JSON-export handler
+  (`a.download = ...`). Batch 6.
+- `functions/src/index.ts` — `todayDateString(tz)` fallback when `tz` is
+  missing or invalid. Batch 5.
 
 ## 3. Null-emit on clear, omit on pass-through
 

@@ -108,10 +108,10 @@ Auth via `authenticateToken(req)`:
 - Cache miss → read `siriTokens/{token}` → cache → return `userId`.
 
 All endpoints take optional `?tz=` query param. Commit `2a98403` added the parameter and the
-`Intl.DateTimeFormat` happy path; the missing/invalid-tz fallback at `functions/src/index.ts:99`
-still uses `new Date().toISOString().split("T")[0]` which is UTC. **Batch 5** in
-`AUDIT_STATE.md` covers replacing the fallback and adding server-side recurrence expansion (the
-function currently reads stored events directly without expanding `recurrenceRule`, so weekly
+`Intl.DateTimeFormat` happy path; the missing/invalid-tz fallback in `todayDateString` still
+uses `new Date().toISOString().split("T")[0]` which is UTC. **Batch 5** in `AUDIT_STATE.md`
+covers replacing the fallback and adding server-side recurrence expansion (the function
+currently reads stored events directly without expanding `recurrenceRule`, so weekly
 repeating events are spoken on the wrong days).
 
 Helper `buildExerciseNameMap(exercises)` builds `Map<id, name>` for O(1) lookups instead of
@@ -168,8 +168,8 @@ agents reading architecture docs.
 
 ### AuthContext race (cancellation-unsafe `onAuthStateChanged`)
 
-`AuthContext.tsx:135` runs `resetStore()` on all three Zustand stores before awaiting
-`Promise.all` of the cloud loads. Firebase emits the listener more than once on initial page
+The `onAuthStateChanged` handler in `AuthProvider`'s `useEffect` runs `resetStore()` on all
+three Zustand stores before awaiting `Promise.all` of the cloud loads. Firebase emits the listener more than once on initial page
 load — typically a cached-user fire followed by a verified-user fire. Each chain runs the same
 sequence (reset → load → start sync). If a chain whose `resetStore` lands AFTER the user
 interacts with the app wins the race, it wipes the local write the user just made. The wipe
@@ -192,6 +192,6 @@ with the full diagnostic timeline in its top-of-file comment block.
 
 ### Cloud Functions Siri TZ fallback + recurrence expansion (Batch 5)
 
-`functions/src/index.ts:99` — `todayDateString(tz)` falls back to UTC when `tz` is missing or
+`todayDateString(tz)` in `functions/src/index.ts` falls back to UTC when `tz` is missing or
 invalid. The right behavior is to require `tz` (return 400) or fall back to a configured default,
 not silently UTC. Batch 5 will fix this alongside server-side recurrence expansion.

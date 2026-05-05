@@ -89,8 +89,9 @@ client + serverless.
 ## Known issues (active blockers)
 
 - **AuthContext race — cancellation-unsafe `onAuthStateChanged`.** The callback in
-  `AuthContext.tsx:135` calls `resetStore()` on all three Zustand stores before awaiting
-  `Promise.all` of the cloud loads. Firebase emits the listener more than once on initial page
+  `AuthContext.tsx` (the `onAuthStateChanged` handler inside `AuthProvider`'s `useEffect`)
+  calls `resetStore()` on all three Zustand stores before awaiting `Promise.all` of the cloud
+  loads. Firebase emits the listener more than once on initial page
   load (cached-user fire, then a verified fire). If a chain whose `resetStore` lands AFTER user
   interaction wins the race, it wipes local writes — and the wipe propagates to cloud on the
   next debounced sync. Reproducible at ~300 ms post-click under bot-style fast interaction.

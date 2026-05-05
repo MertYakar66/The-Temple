@@ -70,12 +70,13 @@ A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
   local writes that happen between the two chains under fast interaction. Blocks the e2e
   harness. Detailed reproduction in `ARCHITECTURE.md` and `AUDIT_STATE.md`.
 - **Cloud Functions Siri TZ fallback (active).** When the `?tz=` query param is missing or
-  invalid, the function falls back to UTC, which gives wrong "today" for non-UTC users
-  (`functions/src/index.ts:99`). Batch 5 territory.
+  invalid, the function (`todayDateString` in `functions/src/index.ts`) falls back to UTC,
+  which gives wrong "today" for non-UTC users. Batch 5 territory.
 - **Cloud Functions don't expand recurrence (active).** Stored recurring events are read raw,
   not expanded. Siri speaks the original master event date instead of today's occurrence.
   Batch 5 territory.
-- **`useDietStore` uses banned date pattern in two places** (`:441`, `:494`). Batch 3 territory.
+- **`useDietStore` uses banned date pattern in two places** (`updateStreaks`,
+  `getWeeklyStats`). Batch 3 territory.
 - **No CI.** Lint/build/test gates are local discipline only.
 - **Single-user product.** Test users live in the production Firebase project (no separate
   staging). The `e2e-test@thetemple.test` user was created against prod. Be aware when running

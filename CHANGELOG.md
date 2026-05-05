@@ -110,8 +110,8 @@ A non-exhaustive list of the larger pre-audit landings, for orientation:
 - `5bf6d1f` Refactor: eliminate redundancy, fix bugs, harden error handling.
 - `448c089` Implement comprehensive account security for multi-user support.
 - `2a98403` Fix two Siri integration bugs: missing exercises + wrong timezone.
-  (TZ partially fixed — the missing/invalid-tz fallback at `functions/src/index.ts:99`
-  still uses UTC; Batch 5.)
+  (TZ partially fixed — the missing/invalid-tz fallback in `todayDateString` still uses
+  UTC; Batch 5.)
 - `99a8538` Add Siri integration via Apple Shortcuts + Firebase Cloud Functions.
 - `a8c4c47` Add Google Places autocomplete for calendar event locations.
 - `774de24` Fix popover positioning: use fixed instead of absolute.
