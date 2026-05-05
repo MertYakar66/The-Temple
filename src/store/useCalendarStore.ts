@@ -1,3 +1,17 @@
+/**
+ * useCalendarStore — events/calendars/settings/invitations Zustand store.
+ * Persisted under `calendar-storage`.
+ *
+ * SOFT-DELETE: `deleteEvent` flips `isDeleted: true`; never hard-deletes.
+ * All read sites must filter `e => !e.isDeleted`. Series deletion flips
+ * both the master and exception-instance children. See
+ * docs/DATA_POLICY.md §4 and docs/DECISIONS.md D-5.
+ *
+ * Recurrence engine lives in `src/utils/calendar.ts` (Batch 4 territory:
+ * exception handling, weekly daysOfWeek, monthly recurrence).
+ *
+ * Tests: src/store/useCalendarStore.test.ts (Batch 1 null-emit invariants).
+ */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';

@@ -1,3 +1,19 @@
+/**
+ * useStore — workout/weight/PR/blocks Zustand store. The largest store
+ * (~950 lines). Persisted at `version: 2` under `workout-tracker-storage`.
+ *
+ * Cloud sync ships a LEAN projection: `getCloudSyncData()` strips the
+ * static `exercises` array down to `{id, name}` (the full data is bundled
+ * with the app — see `src/data/exercises.ts`). Don't reintroduce the full
+ * payload to cloud (docs/DATA_POLICY.md §6).
+ *
+ * Adding a new persisted slice requires updating five places: the type,
+ * `loadFromCloud`, `getCloudSyncData`, `resetStore`, and the equality
+ * check in `AuthContext.startSync` (otherwise it won't sync OR will cause
+ * write storms). See docs/DATA_POLICY.md §5.
+ *
+ * Tests: src/store/useStore.test.ts (Batch 1 null-emit invariants).
+ */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';

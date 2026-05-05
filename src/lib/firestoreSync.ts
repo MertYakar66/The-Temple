@@ -1,3 +1,17 @@
+/**
+ * firestoreSync — read/write the three per-user data documents.
+ *
+ * Every write goes through `setDoc(..., { merge: true })`. This means
+ * `{ field: undefined }` PRESERVES the prior value silently, while
+ * `{ field: null }` clears it. The "null-emit on clear" rule
+ * (docs/DATA_POLICY.md §1, §3) exists because of this merge semantics —
+ * editor code must emit `null`, not `undefined`, when the user clears
+ * an optional field.
+ *
+ * Writes are debounced 2 s per store. `AuthContext.logout` calls the
+ * non-debounced `save*Data` functions to flush before sign-out — the
+ * order matters because Firestore rules require auth.
+ */
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 

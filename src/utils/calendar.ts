@@ -1,3 +1,16 @@
+/**
+ * calendar utils — recurrence engine + view-grid helpers.
+ *
+ * `generateRecurrences` is the recurrence expansion. Active Batch 4
+ * territory (docs/AUDIT_STATE.md): exception handling
+ * (`seriesMasterId` + `originalDate` overrides), weekly `daysOfWeek`
+ * semantics, and monthly recurrence (especially "nth weekday of month"
+ * via `weekOfMonth`) have known gaps. Vitest table-driven tests should
+ * land before behavior changes.
+ *
+ * Cloud Functions don't currently call this; Batch 5 will either share
+ * it or extract a server-safe variant.
+ */
 import {
   startOfMonth,
   endOfMonth,

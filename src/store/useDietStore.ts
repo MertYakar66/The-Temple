@@ -1,3 +1,15 @@
+/**
+ * useDietStore — foods/recipes/meals/log/streaks Zustand store.
+ * Persisted under `diet-tracker-storage`.
+ *
+ * Active Batch 3 territory (docs/AUDIT_STATE.md): two banned date-pattern
+ * usages at lines 441 and 494 use `toISOString().split('T')[0]` (UTC) and
+ * must move to `getDateStamp()`. Don't add more. The `mealReminders`
+ * actions exist but no UI renders them — Batch 3 will either ship UI or
+ * remove the dead actions.
+ *
+ * Tests: not yet (Batch 3 will add).
+ */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
