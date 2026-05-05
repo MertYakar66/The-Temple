@@ -1,13 +1,22 @@
 # CLAUDE.md
 
 Claude Code auto-loads this file as project memory. The full context lives in `AGENTS.md`
-(orientation, invariants, conventions) — read that first. Deeper docs:
+(orientation, invariants, conventions) — read that first. Recommended reading order for a
+new agent:
 
-- `AGENTS.md` — orientation, critical files, hard invariants, branch convention. Read first.
-- `docs/ARCHITECTURE.md` — data flow, Firestore layout, sync lifecycle, Cloud Functions.
-- `docs/MODULES.md` — per-module file map and gotchas.
-- `SIRI_INTEGRATION.md` — user-facing Siri setup guide.
-- `README.md` — user-facing project description.
+1. `AGENTS.md` — orientation, critical files, hard invariants, branch convention.
+2. `docs/PROJECT_STATE.md` — what the project is right now, what's deployed, what's in-flight.
+3. `docs/AUDIT_STATE.md` — per-batch audit progress and current blockers.
+4. `docs/ROADMAP.md` — what comes next.
+5. `docs/ARCHITECTURE.md` — data flow, Firestore layout, sync lifecycle, Cloud Functions.
+6. `docs/MODULES.md` — per-module file map and gotchas.
+7. `docs/DATA_POLICY.md` — hard invariants expanded with rationale.
+8. `docs/DECISIONS.md` — architectural decisions and why.
+9. `docs/TESTING.md` — Vitest + Playwright + the blocked-test discipline.
+10. `docs/COMMIT_STYLE.md` — commit/PR shape used in this repo.
+11. `CHANGELOG.md` — recent landings in human-readable form.
+12. `SIRI_INTEGRATION.md` — user-facing Siri setup guide.
+13. `README.md` — user-facing project description.
 
 ## Quick reminders for Claude Code sessions
 

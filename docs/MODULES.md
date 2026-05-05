@@ -1,6 +1,7 @@
 # Modules
 
-Per-module file map and gotchas. For data flow see `ARCHITECTURE.md`.
+Per-module file map and gotchas. For data flow see `ARCHITECTURE.md`. For invariants and the
+rules-of-the-road that bind every store/page/component see `DATA_POLICY.md`.
 
 ## Workout
 
@@ -146,9 +147,25 @@ Dark mode hook: `src/hooks/useDarkMode.ts`. Tailwind `dark:` classes throughout.
 
 ## Testing
 
-Vitest + Testing Library. Tests are colocated `*.test.ts` next to source. Run `npm test`
-(one-shot) or `npm run test:watch`. Coverage: `npm run test:coverage`. Setup file
-`src/test/setup.ts`.
+For full discipline see `TESTING.md`. Quick orientation:
 
-Existing tests: `src/utils/{date,weight,workoutMetrics}.test.ts`. Coverage is sparse — most
-business logic in stores is untested.
+**Unit (Vitest + Testing Library)** — colocated `*.test.ts` next to source. Run `npm test`
+(one-shot) or `npm run test:watch`. Coverage via `npm run test:coverage`. Setup file
+`src/test/setup.ts` (includes an in-memory localStorage shim — Node 25 + Vitest 4 surface a
+partial localStorage that breaks Zustand persist without it).
+
+Existing tests:
+- `src/utils/{date,weight,workoutMetrics}.test.ts` — utility-level coverage.
+- `src/store/useStore.test.ts` and `src/store/useCalendarStore.test.ts` — Batch 1 null-emit
+  invariants at the store layer (proof-of-fix for `b484873` etc., since the e2e equivalent is
+  blocked).
+
+**End-to-end (Playwright)** — `tests/e2e/*.spec.ts`. Configured against the production build
+(`vite preview`), not dev — see `playwright.config.ts` comment for why (Strict Mode
+double-invocation collides with the AuthContext race in dev). Workers: 1, Chromium only,
+sequential by design.
+
+Currently blocked: `tests/e2e/calendar-location-roundtrip.spec.ts` is `test.fixme()`'d. The
+spec is fully written; it will start passing once the AuthContext race is fixed. Until then,
+batch verifications happen at the layer where the fix was made (store-level Vitest tests).
+See `tests/e2e/README.md` for run instructions and the diagnostic timeline.

@@ -1,3 +1,22 @@
+/**
+ * Cloud Functions — Siri integration endpoints.
+ *
+ * Four HTTPS endpoints (siriDailyBriefing, siriSchedule, siriWorkout,
+ * siriNutrition) deployed to us-central1. Each authenticates via a
+ * per-user random token validated against `siriTokens/{token}` and
+ * cached in-process for 60 s.
+ *
+ * BYPASSES FIRESTORE RULES via Admin SDK — input validation matters.
+ *
+ * Active Batch 5 territory (docs/AUDIT_STATE.md):
+ *  - The `todayDateString(tz)` fallback at line ~99 falls back to UTC
+ *    when `tz` is missing or invalid. Should require `tz` (return 400)
+ *    or use `users/{uid}/data/siriConfig.timezone`.
+ *  - Functions read stored events without expanding `recurrenceRule`,
+ *    so weekly events speak the original master start date instead of
+ *    today's occurrence. Need server-side expansion (likely shared
+ *    with src/utils/calendar.ts after Batch 4).
+ */
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 

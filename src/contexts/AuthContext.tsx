@@ -1,3 +1,19 @@
+/**
+ * AuthContext — authentication + cloud sync controller.
+ *
+ * Owns the lifecycle for all three Zustand stores: on login, reset → load
+ * from Firestore → start subscriptions; on logout, flush → stop → reset.
+ * The only file in `src/` that calls Firebase Auth methods directly; pages
+ * go through `useAuth()`.
+ *
+ * KNOWN ISSUE (audit, high severity, blocks e2e): the `onAuthStateChanged`
+ * callback below is not cancellation-safe. Firebase emits the listener
+ * more than once on cold load (cached-user fire, then a verified fire);
+ * each chain runs `resetStore()` before awaiting the cloud loads, so a
+ * chain whose reset lands AFTER user interaction wipes the local write.
+ * See docs/AUDIT_STATE.md ("Cross-cutting blocker"). The e2e harness is
+ * fixme'd until this is fixed (`tests/e2e/calendar-location-roundtrip.spec.ts`).
+ */
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import {

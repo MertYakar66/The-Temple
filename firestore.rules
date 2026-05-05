@@ -1,3 +1,13 @@
+// Firestore security rules.
+//
+// CLOUD FUNCTIONS BYPASS THESE RULES via Admin SDK (functions/src/index.ts).
+// That's intentional — Apple Shortcuts can't authenticate to Firebase, so
+// Siri endpoints look up tokens directly. Treat new Cloud Functions with
+// the same care as admin endpoints elsewhere; input validation matters.
+//
+// See docs/DATA_POLICY.md §10 (one Firestore doc per module per user) +
+// §11 (Admin SDK bypass), and docs/DECISIONS.md D-10 (token-based Siri
+// auth).
 rules_version = '2';
 
 service cloud.firestore {

@@ -1,6 +1,7 @@
 # Architecture
 
-Data flow, sync model, and invariants. Companion to root `AGENTS.md`.
+Data flow, sync model, and invariants. Companion to root `AGENTS.md`. For invariant rationale
+and data-policy detail see `DATA_POLICY.md`. For per-batch audit progress see `AUDIT_STATE.md`.
 
 ## High-level
 
@@ -61,7 +62,9 @@ Rules (`firestore.rules`):
 
 ## Sync lifecycle
 
-`AuthContext.tsx` is the controller:
+`AuthContext.tsx` is the controller. **Note**: the controller has a known cancellation-unsafe
+race (see "Known issues" below). The lifecycle described here is the intended behavior; in
+practice the listener can fire more than once on cold load and step on its own state.
 
 1. **Login** — `onAuthStateChanged` fires with user.
    - Reset all three stores.
@@ -104,8 +107,12 @@ Auth via `authenticateToken(req)`:
 - In-process LRU cache, 60s TTL, max 128 entries — function instances stay warm and reuse it.
 - Cache miss → read `siriTokens/{token}` → cache → return `userId`.
 
-All endpoints take optional `?tz=` query param. Without it, falls back to UTC, which gives
-wrong "today" for non-UTC users — bug fixed in commit `2a98403`.
+All endpoints take optional `?tz=` query param. Commit `2a98403` added the parameter and the
+`Intl.DateTimeFormat` happy path; the missing/invalid-tz fallback in `todayDateString` still
+uses `new Date().toISOString().split("T")[0]` which is UTC. **Batch 5** in `AUDIT_STATE.md`
+covers replacing the fallback and adding server-side recurrence expansion (the function
+currently reads stored events directly without expanding `recurrenceRule`, so weekly
+repeating events are spoken on the wrong days).
 
 Helper `buildExerciseNameMap(exercises)` builds `Map<id, name>` for O(1) lookups instead of
 linear scans per routine exercise.
@@ -153,3 +160,38 @@ Each store sets `persist({ name, version, migrate, merge })`:
   subcollection to `backups/YYYYMMDD_HHmmss_backup.json`. Requires `serviceAccountKey.json`
   at repo root (gitignored).
 - `npm run restore` — companion script.
+
+## Known issues
+
+These are documented in `AUDIT_STATE.md` and have audit batches scheduled. Listed here for
+agents reading architecture docs.
+
+### AuthContext race (cancellation-unsafe `onAuthStateChanged`)
+
+The `onAuthStateChanged` handler in `AuthProvider`'s `useEffect` runs `resetStore()` on all
+three Zustand stores before awaiting `Promise.all` of the cloud loads. Firebase emits the listener more than once on initial page
+load — typically a cached-user fire followed by a verified-user fire. Each chain runs the same
+sequence (reset → load → start sync). If a chain whose `resetStore` lands AFTER the user
+interacts with the app wins the race, it wipes the local write the user just made. The wipe
+then propagates to cloud on the next debounced sync.
+
+Reproduction (Playwright, prod build, Chromium):
+- click Add at t=0 → `addEvent` succeeds, localStorage `events.length === 1`.
+- t = 150 ms: still 1.
+- t = 300 ms: `events.length === 0`. Stack: `AuthContext.resetStore` from the second listener
+  callback.
+
+Fix shape (Batch — sequencing TBD):
+- Track an in-flight token / `AbortController` across callback runs.
+- Verify `auth.currentUser?.uid === user.uid` before resetting / loading / starting sync; bail
+  if a newer chain is already in flight.
+- Unsubscribe the prior `unsubXxxRef` before overwriting (currently leaks).
+
+This blocks the e2e harness — `tests/e2e/calendar-location-roundtrip.spec.ts` is `test.fixme()`'d
+with the full diagnostic timeline in its top-of-file comment block.
+
+### Cloud Functions Siri TZ fallback + recurrence expansion (Batch 5)
+
+`todayDateString(tz)` in `functions/src/index.ts` falls back to UTC when `tz` is missing or
+invalid. The right behavior is to require `tz` (return 400) or fall back to a configured default,
+not silently UTC. Batch 5 will fix this alongside server-side recurrence expansion.
