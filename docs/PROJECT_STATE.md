@@ -58,11 +58,13 @@ A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
   Vitest store-layer null-emit invariant tests, plus the AI-handoff doc set
   (`PROJECT_STATE`, `AUDIT_STATE`, `ROADMAP`, `TESTING`, `DATA_POLICY`, `DECISIONS`,
   `COMMIT_STYLE`, `CHANGELOG`) and top-of-file headers on data-spine modules.
-- **Batch 3 — Diet UX correctness.** 🚧 In flight on `claude/audit-batch3-diet-ux`. Phase A
-  read complete; Phase B decisions made (#2 build the meal editor with rename, #4 strip
-  `mealReminders`); Phase C halted on a #3 finding awaiting the owner's call (the originally
-  specified `getDateStamp` swap introduces a one-day regression unless paired with
-  `parseDateStamp` for input parsing — see `AUDIT_STATE.md` Batch 3). No commits yet.
+- **Batch 3 — Diet UX correctness.** ✅ Done (pending merge) on `claude/audit-batch3-diet-ux`.
+  Eight commits. Render custom mealTypes on Diet/History; full local-aware date math
+  (parseDateStamp + getDateStamp end-to-end) with TZ-sensitive Vitest coverage; rename
+  `DietMealNew` → `DietMealEditor` and add `/diet/meals/:id/edit` route with edit-mode
+  support; strip `mealReminders` feature with persist v1 migration. First component test in
+  the repo landed alongside. 54/54 tests green. See `AUDIT_STATE.md` Batch 3 for the full
+  per-commit table.
 - **Batches 4–6.** ⏳ Pending. Calendar recurrence; Cloud Functions Siri TZ + server-side
   recurrence expansion; polish.
 
