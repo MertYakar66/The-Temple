@@ -30,7 +30,7 @@ const categoryIcons: Record<FoodCategory, React.ElementType> = {
   other: MoreHorizontal,
 };
 
-export function DietMealNew() {
+export function DietMealEditor() {
   const navigate = useNavigate();
   const getAllFoods = useDietStore((s) => s.getAllFoods);
   const addMeal = useDietStore((s) => s.addMeal);
