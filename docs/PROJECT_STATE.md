@@ -52,14 +52,17 @@ A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
 - **Batch 2 — Quick wins.** ✅ Merged (`11f2861`). Stop wiping cloud routines on missing
   `program` field; preserve profile weight when back-filling older entries; unit-aware weight
   bounds in Settings; omit onboarding email when sign-in provides none.
-- **E2E harness.** ✅ Added on `claude/setup-playwright-e2e` (not yet merged to main).
-  Playwright config, sign-in/sign-out helpers, one Calendar location round-trip spec
-  (`test.fixme()`'d, blocked by the AuthContext race), full e2e README, plus Vitest store-layer
-  null-emit invariant tests as the verification fallback.
-- **Repo foundation pass.** 🚧 In progress on `claude/repo-foundation-pass` (this branch).
-- **Batch 3 — Diet UX correctness.** ⏳ Pending. Scope: render custom mealTypes on the log page,
-  fix `/diet/meals/:id/edit`, replace `toISOString().split('T')[0]` with `getDateStamp()` in
-  `useDietStore`, decide on `mealReminders` feature, add Vitest tests for the date-stamp fix.
+- **E2E harness + repo foundation pass.** ✅ Merged into main at `6836f5a` (one merge commit
+  covering both — the foundation pass branch was stacked on the e2e harness branch). Adds
+  Playwright config, sign-in/sign-out helpers, one fixme'd Calendar location round-trip spec,
+  Vitest store-layer null-emit invariant tests, plus the AI-handoff doc set
+  (`PROJECT_STATE`, `AUDIT_STATE`, `ROADMAP`, `TESTING`, `DATA_POLICY`, `DECISIONS`,
+  `COMMIT_STYLE`, `CHANGELOG`) and top-of-file headers on data-spine modules.
+- **Batch 3 — Diet UX correctness.** 🚧 In flight on `claude/audit-batch3-diet-ux`. Phase A
+  read complete; Phase B decisions made (#2 build the meal editor with rename, #4 strip
+  `mealReminders`); Phase C halted on a #3 finding awaiting the owner's call (the originally
+  specified `getDateStamp` swap introduces a one-day regression unless paired with
+  `parseDateStamp` for input parsing — see `AUDIT_STATE.md` Batch 3). No commits yet.
 - **Batches 4–6.** ⏳ Pending. Calendar recurrence; Cloud Functions Siri TZ + server-side
   recurrence expansion; polish.
 

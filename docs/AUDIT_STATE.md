@@ -63,25 +63,87 @@ e2e round-trip is fully written but `test.fixme()`'d (see "Cross-cutting blocker
 **Verification:** None landed with the batch (these are localized fixes). Should be covered
 by future Vitest expansion.
 
-## Batch 3 — Diet UX correctness ⏳ Pending
+## Batch 3 — Diet UX correctness 🚧 In flight
 
-**Branch (planned):** `claude/audit-batch3-diet-ux`.
+**Branch:** `claude/audit-batch3-diet-ux` (off main at `6836f5a`). No commits on the branch
+yet — Phase A read complete, Phase B decisions made, Phase C halted on a #3 finding awaiting
+the owner's call.
 
-**Scope:**
-- Render custom `mealType` strings on the daily log. Currently the log groups only by the
-  built-in breakfast/lunch/dinner/snack — custom types entered by the user are dropped.
-- Fix `/diet/meals/:id/edit`. The route exists but the page doesn't load the meal it's
-  editing.
-- Replace `new Date().toISOString().split('T')[0]` with `getDateStamp()` in
-  `useDietStore.ts` (call sites: `updateStreaks` action and `getWeeklyStats` action).
-  Banned per `DATA_POLICY.md`; uses UTC and breaks for non-UTC users (date stamps roll
-  over at the wrong moment).
-- Decide on `mealReminders` feature. The store has the type and CRUD, but no UI exposes it.
-  Either ship a UI or strip the dead actions.
-- Add Vitest tests for the date-stamp fix and the meal-edit page.
+### Phase A — files read
 
-**Verification approach:** Vitest at the store/utility layer for the date-stamp fix; component
-test for the meal editor; defer e2e to whenever the AuthContext race is fixed.
+`Diet.tsx`, `History.tsx`, `DietMeals.tsx`, `DietMealNew.tsx`, `DietRecipeEditor.tsx`,
+`DietSettings.tsx`, `useDietStore.ts`, `App.tsx`, `types/index.ts`. No code touched yet.
+
+### Phase B — decisions
+
+| # | Item | Status | Decision |
+|---|---|---|---|
+| 1 | Render custom `mealType` strings on `Diet.tsx` and `History.tsx`. Both pages hard-filter by built-in slot lists, so custom strings (and `pre_workout`/`post_workout` on Diet.tsx) render nothing. | Mechanical | Derive the visible mealType list from the entries themselves; built-ins first, custom appended; humanize unknown labels. |
+| 2 | `/diet/meals/:id/edit` is a dead Edit pencil — `DietMeals.tsx` links to it but `App.tsx` registers no route. The catch-all silently redirects to dashboard. | Propose-and-wait | **Build it (Option A) with rename.** Mirror `DietRecipeEditor.tsx`'s edit-mode pattern. Rename `DietMealNew.tsx` → `DietMealEditor.tsx` for symmetry. Register the new route. |
+| 3 | Replace banned `toISOString().split('T')[0]` in `useDietStore.ts` (`updateStreaks`, `getWeeklyStats`). | **Mechanical → re-classified** | **Open question (Option A vs B).** See below — the simple swap as originally specified introduces a one-day regression for non-UTC users. |
+| 4 | `mealReminders` — store + DietSettings UI exists, no notification firing. (Original prompt assumed no UI; Phase A correction: there IS a settings editor.) | Propose-and-wait | **Strip (Option A).** Remove type, store actions, default state, DietSettings section. Bump persist version + write `migrate` that drops persisted `mealReminders` while preserving everything else. |
+| 5 | Vitest coverage. | Mechanical | Test the #3 fix at the store layer (with a TZ-aware setup that fails under the regression); recommended migrate-function unit test for #4 (3 lines, eliminates the only failure mode). Component test for the meal editor only if feasible. |
+
+### Open question — Item #3 trap
+
+The originally specified swap (`d.toISOString().split('T')[0]` → `getDateStamp(d)`) does NOT
+work as a one-line fix. Tracing the math:
+
+The current code's input is already a date stamp (e.g. `weekStartStr = format(currentWeekStart,
+'yyyy-MM-dd')` from `DietWeekly.tsx`). `new Date('YYYY-MM-DD')` parses as UTC midnight per
+ECMAScript spec. The pattern then operates the Date in local time via `setDate` and reads it
+back via `toISOString`, which round-trips through UTC midnight cleanly. Output happens to be
+correct for any timezone — the UTC parse and UTC format cancel.
+
+`getDateStamp` formats in *local* time. Replacing only the format step breaks the cancellation:
+in PST, `new Date('2026-01-12')` becomes `Jan 11 16:00 PST`, and `getDateStamp` of that returns
+`'2026-01-11'` — a one-day backward shift relative to the requested input.
+
+**Two options:**
+
+- **Option A — full local-aware fix.** Replace `new Date(date)` with `parseDateStamp(date)`
+  AND `toISOString().split('T')[0]` with `getDateStamp(d)`. Local arithmetic end-to-end.
+  Same output as today for all timezones; removes the trap. 4 line edits + 1 import.
+- **Option B — originally specified swap.** Just `getDateStamp(d)` for the format step.
+  **Regression** — week boundaries shift back one day for non-UTC users. Low value.
+
+Recommendation in the conversation: **A**. The "mechanical" framing of #3 in the original
+Batch 3 prompt was wrong; this is a Phase B-class scope decision. Holding for the owner's
+explicit call before Phase C resumes.
+
+### Suggested commit grouping (when Phase C resumes)
+
+Per `docs/COMMIT_STYLE.md`, lowest-risk first, highest-risk last:
+
+1. `fix(diet): render custom mealTypes on Diet and History pages` (#1)
+2. `fix(diet): use parseDateStamp + getDateStamp in useDietStore date math` (#3, assuming A)
+3. `test(diet): vitest coverage for date-stamp fix` (#5a)
+4. `refactor(diet): rename DietMealNew → DietMealEditor` (#2 part 1, behavior-preserving)
+5. `feat(diet): add edit-mode support to DietMealEditor + register route` (#2 part 2)
+6. `test(diet): vitest coverage for meal editor` (#5b, if feasible — else skip with note)
+7. `refactor(diet): strip mealReminders feature, bump store version with migration` (#4)
+
+The store-version bump in #7 is the highest-risk change; do last so a rollback only loses
+one commit. Migrate function should be unit-tested with a hand-constructed old-shape object
+(input has `mealReminders` and other persisted fields → output preserves everything except
+`mealReminders`).
+
+### Verification approach
+
+Vitest at the store/utility layer for #3 (with `vi.useFakeTimers().setSystemTime` and a
+process TZ that distinguishes Option A from Option B). Migrate-function unit test for #4.
+Component test for the meal editor only if the patterns extend cleanly. Defer e2e to whenever
+the AuthContext race is fixed.
+
+### Side findings flagged during Phase A
+
+- `MealType` type in `src/types/index.ts` is now `string` (line 186) — fully open. The
+  audit comment in the original prompt assumed it was a closed union; it isn't. The fix
+  for #1 must humanize unknown strings rather than route them through a Record lookup.
+- `DietSettings.tsx` mealTypeLabels lookup (`Record<MealType, string>`) was used to render
+  reminder display labels. Removed entirely once #4 strips the reminders.
+- `useStore.startWorkout` `routineId = undefined` (flagged in Batch 1) is still pending —
+  Batch 6 territory.
 
 ## Batch 4 — Calendar recurrence ⏳ Pending
 

@@ -48,6 +48,35 @@ which respects the local timezone.
   in `functions/src/index.ts` *currently uses* the banned pattern when `tz` is missing —
   that's Batch 5 territory, not a license to do this elsewhere.
 
+**Corollary — the `parseDateStamp` trap.** When you remove the banned format step
+(`toISOString().split('T')[0]`), check whether the *input* is also being constructed via
+`new Date('YYYY-MM-DD')`. ECMAScript parses date-only strings as UTC midnight; date-fns'
+`parseISO` (which `parseDateStamp` wraps) parses them as *local* midnight. The two existing
+pieces (`new Date(stamp)` + `toISOString().split('T')[0]`) round-trip through UTC and
+*cancel out* — output is accidentally correct for any timezone. Replacing only the format
+step with `getDateStamp` (which formats in local time) breaks the cancellation and
+introduces a one-day regression for non-UTC users.
+
+**Use `parseDateStamp` and `getDateStamp` together, end-to-end:**
+```js
+// WRONG — output happens to be correct via UTC round-trip, but pattern is a trap
+const d = new Date(dateStamp);
+d.setDate(d.getDate() + 1);
+const next = d.toISOString().split('T')[0];
+
+// WRONG — partial fix; one-day shift in non-UTC TZs
+const d = new Date(dateStamp);
+d.setDate(d.getDate() + 1);
+const next = getDateStamp(d);
+
+// RIGHT — local arithmetic end-to-end
+const d = parseDateStamp(dateStamp);
+d.setDate(d.getDate() + 1);
+const next = getDateStamp(d);
+```
+Surfaced during Batch 3 Phase C analysis (`useDietStore.ts` `updateStreaks` and
+`getWeeklyStats`). See `AUDIT_STATE.md` Batch 3 for the full trace.
+
 **Active violations** (will be cleaned up — don't add more):
 - `src/store/useDietStore.ts` — `updateStreaks` action (`yesterdayStr`) and
   `getWeeklyStats` action (the 7-day loop). Batch 3.
