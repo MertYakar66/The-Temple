@@ -39,7 +39,9 @@ import {
 } from '../utils/workoutMetrics';
 import { kgToDisplay, getWeightUnit } from '../utils/weight';
 
-const mealTypeLabels: Record<MealType, string> = {
+// Known display labels for the canonical mealTypes. Custom mealType strings
+// (anything not listed here) are humanized at render time via humanizeMealType.
+const KNOWN_LABELS: Record<string, string> = {
   breakfast: 'Breakfast',
   lunch: 'Lunch',
   dinner: 'Dinner',
@@ -48,7 +50,18 @@ const mealTypeLabels: Record<MealType, string> = {
   post_workout: 'Post-Workout',
 };
 
-const mealTypeOrder: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'pre_workout', 'post_workout'];
+// Canonical sort order for known mealTypes. Acts as a sort priority, not a
+// filter — custom strings still render, appended in first-appearance order.
+const KNOWN_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'pre_workout', 'post_workout'];
+
+function humanizeMealType(mt: MealType): string {
+  if (KNOWN_LABELS[mt]) return KNOWN_LABELS[mt];
+  return mt
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
 
 export function History() {
   const workoutSessions = useStore((state) => state.workoutSessions);
@@ -103,11 +116,26 @@ export function History() {
 
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Group diet entries by meal type
-  const entriesByMealType = mealTypeOrder.reduce((acc, mealType) => {
+  // Build the visible mealType list from this day's entries: known
+  // mealTypes first (in canonical order), then any custom strings appended
+  // in first-appearance order. Empty mealTypes are filtered out — History
+  // only shows what was logged. Cheap recomputation; no useMemo.
+  const presentMealTypes = new Set(selectedDateDiet.map((e) => e.mealType));
+  const knownVisible = KNOWN_ORDER.filter((mt) => presentMealTypes.has(mt));
+  const seenForCustom = new Set<string>(KNOWN_ORDER);
+  const customVisible: MealType[] = [];
+  for (const e of selectedDateDiet) {
+    if (!seenForCustom.has(e.mealType)) {
+      seenForCustom.add(e.mealType);
+      customVisible.push(e.mealType);
+    }
+  }
+  const visibleMealTypes: MealType[] = [...knownVisible, ...customVisible];
+
+  const entriesByMealType = visibleMealTypes.reduce((acc, mealType) => {
     acc[mealType] = selectedDateDiet.filter((e) => e.mealType === mealType);
     return acc;
-  }, {} as Record<MealType, typeof selectedDateDiet>);
+  }, {} as Record<string, typeof selectedDateDiet>);
 
   return (
     <div className="px-4 py-6 space-y-6 pb-24">
@@ -363,10 +391,8 @@ export function History() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {mealTypeOrder.map((mealType) => {
+                  {visibleMealTypes.map((mealType) => {
                     const mealEntries = entriesByMealType[mealType];
-                    if (mealEntries.length === 0) return null;
-
                     const mealMacros = mealEntries.reduce(
                       (acc, e) => ({
                         calories: acc.calories + e.macros.calories,
@@ -380,7 +406,7 @@ export function History() {
                     return (
                       <div key={mealType} className="card">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium text-gray-900 dark:text-white">{mealTypeLabels[mealType]}</h4>
+                          <h4 className="font-medium text-gray-900 dark:text-white">{humanizeMealType(mealType)}</h4>
                           <span className="text-sm text-gray-500 dark:text-gray-400">
                             {Math.round(mealMacros.calories)} cal • {Math.round(mealMacros.protein)}g P
                           </span>

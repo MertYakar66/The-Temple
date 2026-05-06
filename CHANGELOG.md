@@ -8,6 +8,43 @@ rather than by version — there are no semver tags. Newest first.
 
 ---
 
+## Audit Batch 3 — Diet UX correctness — `claude/audit-batch3-diet-ux` (pending merge)
+
+Branch off main at `6836f5a`. Eight commits. All five scope items landed with full Vitest
+coverage (54/54 tests green; 11 new tests this batch).
+
+- `420617f` Pre-work: capture in-flight Batch 3 state, the parseDateStamp-trap corollary in
+  `docs/DATA_POLICY.md` §2, and the suggested commit grouping into `docs/AUDIT_STATE.md`.
+- `d928d67` Render custom `mealType` strings on `Diet.tsx` and `History.tsx`. Anchor slots
+  first, custom mealTypes appended in first-appearance order. Humanize-fallback for unknown
+  strings (`'my_custom_meal'` → `'My Custom Meal'`).
+- `d960249` Use `parseDateStamp` + `getDateStamp` in `useDietStore` date math (`updateStreaks`
+  + `getWeeklyStats`). Local-aware end-to-end. The naïve swap introduces a one-day regression
+  for non-UTC users via the parseDateStamp trap (DATA_POLICY §2 corollary); this fix swaps
+  both halves.
+- `6539aa0` Vitest coverage for the date-stamp fix. Sets `process.env.TZ =
+  'America/Los_Angeles'` at the top of the file with a sanity check that fires first; the
+  three regression sentinels would each fail under the naïve swap.
+- `f9af9f4` Rename `DietMealNew.tsx` → `DietMealEditor.tsx` (pure rename, behavior-preserving).
+- `84aecf6` Add edit-mode support to `DietMealEditor` + register `/diet/meals/:id/edit`
+  route. Mirrors `DietRecipeEditor`'s pattern. The Edit pencil from `DietMeals.tsx` now
+  works instead of redirecting to dashboard.
+- `716c20f` First component test in the repo: `DietMealEditor.test.tsx`. Three cases (create
+  / edit / stale-id) using `MemoryRouter` + direct store seeding. Pattern documented inline.
+- `746b513` Strip `mealReminders` feature across types, store, and DietSettings editor.
+  Persist `version` 0 → 1 with `dietStoreMigrate` (exported, unit-tested for happy path +
+  three edge cases) that drops `mealReminders` from older persisted state while preserving
+  every sibling field.
+
+Carry-forwards (flagged for future batches):
+- `useStore.startWorkout` undefined `routineId` → Batch 6.
+- `Settings.tsx` data-export filename banned date pattern → Batch 6.
+- Cloud Functions `todayDateString` UTC fallback → Batch 5.
+- `humanizeMealType` is duplicated across two pages — extract to `src/utils/` if a third
+  caller appears.
+
+---
+
 ## Repo foundation pass — `claude/repo-foundation-pass` (in progress)
 
 Branch from `claude/setup-playwright-e2e`. Documentation and hygiene only — no source
