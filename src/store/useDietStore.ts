@@ -2,13 +2,16 @@
  * useDietStore — foods/recipes/meals/log/streaks Zustand store.
  * Persisted under `diet-tracker-storage`.
  *
- * Active Batch 3 territory (docs/AUDIT_STATE.md): two banned date-pattern
- * usages at lines 441 and 494 use `toISOString().split('T')[0]` (UTC) and
- * must move to `getDateStamp()`. Don't add more. The `mealReminders`
- * actions exist but no UI renders them — Batch 3 will either ship UI or
- * remove the dead actions.
+ * Date math goes through parseDateStamp (input) + getDateStamp (output)
+ * end-to-end. Local-aware on both sides — see docs/DATA_POLICY.md §2 and
+ * its parseDateStamp-trap corollary. Don't reintroduce `new Date(stamp)`
+ * or `toISOString().split('T')[0]` here.
  *
- * Tests: not yet (Batch 3 will add).
+ * Active Batch 3 territory (docs/AUDIT_STATE.md): mealReminders has store
+ * actions and a settings UI but no notification-firing layer; planned
+ * strip in this batch.
+ *
+ * Tests: src/store/useDietStore.test.ts (Batch 3 date-stamp invariants).
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -27,6 +30,7 @@ import type {
   DietGoalType,
 } from '../types';
 import { defaultFoods } from '../data/foods';
+import { getDateStamp, parseDateStamp } from '../utils/date';
 
 interface DietState {
   // Foods
@@ -448,9 +452,12 @@ export const useDietStore = create<DietState>()(
         const hitProtein = dailyMacros.protein >= targets.protein * 0.9; // 90% threshold
 
         set((state) => {
-          const yesterday = new Date(date);
+          // Local-aware date math end-to-end. parseDateStamp parses the
+          // YYYY-MM-DD as LOCAL midnight (date-fns parseISO); getDateStamp
+          // formats the result in local time. See docs/DATA_POLICY.md §2.
+          const yesterday = parseDateStamp(date);
           yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          const yesterdayStr = getDateStamp(yesterday);
 
           let newProteinStreak = state.streaks.proteinStreak;
           let newLoggingStreak = state.streaks.loggingStreak;
@@ -498,12 +505,13 @@ export const useDietStore = create<DietState>()(
       },
 
       getWeeklyStats: (weekStartDate) => {
-        const weekStart = new Date(weekStartDate);
+        // Local-aware date math end-to-end. See updateStreaks above.
+        const weekStart = parseDateStamp(weekStartDate);
         const dates: string[] = [];
         for (let i = 0; i < 7; i++) {
           const d = new Date(weekStart);
           d.setDate(d.getDate() + i);
-          dates.push(d.toISOString().split('T')[0]);
+          dates.push(getDateStamp(d));
         }
 
         let totalCalories = 0;
