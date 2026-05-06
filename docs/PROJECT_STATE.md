@@ -58,7 +58,7 @@ A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
   Vitest store-layer null-emit invariant tests, plus the AI-handoff doc set
   (`PROJECT_STATE`, `AUDIT_STATE`, `ROADMAP`, `TESTING`, `DATA_POLICY`, `DECISIONS`,
   `COMMIT_STYLE`, `CHANGELOG`) and top-of-file headers on data-spine modules.
-- **Batch 3 — Diet UX correctness.** ✅ Done (pending merge) on `claude/audit-batch3-diet-ux`.
+- **Batch 3 — Diet UX correctness.** ✅ Merged (`5bbd9a6`).
   Eight commits. Render custom mealTypes on Diet/History; full local-aware date math
   (parseDateStamp + getDateStamp end-to-end) with TZ-sensitive Vitest coverage; rename
   `DietMealNew` → `DietMealEditor` and add `/diet/meals/:id/edit` route with edit-mode

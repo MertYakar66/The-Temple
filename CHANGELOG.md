@@ -8,7 +8,7 @@ rather than by version — there are no semver tags. Newest first.
 
 ---
 
-## Audit Batch 3 — Diet UX correctness — `claude/audit-batch3-diet-ux` (pending merge)
+## Audit Batch 3 — Diet UX correctness — `claude/audit-batch3-diet-ux` ✅ Merged in 5bbd9a6
 
 Branch off main at `6836f5a`. Eight commits. All five scope items landed with full Vitest
 coverage (54/54 tests green; 11 new tests this batch).
@@ -45,7 +45,7 @@ Carry-forwards (flagged for future batches):
 
 ---
 
-## Repo foundation pass — `claude/repo-foundation-pass` (in progress)
+## Repo foundation pass — `claude/repo-foundation-pass` ✅ Merged in 6836f5a
 
 Branch from `claude/setup-playwright-e2e`. Documentation and hygiene only — no source
 behavior change.
@@ -137,7 +137,7 @@ Side findings flagged (deferred to Batch 6):
 
 A non-exhaustive list of the larger pre-audit landings, for orientation:
 
-- `658dfd8` Add Claude Code on the web reference doc.
+- `2fbb6d3` Add Claude Code on the web reference doc.
 - `281be6e` Add CLAUDE.md as Claude Code project-memory entry point.
 - `dbc3213` Add token-efficient AI agent context files (the original AGENTS.md).
 - `a0b971d` Efficiency pass: slimmer syncs, cached token lookups, calendar
