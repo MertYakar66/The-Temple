@@ -119,6 +119,7 @@ function AppRoutes() {
       <Route path="/diet/log" element={<DietLog />} />
       <Route path="/diet/meals" element={<DietMeals />} />
       <Route path="/diet/meals/new" element={<DietMealEditor />} />
+      <Route path="/diet/meals/:id/edit" element={<DietMealEditor />} />
       <Route path="/diet/weekly" element={<DietWeekly />} />
       <Route path="/diet/settings" element={<DietSettings />} />
       <Route path="/diet/food/new" element={<DietFoodNew />} />

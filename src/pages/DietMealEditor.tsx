@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ChevronLeft,
   Plus,
@@ -32,12 +32,20 @@ const categoryIcons: Record<FoodCategory, React.ElementType> = {
 
 export function DietMealEditor() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditing = Boolean(id);
+
   const getAllFoods = useDietStore((s) => s.getAllFoods);
   const addMeal = useDietStore((s) => s.addMeal);
+  const updateMeal = useDietStore((s) => s.updateMeal);
+  const getMeal = useDietStore((s) => s.getMeal);
 
-  const [mealName, setMealName] = useState('');
+  // Load existing meal in edit mode. Mirrors DietRecipeEditor's pattern.
+  const existing = id ? getMeal(id) : undefined;
+
+  const [mealName, setMealName] = useState(existing?.name ?? '');
   const [searchQuery, setSearchQuery] = useState('');
-  const [items, setItems] = useState<MealItem[]>([]);
+  const [items, setItems] = useState<MealItem[]>(existing?.items ?? []);
   const [showFoodPicker, setShowFoodPicker] = useState(false);
 
   const allFoods = getAllFoods();
@@ -105,11 +113,18 @@ export function DietMealEditor() {
       return;
     }
 
-    addMeal({
-      name: mealName.trim(),
-      mealType: 'custom',
-      items,
-    });
+    if (isEditing && id) {
+      updateMeal(id, {
+        name: mealName.trim(),
+        items,
+      });
+    } else {
+      addMeal({
+        name: mealName.trim(),
+        mealType: 'custom',
+        items,
+      });
+    }
 
     navigate('/diet/meals');
   };
@@ -185,7 +200,9 @@ export function DietMealEditor() {
             <ChevronLeft className="w-5 h-5 mr-1" />
             Back
           </button>
-          <h1 className="font-semibold text-gray-900 dark:text-white">New Meal</h1>
+          <h1 className="font-semibold text-gray-900 dark:text-white">
+            {isEditing ? 'Edit Meal' : 'New Meal'}
+          </h1>
           <button
             onClick={handleSave}
             disabled={!mealName.trim() || items.length === 0}
@@ -320,7 +337,7 @@ export function DietMealEditor() {
           }`}
         >
           <Check className="w-5 h-5 mr-2" />
-          Save Meal
+          {isEditing ? 'Update Meal' : 'Save Meal'}
         </button>
       </div>
     </div>
