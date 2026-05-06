@@ -11,16 +11,29 @@ import {
 import { useDietStore } from '../store/useDietStore';
 import type { MealType } from '../types';
 
-// Fixed meal slots like MyFitnessPal (lowercase to match stored mealType values)
-const MEAL_SLOTS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+// Anchor slots — always rendered, with empty-state "ADD FOOD" button.
+// MyFitnessPal-style. Lowercase to match stored mealType values.
+const ANCHOR_SLOTS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
-// Display labels for meal slots
-const MEAL_LABELS: Record<MealType, string> = {
+// Known display labels. Custom mealType strings (anything not listed here)
+// are humanized at render time via humanizeMealType.
+const KNOWN_LABELS: Record<string, string> = {
   breakfast: 'Breakfast',
   lunch: 'Lunch',
   dinner: 'Dinner',
   snack: 'Snacks',
+  pre_workout: 'Pre-Workout',
+  post_workout: 'Post-Workout',
 };
+
+function humanizeMealType(mt: MealType): string {
+  if (KNOWN_LABELS[mt]) return KNOWN_LABELS[mt];
+  return mt
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
 
 export function Diet() {
   const navigate = useNavigate();
@@ -36,8 +49,20 @@ export function Diet() {
   const dailyMacros = getDailyMacros(dateStr);
   const targets = dietSettings.goals;
 
-  // Group entries by meal slot
-  const entriesByMeal = MEAL_SLOTS.reduce((acc, slot) => {
+  // Anchor slots first (always shown, with ADD FOOD), then any custom
+  // mealTypes present on this date appended in first-appearance order.
+  // Cheap to recompute every render — entries is small (one day's log).
+  const customSeen = new Set<string>(ANCHOR_SLOTS);
+  const customMealTypes: MealType[] = [];
+  for (const e of entries) {
+    if (!customSeen.has(e.mealType)) {
+      customSeen.add(e.mealType);
+      customMealTypes.push(e.mealType);
+    }
+  }
+  const visibleMealTypes: MealType[] = [...ANCHOR_SLOTS, ...customMealTypes];
+
+  const entriesByMeal = visibleMealTypes.reduce((acc, slot) => {
     acc[slot] = entries.filter((e) => e.mealType === slot);
     return acc;
   }, {} as Record<string, typeof entries>);
@@ -127,7 +152,7 @@ export function Diet() {
       </div>
 
       {/* Meal Sections */}
-      {MEAL_SLOTS.map((mealSlot) => {
+      {visibleMealTypes.map((mealSlot) => {
         const mealEntries = entriesByMeal[mealSlot] || [];
         const mealCalories = mealEntries.reduce((sum, e) => sum + e.macros.calories, 0);
 
@@ -135,7 +160,7 @@ export function Diet() {
           <div key={mealSlot} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
             {/* Meal Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="font-semibold text-gray-900 dark:text-white">{MEAL_LABELS[mealSlot] || mealSlot}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{humanizeMealType(mealSlot)}</h3>
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {Math.round(mealCalories)} cal
               </span>
