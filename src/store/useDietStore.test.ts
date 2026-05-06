@@ -23,7 +23,7 @@ const __originalTZ = process.env.TZ;
 process.env.TZ = 'America/Los_Angeles';
 
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { useDietStore } from './useDietStore';
+import { useDietStore, dietStoreMigrate } from './useDietStore';
 import { defaultFoods } from '../data/foods';
 
 const FOOD_ID = defaultFoods[0].id; // 'chicken-breast'
@@ -138,5 +138,73 @@ describe('useDietStore — Batch 3 date-stamp fix (Option A: parseDateStamp + ge
     // Naïve fix: one entry (the '2026-05-04' food, picked up via the
     //   off-by-one i=0 iteration). totalDaysLogged would be 1.
     expect(stats.totalDaysLogged).toBe(0);
+  });
+});
+
+describe('dietStoreMigrate (persist v1)', () => {
+  it('drops dietSettings.mealReminders and preserves every other field', () => {
+    // Hand-construct an "old shape" persisted blob — what a v0
+    // localStorage entry from before Batch 3 would look like. The
+    // migration must strip mealReminders without touching any sibling.
+    const oldShape = {
+      customFoods: [{ id: 'f1', name: 'Tofu' }],
+      recipes: [{ id: 'r1', name: 'Salad' }],
+      meals: [{ id: 'm1', name: 'Lunch combo' }],
+      foodLog: [{ id: 'l1', date: '2026-05-05' }],
+      recentFoodIds: ['f1'],
+      dietSettings: {
+        goals: {
+          dailyCalories: 2500,
+          dailyProtein: 180,
+          dailyCarbs: 250,
+          dailyFat: 80,
+          goalType: 'maintenance',
+          trainingDayCalorieAdjustment: 300,
+          trainingDayProteinAdjustment: 20,
+        },
+        mealReminders: [
+          { id: 'reminder-breakfast', mealType: 'breakfast', time: '08:00', enabled: true },
+          { id: 'reminder-lunch', mealType: 'lunch', time: '12:30', enabled: false },
+        ],
+        proteinPriority: true,
+      },
+      streaks: { proteinStreak: 5, loggingStreak: 7, lastProteinHitDate: '2026-05-05', lastLogDate: '2026-05-05' },
+    };
+
+    const result = dietStoreMigrate(oldShape) as typeof oldShape & {
+      dietSettings: Omit<(typeof oldShape)['dietSettings'], 'mealReminders'>;
+    };
+
+    // Sibling fields preserved unchanged (the only failure mode worth
+    // catching — accidentally widening the migration to drop more).
+    expect(result.customFoods).toEqual(oldShape.customFoods);
+    expect(result.recipes).toEqual(oldShape.recipes);
+    expect(result.meals).toEqual(oldShape.meals);
+    expect(result.foodLog).toEqual(oldShape.foodLog);
+    expect(result.recentFoodIds).toEqual(oldShape.recentFoodIds);
+    expect(result.streaks).toEqual(oldShape.streaks);
+    expect(result.dietSettings.goals).toEqual(oldShape.dietSettings.goals);
+    expect(result.dietSettings.proteinPriority).toBe(true);
+
+    // mealReminders is gone.
+    expect(result.dietSettings).not.toHaveProperty('mealReminders');
+  });
+
+  it('is a no-op when dietSettings is absent', () => {
+    const blob = { customFoods: [], foodLog: [] };
+    expect(dietStoreMigrate(blob)).toEqual(blob);
+  });
+
+  it('is a no-op when dietSettings has no mealReminders key', () => {
+    // E.g. partial shape from a hand-edited localStorage or a user who
+    // already cleared their reminders via an earlier client.
+    const blob = { dietSettings: { goals: { dailyCalories: 2500 }, proteinPriority: true } };
+    expect(dietStoreMigrate(blob)).toEqual(blob);
+  });
+
+  it('handles non-object input safely', () => {
+    expect(dietStoreMigrate(null)).toBe(null);
+    expect(dietStoreMigrate(undefined)).toBe(undefined);
+    expect(dietStoreMigrate('not an object')).toBe('not an object');
   });
 });

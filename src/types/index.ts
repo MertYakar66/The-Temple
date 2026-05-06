@@ -278,15 +278,7 @@ export interface DietGoals {
 
 export interface DietSettings {
   goals: DietGoals;
-  mealReminders: MealReminder[];
   proteinPriority: boolean; // highlight protein compliance
-}
-
-export interface MealReminder {
-  id: string;
-  mealType: MealType;
-  time: string; // HH:MM format
-  enabled: boolean;
 }
 
 export interface DietStreak {

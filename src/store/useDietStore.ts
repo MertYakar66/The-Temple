@@ -1,17 +1,18 @@
 /**
  * useDietStore — foods/recipes/meals/log/streaks Zustand store.
- * Persisted under `diet-tracker-storage`.
+ * Persisted under `diet-tracker-storage` at version 1.
  *
  * Date math goes through parseDateStamp (input) + getDateStamp (output)
  * end-to-end. Local-aware on both sides — see docs/DATA_POLICY.md §2 and
  * its parseDateStamp-trap corollary. Don't reintroduce `new Date(stamp)`
  * or `toISOString().split('T')[0]` here.
  *
- * Active Batch 3 territory (docs/AUDIT_STATE.md): mealReminders has store
- * actions and a settings UI but no notification-firing layer; planned
- * strip in this batch.
+ * Persist version 1 strips `dietSettings.mealReminders` from older
+ * persisted state via dietStoreMigrate. The reminder feature was removed
+ * in Batch 3 (no notification-firing layer ever existed; the editor UI
+ * was misleading).
  *
- * Tests: src/store/useDietStore.test.ts (Batch 3 date-stamp invariants).
+ * Tests: src/store/useDietStore.test.ts.
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -23,7 +24,6 @@ import type {
   FoodLogEntry,
   DietGoals,
   DietSettings,
-  MealReminder,
   DietStreak,
   Macros,
   MealType,
@@ -69,9 +69,6 @@ interface DietState {
   // Diet Settings & Goals
   dietSettings: DietSettings;
   updateDietGoals: (goals: Partial<DietGoals>) => void;
-  updateMealReminder: (id: string, updates: Partial<MealReminder>) => void;
-  addMealReminder: (reminder: Omit<MealReminder, 'id'>) => void;
-  deleteMealReminder: (id: string) => void;
 
   // Streaks
   streaks: DietStreak;
@@ -116,13 +113,39 @@ const defaultDietSettings: DietSettings = {
     trainingDayCalorieAdjustment: 300,
     trainingDayProteinAdjustment: 20,
   },
-  mealReminders: [
-    { id: 'reminder-breakfast', mealType: 'breakfast', time: '08:00', enabled: false },
-    { id: 'reminder-lunch', mealType: 'lunch', time: '12:30', enabled: false },
-    { id: 'reminder-dinner', mealType: 'dinner', time: '19:00', enabled: false },
-  ],
   proteinPriority: true,
 };
+
+/**
+ * Persist v1 migration: drop dietSettings.mealReminders.
+ *
+ * Older persisted state had an unused `mealReminders` array under
+ * `dietSettings`. The feature was removed in Batch 3 (no notification
+ * firing was ever implemented; the editor was misleading). This migration
+ * walks one path — `state.dietSettings.mealReminders` — and removes that
+ * key only. Every other field passes through untouched. Exported for unit
+ * testing in useDietStore.test.ts. Zustand passes (state, version) to
+ * the migrate callback; the version arg is unused (this is the first
+ * migration, so any pre-v1 state carries the old shape).
+ */
+export function dietStoreMigrate(persistedState: unknown): unknown {
+  if (typeof persistedState !== 'object' || persistedState === null) {
+    return persistedState;
+  }
+  const state = persistedState as Record<string, unknown>;
+  const settings = state.dietSettings;
+  if (
+    typeof settings === 'object' &&
+    settings !== null &&
+    'mealReminders' in (settings as Record<string, unknown>)
+  ) {
+    const rest = Object.fromEntries(
+      Object.entries(settings as Record<string, unknown>).filter(([k]) => k !== 'mealReminders'),
+    );
+    return { ...state, dietSettings: rest };
+  }
+  return state;
+}
 
 const defaultStreaks: DietStreak = {
   proteinStreak: 0,
@@ -410,39 +433,6 @@ export const useDietStore = create<DietState>()(
         }));
       },
 
-      updateMealReminder: (id, updates) => {
-        set((state) => ({
-          dietSettings: {
-            ...state.dietSettings,
-            mealReminders: state.dietSettings.mealReminders.map((r) =>
-              r.id === id ? { ...r, ...updates } : r
-            ),
-          },
-        }));
-      },
-
-      addMealReminder: (reminder) => {
-        const newReminder: MealReminder = {
-          ...reminder,
-          id: uuidv4(),
-        };
-        set((state) => ({
-          dietSettings: {
-            ...state.dietSettings,
-            mealReminders: [...state.dietSettings.mealReminders, newReminder],
-          },
-        }));
-      },
-
-      deleteMealReminder: (id) => {
-        set((state) => ({
-          dietSettings: {
-            ...state.dietSettings,
-            mealReminders: state.dietSettings.mealReminders.filter((r) => r.id !== id),
-          },
-        }));
-      },
-
       // Streaks
       streaks: defaultStreaks,
 
@@ -583,6 +573,8 @@ export const useDietStore = create<DietState>()(
     }),
     {
       name: 'diet-tracker-storage',
+      version: 1,
+      migrate: dietStoreMigrate,
     }
   )
 );

@@ -6,17 +6,14 @@ import {
   Beef,
   Wheat,
   Droplet,
-  Bell,
   Dumbbell,
-  Plus,
-  Trash2,
   AlertTriangle,
   Check,
   Calculator,
   ChevronRight,
 } from 'lucide-react';
 import { useDietStore } from '../store/useDietStore';
-import type { DietGoalType, MealType } from '../types';
+import type { DietGoalType } from '../types';
 
 const goalTypeOptions: { id: DietGoalType; label: string; description: string }[] = [
   { id: 'cut', label: 'Cut', description: 'Calorie deficit for fat loss' },
@@ -24,23 +21,11 @@ const goalTypeOptions: { id: DietGoalType; label: string; description: string }[
   { id: 'bulk', label: 'Bulk', description: 'Calorie surplus for muscle gain' },
 ];
 
-const mealTypeLabels: Record<MealType, string> = {
-  breakfast: 'Breakfast',
-  lunch: 'Lunch',
-  dinner: 'Dinner',
-  snack: 'Snack',
-  pre_workout: 'Pre-Workout',
-  post_workout: 'Post-Workout',
-};
-
 export function DietSettings() {
   const navigate = useNavigate();
 
   const dietSettings = useDietStore((s) => s.dietSettings);
   const updateDietGoals = useDietStore((s) => s.updateDietGoals);
-  const updateMealReminder = useDietStore((s) => s.updateMealReminder);
-  const addMealReminder = useDietStore((s) => s.addMealReminder);
-  const deleteMealReminder = useDietStore((s) => s.deleteMealReminder);
 
   const [editingGoals, setEditingGoals] = useState(false);
   const [localGoals, setLocalGoals] = useState(dietSettings.goals);
@@ -60,14 +45,6 @@ export function DietSettings() {
   const handleSaveGoals = () => {
     updateDietGoals(localGoals);
     setEditingGoals(false);
-  };
-
-  const handleAddReminder = () => {
-    addMealReminder({
-      mealType: 'snack',
-      time: '15:00',
-      enabled: true,
-    });
   };
 
   // Auto-balance macros based on calories (useful presets)
@@ -410,62 +387,6 @@ export function DietSettings() {
                 </span>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Meal Reminders */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Meal Reminders
-            </h2>
-            <button
-              onClick={handleAddReminder}
-              className="text-primary-600 dark:text-primary-400 text-sm font-medium flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" />
-              Add
-            </button>
-          </div>
-
-          <div className="card p-0 divide-y divide-gray-100 dark:divide-gray-700">
-            {dietSettings.mealReminders.map((reminder) => (
-              <div key={reminder.id} className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <Bell className={`w-5 h-5 ${reminder.enabled ? 'text-primary-500' : 'text-gray-400'}`} />
-                  <div>
-                    <span className="text-gray-900 dark:text-white">{mealTypeLabels[reminder.mealType]}</span>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{reminder.time}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => updateMealReminder(reminder.id, { enabled: !reminder.enabled })}
-                    className={`w-12 h-6 rounded-full transition-colors ${
-                      reminder.enabled ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                  >
-                    <div
-                      className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform ${
-                        reminder.enabled ? 'translate-x-6' : 'translate-x-0.5'
-                      }`}
-                    />
-                  </button>
-                  <button
-                    onClick={() => deleteMealReminder(reminder.id)}
-                    className="p-1 text-gray-400 hover:text-red-500"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {dietSettings.mealReminders.length === 0 && (
-              <div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
-                No reminders set
-              </div>
-            )}
           </div>
         </div>
 
