@@ -63,7 +63,7 @@ e2e round-trip is fully written but `test.fixme()`'d (see "Cross-cutting blocker
 **Verification:** None landed with the batch (these are localized fixes). Should be covered
 by future Vitest expansion.
 
-## Batch 3 — Diet UX correctness ✅ Done (pending merge)
+## Batch 3 — Diet UX correctness ✅ Merged in 5bbd9a6
 
 **Branch:** `claude/audit-batch3-diet-ux` (off main at `6836f5a`). Eight commits, ready for
 merge to main. All five scope items landed with full Vitest coverage.
