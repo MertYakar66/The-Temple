@@ -137,19 +137,22 @@ function getDayOfWeek(tz?: string): number {
   return new Date().getDay();
 }
 
-// Safe macro accumulator — handles missing/corrupted data
-function sumMacros(entries: unknown[]): { calories: number; protein: number; carbs: number; fat: number } {
+// Safe macro accumulator — handles missing/corrupted data.
+// `entry.macros` is the per-entry total: useDietStore.logFood/logRecipe
+// pre-multiply food.macros by entry.servings at write time, and the client
+// reader (useDietStore.getDailyMacros) sums entry.macros directly. Don't
+// multiply by servings here or you'll double-count.
+export function sumMacros(entries: unknown[]): { calories: number; protein: number; carbs: number; fat: number } {
   return entries.reduce<{ calories: number; protein: number; carbs: number; fat: number }>(
     (acc, raw) => {
       const entry = raw as Record<string, unknown>;
       const macros = entry?.macros as Record<string, number> | undefined;
-      const servings = typeof entry?.servings === "number" ? entry.servings : 1;
       if (!macros) return acc;
       return {
-        calories: acc.calories + (macros.calories || 0) * servings,
-        protein: acc.protein + (macros.protein || 0) * servings,
-        carbs: acc.carbs + (macros.carbs || 0) * servings,
-        fat: acc.fat + (macros.fat || 0) * servings,
+        calories: acc.calories + (macros.calories || 0),
+        protein: acc.protein + (macros.protein || 0),
+        carbs: acc.carbs + (macros.carbs || 0),
+        fat: acc.fat + (macros.fat || 0),
       };
     },
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
@@ -464,9 +467,8 @@ export const siriNutrition = onRequest({ cors: true }, async (req, res) => {
 
     const mealBreakdown = todayLog.reduce<Record<string, number>>((acc, entry) => {
       const macros = entry.macros;
-      const servings = typeof entry.servings === "number" ? entry.servings : 1;
       const meal = entry.mealType || "Other";
-      acc[meal] = (acc[meal] || 0) + Math.round((macros?.calories || 0) * servings);
+      acc[meal] = (acc[meal] || 0) + Math.round(macros?.calories || 0);
       return acc;
     }, {});
 
