@@ -11,6 +11,8 @@ A workout tracker and nutrition logger built with React, TypeScript, and Firebas
 - **Body Weight Tracking** — Track weight over time with visual progress charts.
 - **Nutrition Logging** — Log meals with calorie and macro tracking. Create custom foods and recipes.
 - **Progress Dashboard** — View strength progression, volume trends, and body composition changes.
+- **Calendar** — Day, week, month, and upcoming views with recurring events, multiple calendars, and Google Places location autocomplete.
+- **Siri Integration** — Ask Siri for a daily briefing, schedule, workout, or nutrition summary via Apple Shortcuts — hands-free, even from the lock screen.
 - **Cloud Sync** — Data syncs to Firebase per user account. Log in from any device.
 - **Dark Mode** — Full dark mode support across all screens.
 - **Unit System** — Toggle between metric (kg) and imperial (lbs).
