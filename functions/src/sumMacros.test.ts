@@ -4,7 +4,7 @@ import { sumMacros } from "./index";
 // Fixtures mirror useDietStore.logFood / logRecipe output: `entry.macros`
 // is already pre-multiplied by `entry.servings` at write time. The Cloud
 // Function MUST sum macros directly without re-multiplying — see C-2 in
-// docs/AUDIT_2026-05-08.md.
+// docs/audits/2026-05-08-cross-module-audit.md.
 
 describe("sumMacros", () => {
   it("returns zeros for an empty log", () => {
