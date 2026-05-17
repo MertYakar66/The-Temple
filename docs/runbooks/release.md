@@ -23,6 +23,27 @@ All three must be green. `npm run build` writes the production bundle to
 
 ```bash
 npm run build
+```
+
+**Verify the build carries Firebase config — before deploying.**
+`npm run build` succeeds even when the `VITE_FIREBASE_*` env vars are missing
+(no `.env` at the repo root, or an empty one): Vite silently bakes
+`apiKey: undefined` into the bundle, and the deployed site loads to a blank
+page (`auth/invalid-api-key`). `npm run lint` / `npm run build` cannot catch
+this. Confirm the config is actually in the built bundle:
+
+```bash
+grep -c "firebaseapp.com" dist/assets/*.js   # must be > 0  (authDomain baked in)
+grep -c "apiKey:void 0"   dist/assets/*.js   # must be 0    (apiKey real, not undefined)
+```
+
+If `firebaseapp.com` is `0`, or `apiKey:void 0` is non-zero, the build has no
+Firebase config — `.env` is missing or empty. **STOP — do not deploy.** Fix
+`.env` at the repo root, rebuild, and re-check.
+
+Only when both checks pass:
+
+```bash
 firebase deploy --only hosting:myapp
 ```
 
