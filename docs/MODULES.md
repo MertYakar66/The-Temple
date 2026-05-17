@@ -105,7 +105,7 @@ on a month with many events caused jank.
 **Pitfall:** All Firestore reads are defensive — `safeArray` returns `[]` for missing/wrong-type
 fields. Don't assume any field exists. Users may have partial data.
 
-**User docs:** `SIRI_INTEGRATION.md` at repo root walks through deployment + shortcut creation
+**User docs:** `docs/siri-integration.md` walks through deployment + shortcut creation
 in detail.
 
 ## Auth
