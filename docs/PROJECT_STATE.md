@@ -33,7 +33,8 @@ client + serverless.
   `thetemple.web.app`. Deploy via `firebase deploy --only hosting:myapp`.
 - **Functions:** four endpoints in `us-central1` (`siriDailyBriefing`, `siriSchedule`,
   `siriWorkout`, `siriNutrition`). Deploy via `cd functions && npm run deploy`.
-- **CI:** none. Lint/build/test run locally before each merge.
+- **CI:** no GitHub Actions; lint/build/test run locally before each merge. A Vercel GitHub
+  integration posts a preview-deploy status check on every PR (no Vercel config in the repo).
 - **Default branch:** `main`. Feature branches are `claude/<topic>-<suffix>`. Direct pushes to
   main are forbidden.
 
@@ -82,7 +83,8 @@ A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
   Batch 5 territory.
 - **`useDietStore` uses banned date pattern in two places** (`updateStreaks`,
   `getWeeklyStats`). Batch 3 territory.
-- **No CI.** Lint/build/test gates are local discipline only.
+- **No test CI.** No GitHub Actions; lint/build/test gates are local discipline only. The
+  Vercel GitHub integration builds a preview deploy per PR, but does not run lint or tests.
 - **Single-user product.** Test users live in the production Firebase project (no separate
   staging). The `e2e-test@thetemple.test` user was created against prod. Be aware when running
   destructive scripts.
