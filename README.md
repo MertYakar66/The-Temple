@@ -44,15 +44,27 @@ firebase deploy --only hosting:myapp
 
 ```
 src/
-├── components/       # Reusable UI components
-├── contexts/         # React context providers (Auth)
+├── components/       # Reusable UI components (workout, calendar, blocks, …)
+├── contexts/         # React context providers (Auth + cloud sync)
+├── data/             # Default seed data (exercises, foods, programs)
 ├── hooks/            # Custom hooks (dark mode, etc.)
-├── lib/              # Firebase config and sync logic
+├── lib/              # Firebase config and Firestore sync logic
 ├── pages/            # Route-level page components
-├── store/            # Zustand stores (workout, diet)
+├── store/            # Zustand stores (workout, diet, calendar)
 ├── types/            # TypeScript type definitions
-└── utils/            # Utility functions (weight conversion, etc.)
+└── utils/            # Utility functions (dates, weight conversion, etc.)
+functions/            # Firebase Cloud Functions — Siri integration endpoints
+docs/                 # Architecture, data policy, runbooks, audits
+scripts/              # backup.cjs / restore.cjs — Firestore backup tooling
 ```
+
+## Documentation
+
+- **[`CLAUDE.md`](CLAUDE.md)** — the working guide for contributors and AI
+  agents: architecture, the hard invariants, conventions, and pointers to
+  everything below.
+- **[`docs/`](docs/)** — deeper reference: architecture, data policy,
+  decisions, the sync model, testing, runbooks, and audit reports.
 
 ## License
 
