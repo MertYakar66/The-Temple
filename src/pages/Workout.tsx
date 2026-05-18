@@ -78,7 +78,7 @@ function ProgramAccordion({
               <div className="text-left flex-1">
                 <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{routine.name}</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {routine.exercises.length} exercises
+                  {pluralize(routine.exercises.length, 'exercise')}
                 </p>
               </div>
             </button>
@@ -174,7 +174,7 @@ function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: stri
                             )}
                           </h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {trainingDays.length} training days
+                            {pluralize(trainingDays.length, 'training day')}
                           </p>
                         </div>
                         {isWeekExpanded ? (
@@ -199,7 +199,7 @@ function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: stri
                                 <div className="text-left flex-1">
                                   <h5 className="font-medium text-gray-900 dark:text-white text-sm">{day.dayName}</h5>
                                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {day.exercises.length} exercises
+                                    {pluralize(day.exercises.length, 'exercise')}
                                   </p>
                                 </div>
                               </button>
@@ -385,7 +385,7 @@ export function Workout() {
                         <div className="text-left flex-1">
                           <h3 className="font-semibold text-gray-900 dark:text-white">{routine.name}</h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {routine.exercises.length} exercises
+                            {pluralize(routine.exercises.length, 'exercise')}
                           </p>
                         </div>
                       </button>
