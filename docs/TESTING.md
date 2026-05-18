@@ -109,9 +109,11 @@ For e2e specifically:
 
 ## CI
 
-None configured. Lint/build/test pass locally before each merge. If CI is added later, the
-target gate is `lint && build && test` (not e2e — keep e2e local until the harness is
-unblocked and stable).
+No GitHub Actions and no test CI — lint/build/test pass locally before each merge. A Vercel
+GitHub integration builds a preview deploy on every PR and posts it as a status check (the repo
+has no Vercel config); it does not run lint or tests. If a test CI is added later, the target
+gate is `lint && build && test` (not e2e — keep e2e local until the harness is unblocked and
+stable).
 
 ## When to update this file
 
