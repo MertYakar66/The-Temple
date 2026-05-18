@@ -10,7 +10,7 @@ export function Header({ title = 'TheTemple', showSettings = true }: HeaderProps
   return (
     <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h1>
+        <div className="text-xl font-bold text-gray-900 dark:text-white">{title}</div>
         {showSettings && (
           <Link
             to="/settings"
