@@ -78,7 +78,7 @@ export function Routines() {
             </p>
           )}
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {routine.exercises.length} exercises
+            {pluralize(routine.exercises.length, 'exercise')}
           </p>
         </Link>
 
