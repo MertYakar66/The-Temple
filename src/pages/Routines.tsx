@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Play, Trash2, Edit2, MoreVertical, ChevronLeft, ChevronDown, ChevronRight, Dumbbell } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { RoutineGroupEditModal } from '../components/workout/RoutineGroupEditModal';
+import { pluralize } from '../utils/pluralize';
 
 export function Routines() {
   const navigate = useNavigate();
@@ -188,7 +189,7 @@ export function Routines() {
                         {programName}
                       </h2>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {programRoutines.length} days &middot; {totalExercises} exercises
+                        {pluralize(programRoutines.length, 'day')} &middot; {pluralize(totalExercises, 'exercise')}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">

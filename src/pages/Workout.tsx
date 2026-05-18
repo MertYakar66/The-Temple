@@ -9,6 +9,7 @@ import { WorkoutExerciseCard } from '../components/workout/WorkoutExerciseCard';
 import { RestTimer } from '../components/workout/RestTimer';
 import { getCompletedSetCount, getTotalSetCount } from '../utils/workoutMetrics';
 import { RoutineGroupEditModal } from '../components/workout/RoutineGroupEditModal';
+import { pluralize } from '../utils/pluralize';
 
 function ProgramAccordion({
   programName,
@@ -42,7 +43,7 @@ function ProgramAccordion({
             {programName}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {routines.length} days &middot; {totalExercises} exercises
+            {pluralize(routines.length, 'day')} &middot; {pluralize(totalExercises, 'exercise')}
           </p>
         </div>
         <div className="flex items-center gap-1">
