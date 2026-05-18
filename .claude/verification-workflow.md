@@ -8,7 +8,7 @@ first, along with `.claude/project-profile.md` and `AGENTS.md`.
 The goal is simple: separate the **production** of findings from the
 **verification** of findings, so that hallucinated, unsupported, or internally
 inconsistent claims are caught before they drive a decision. TheTemple has
-already been bitten by stale context — the `docs/AUDIT_2026-05-08.md` pass
+already been bitten by stale context — the `docs/audits/2026-05-08-cross-module-audit.md` pass
 found that `AGENTS.md`'s "Known issues" entry for the AuthContext race
 understated the bug (it missed the leaked-subscriber and reset-driven
 empty-state-write failure modes), and that `AGENTS.md` §5 hedges `currentSession`
@@ -210,7 +210,7 @@ load-bearing invariants in `.claude/project-profile.md`, `AGENTS.md`, and
   branches are named `claude/<topic>-<suffix>` and are not merged to `main`
   unless the relay asks. A claim must be checked against the branch the
   executor is actually on — a finding true on one branch may be false on
-  another. `docs/AUDIT_2026-05-08.md` is the current open-findings list;
+  another. `docs/audits/2026-05-08-cross-module-audit.md` is the current open-findings list;
   unfixed items there (C-1, C-3, C-4, H-1…) are expected, not regressions.
 
 These anchors are evidence, not ground truth. If the executor shows the repo
