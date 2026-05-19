@@ -1,0 +1,76 @@
+name: CI
+
+# Secret-free pre-merge gate — lint + build + test for the frontend, and
+# build + test for functions/ — on every pull request and on pushes to main.
+#
+# No secrets and no environment variables: npm ci / lint / build / test all
+# succeed without Firebase config (Vite reads VITE_* at runtime, not build
+# time). The e2e suite (npm run test:e2e) is deliberately NOT run here — it
+# signs into real Firebase as a test user and needs .env.test. See
+# docs/TESTING.md.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new commit on a ref cancels that ref's in-progress run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege — the gate only needs to read the repository.
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend — lint, build, test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+  functions:
+    name: Functions — build, test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: functions
+
+      - name: Build
+        run: npm run build
+        working-directory: functions
+
+      - name: Test
+        run: npm test
+        working-directory: functions
