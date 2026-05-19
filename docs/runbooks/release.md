@@ -7,7 +7,8 @@ Functions for Siri. No backend server.
 - **Hosting target:** `myapp` → site `thetemple` → https://thetemple.web.app
 - **Functions region:** `us-central1` (Node 20)
 
-There is no CI — run these steps manually from a trusted machine signed in via
+CI (`.github/workflows/ci.yml`) runs the lint/build/test gate on pull requests, but it does
+not deploy — run these release steps manually from a trusted machine signed in via
 `firebase login`.
 
 ## Pre-flight (always)

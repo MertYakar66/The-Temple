@@ -37,7 +37,9 @@ Before declaring any task done:
 
 `npm run test:e2e` is **not** part of the standard gate — it needs `.env.test`,
 network, and the test user. Its one spec is active again (the AuthContext race
-that blocked it is fixed). Quick gate: the `/preflight` slash command.
+that blocked it is fixed). Quick gate: the `/preflight` slash command. GitHub
+Actions (`.github/workflows/ci.yml`) runs this same lint/build/test gate on
+every pull request — but run it locally first; don't lean on CI to catch it.
 
 ## Branch & PR rules
 

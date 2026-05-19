@@ -105,10 +105,21 @@ For e2e specifically:
 
 ## CI
 
-No GitHub Actions and no test CI — lint/build/test pass locally before each merge. A Vercel
-GitHub integration builds a preview deploy on every PR and posts it as a status check (the repo
-has no Vercel config); it does not run lint or tests. If a test CI is added later, the target
-gate is `lint && build && test` (e2e stays local — it needs the test-user credentials).
+GitHub Actions runs the secret-free gate on **every pull request** and on pushes to `main` —
+workflow at `.github/workflows/ci.yml`:
+
+- **Frontend job:** `npm ci` → `npm run lint` → `npm run build` → `npm test`.
+- **Functions job:** `npm ci` → `npm run build` → `npm test`, in `functions/`.
+
+Both run on `ubuntu-latest` / Node 20 with per-lockfile npm caching. The workflow needs **no
+secrets** — `npm ci` / lint / build / test all succeed without Firebase config because Vite
+reads `VITE_*` at runtime, not build time — so it runs on PRs from any branch.
+
+`npm run test:e2e` is **not** in CI: it signs into real Firebase as a test user and needs
+`.env.test`, which CI has no way to supply. e2e stays a local / manual step.
+
+A Vercel GitHub integration also builds a preview deploy on every PR and posts it as a status
+check (the repo has no Vercel config); it does not run lint or tests.
 
 ## When to update this file
 
