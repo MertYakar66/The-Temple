@@ -8,7 +8,7 @@ Personal fitness/life PWA. Live at https://thetemple.web.app. Mobile-first.
 - Zustand with `persist` middleware (3 stores)
 - Firebase Auth + Firestore (client SDK); Cloud Functions (Node 20, firebase-admin) in `functions/`
 - Tailwind, Recharts, `react-router-dom` v7, `date-fns`
-- Vitest (unit, colocated `*.test.ts`), Playwright (e2e, currently `test.fixme`'d)
+- Vitest (unit, colocated `*.test.ts`), Playwright (e2e, one active spec)
 - No backend server. Client + serverless only.
 
 ## Architecture (top modules)
@@ -16,7 +16,7 @@ Personal fitness/life PWA. Live at https://thetemple.web.app. Mobile-first.
 - **`src/store/useStore.ts`** (~950 lines) — Workout state: sessions, sets/reps, routines, PRs, weight history, Jeff Nippard "Min Max" Block program.
 - **`src/store/useDietStore.ts`** — Diet: foods, recipes, saved meals, daily food log, macro goals, streaks, TDEE.
 - **`src/store/useCalendarStore.ts`** — Calendar: events, multi-calendar, recurrence, invitations, Google Places autocomplete. Soft-delete via `isDeleted`.
-- **`src/contexts/AuthContext.tsx`** — Auth + cloud sync wiring. `onAuthStateChanged` → `resetStore` → `Promise.all` cloud loads → `loadFromCloud` → `startSync(uid)`. ⚠️ has a known cancellation-unsafe race (multiple Firebase emits can wipe local writes).
+- **`src/contexts/AuthContext.tsx`** — Auth + cloud sync wiring. `onAuthStateChanged` → `resolveAuthAction` → `Promise.all` cloud loads → fused `resetStore`+`loadFromCloud` → `startSync(uid)`. Cancellation-safe (audit C-1 fixed).
 - **`src/lib/firestoreSync.ts`** — Read/write to `users/{uid}/data/{workout|diet|calendar|siriConfig}`. Debounced 2s (`SYNC_DEBOUNCE_MS`).
 - **`functions/src/index.ts`** — Siri endpoints (Apple Shortcuts → Cloud Functions, token-auth via top-level `siriTokens/{token}`, Admin SDK bypasses rules).
 
@@ -45,4 +45,4 @@ Personal fitness/life PWA. Live at https://thetemple.web.app. Mobile-first.
 2. **Never use `new Date().toISOString().split('T')[0]`** for date stamps — UTC, breaks for non-UTC users. Use the date utils.
 3. **`getCloudSyncData()` ships a lean projection** — strips static `exercises` to `{id, name}`. Don't reintroduce the full list to the cloud doc.
 4. **Logout must flush sync immediately** via `saveWorkoutData`/`saveDietData`/`saveCalendarData` (non-debounced). Skipping → users lose unsynced data.
-5. **AuthContext race**: `onAuthStateChanged` fires more than once on load (cached then verified). A late-landing `resetStore` after user interaction wipes local writes; reproducible at ~300ms post-click. Blocks e2e harness.
+5. **AuthContext cancellation-safety**: `onAuthStateChanged` can fire more than once on load (cached then verified). The callback is guarded — `resolveAuthAction` skips a same-uid re-fire, a per-chain `AbortController` cancels superseded chains — so a late emission can't wipe local writes (audit C-1 fixed).

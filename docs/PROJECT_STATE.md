@@ -68,15 +68,17 @@ A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
   support; strip `mealReminders` feature with persist v1 migration. First component test in
   the repo landed alongside. 54/54 tests green. See `AUDIT_STATE.md` Batch 3 for the full
   per-commit table.
+- **AuthContext cloud-sync race fix.** ✅ Landed (`claude/fix-authcontext-race-8mq2`).
+  Audit finding C-1 — the cancellation-unsafe `onAuthStateChanged`. The callback is now
+  guarded: `resolveAuthAction` skips a same-uid re-fire and an unexpected `null`, a
+  per-chain `AbortController` cancels superseded chains, and `resetStore`+`loadFromCloud`
+  are fused after the await. The e2e harness is unblocked. See
+  `docs/plans/fix-authcontext-race.md`.
 - **Batches 4–6.** ⏳ Pending. Calendar recurrence; Cloud Functions Siri TZ + server-side
   recurrence expansion; polish.
 
 ## Known risks
 
-- **AuthContext race (active).** `onAuthStateChanged` callback isn't cancellation-safe. Fires
-  multiple times on initial load; each chain resets stores before awaiting cloud loads. Wipes
-  local writes that happen between the two chains under fast interaction. Blocks the e2e
-  harness. Detailed reproduction in `ARCHITECTURE.md` and `AUDIT_STATE.md`.
 - **Cloud Functions Siri TZ fallback (active).** When the `?tz=` query param is missing or
   invalid, the function (`todayDateString` in `functions/src/index.ts`) falls back to UTC,
   which gives wrong "today" for non-UTC users. Batch 5 territory.
@@ -91,11 +93,10 @@ A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
 
 ## Where to start
 
-If you're picking up next, the recommended next task is **audit Batch 3 — Diet UX correctness**.
-See `ROADMAP.md` for sequencing and `AUDIT_STATE.md` for the Batch 3 scope.
-
-If you're picking up the AuthContext race instead, see the "Known issues" section of
-`ARCHITECTURE.md` for the fix shape — and unblocking the e2e suite is the immediate payoff.
+Audit Batches 1–3 and the AuthContext cloud-sync race are landed. The recommended next task
+is **audit Batch 4 — Calendar recurrence** — the recurrence engine in `src/utils/calendar.ts`
+(exception handling, weekly `daysOfWeek`, monthly "nth weekday"). See `ROADMAP.md` for
+sequencing and `AUDIT_STATE.md` for the Batch 4 scope.
 
 ## When to update this file
 

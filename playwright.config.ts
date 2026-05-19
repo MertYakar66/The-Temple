@@ -22,14 +22,13 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  // e2e tests run against the production build (vite preview), not dev.
-  // Reason: React 18 Strict Mode in dev double-invokes AuthContext.onAuthStateChanged,
-  // and the second run's resetStore() wipes any local writes between mounts.
-  // This is a known audit finding (AuthContext race, high severity) — fixing it
-  // properly is a separate batch. Until then, prod-build testing is correct because
-  // it matches what real users at thetemple.web.app actually run.
+  // e2e tests run against the dev server. The AuthContext onAuthStateChanged
+  // race — which made React Strict Mode's dev double-invoke wipe local writes
+  // between mounts — is fixed (see docs/plans/fix-authcontext-race.md), so
+  // dev-build testing is safe again and skips the ~3-5 s production build
+  // step. See DECISIONS.md D-8 (reversal trigger fired).
   webServer: {
-    command: 'npm run build && npx vite preview --port 5173 --strictPort',
+    command: 'npm run dev -- --port 5173 --strictPort',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

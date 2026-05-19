@@ -1,18 +1,26 @@
 /**
  * AuthContext — authentication + cloud sync controller.
  *
- * Owns the lifecycle for all three Zustand stores: on login, reset → load
- * from Firestore → start subscriptions; on logout, flush → stop → reset.
+ * Owns the lifecycle for all three Zustand stores: on sign-in, reset → load
+ * from Firestore → start subscriptions; on sign-out, flush → stop → reset.
  * The only file in `src/` that calls Firebase Auth methods directly; pages
  * go through `useAuth()`.
  *
- * KNOWN ISSUE (audit, high severity, blocks e2e): the `onAuthStateChanged`
- * callback below is not cancellation-safe. Firebase emits the listener
- * more than once on cold load (cached-user fire, then a verified fire);
- * each chain runs `resetStore()` before awaiting the cloud loads, so a
- * chain whose reset lands AFTER user interaction wipes the local write.
- * See docs/AUDIT_STATE.md ("Cross-cutting blocker"). The e2e harness is
- * fixme'd until this is fixed (`tests/e2e/calendar-location-roundtrip.spec.ts`).
+ * Cancellation-safe `onAuthStateChanged`. Firebase can emit the listener
+ * more than once for a single cold load (a cached-user emission, then a
+ * verified emission), and React StrictMode double-invokes the effect in dev.
+ * The callback is guarded so a late or duplicate emission can never wipe a
+ * live session:
+ *   - `resolveAuthAction` (see ./authSession) classifies each emission as
+ *     `establish` / `skip` / `sign-out` from (owned uid, incoming uid,
+ *     intentional-sign-out flag). A re-fire for the already-owned uid is a
+ *     `skip`; an unexpected `null` (a transient emission, not an in-app
+ *     sign-out) is also a `skip` — neither resets nor reloads.
+ *   - Each `establish` chain owns an `AbortController`; a newer chain aborts
+ *     the older, which bails after its `await` instead of clobbering state.
+ *   - `resetStore()` is fused with `loadFromCloud()` AFTER the await, as one
+ *     synchronous block — nothing can interleave between empty and hydrated.
+ * See docs/plans/fix-authcontext-race.md.
  */
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
@@ -49,6 +57,7 @@ import {
   deleteUserCloudData,
 } from '../lib/firestoreSync';
 import { revokeSiriToken } from '../lib/siriToken';
+import { resolveAuthAction } from './authSession';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -85,8 +94,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const unsubWorkoutRef = useRef<(() => void) | null>(null);
   const unsubDietRef = useRef<(() => void) | null>(null);
   const unsubCalendarRef = useRef<(() => void) | null>(null);
+  // Cancellation + dedup state for the onAuthStateChanged callback.
+  // - controllerRef: aborts an in-flight establish chain when superseded.
+  // - establishedUidRef: the uid of the session currently owned (in-flight
+  //   or established) — drives the same-uid dedup; cleared only by a genuine
+  //   sign-out or the effect cleanup.
+  // - intentionalSignOutRef: set by logout()/deleteAccount() so the null
+  //   emission they trigger is treated as a real sign-out, not as noise.
+  // See docs/plans/fix-authcontext-race.md §2.
+  const controllerRef = useRef<AbortController | null>(null);
+  const establishedUidRef = useRef<string | null>(null);
+  const intentionalSignOutRef = useRef(false);
+
+  const stopSync = useCallback(() => {
+    cancelPendingSyncs();
+    if (unsubWorkoutRef.current) {
+      unsubWorkoutRef.current();
+      unsubWorkoutRef.current = null;
+    }
+    if (unsubDietRef.current) {
+      unsubDietRef.current();
+      unsubDietRef.current = null;
+    }
+    if (unsubCalendarRef.current) {
+      unsubCalendarRef.current();
+      unsubCalendarRef.current = null;
+    }
+  }, []);
 
   const startSync = useCallback((uid: string) => {
+    // Defense in depth: never leak a prior subscription by overwriting a live
+    // unsub ref. The establish chain already calls stopSync before this, but
+    // any future caller that forgets to should still get clean teardown.
+    stopSync();
+
     // Zustand `subscribe` fires on EVERY state change, including ephemeral UI
     // state (`currentView`, `selectedDate`, `newPRs`, etc.) that we don't sync.
     // Compare slice references against the previous state and skip writes when
@@ -129,70 +170,120 @@ export function AuthProvider({ children }: AuthProviderProps) {
       ) return;
       debouncedSaveCalendarData(uid, state.getCloudSyncData());
     });
-  }, []);
-
-  const stopSync = useCallback(() => {
-    cancelPendingSyncs();
-    if (unsubWorkoutRef.current) {
-      unsubWorkoutRef.current();
-      unsubWorkoutRef.current = null;
-    }
-    if (unsubDietRef.current) {
-      unsubDietRef.current();
-      unsubDietRef.current = null;
-    }
-    if (unsubCalendarRef.current) {
-      unsubCalendarRef.current();
-      unsubCalendarRef.current = null;
-    }
-  }, []);
+  }, [stopSync]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
 
-      if (user) {
-        // Clear any existing data from previous user before loading new user's data
-        useStore.getState().resetStore();
-        useDietStore.getState().resetStore();
-        useCalendarStore.getState().resetStore();
+      const nextUid = user?.uid ?? null;
+      const action = resolveAuthAction(
+        establishedUidRef.current,
+        nextUid,
+        intentionalSignOutRef.current,
+      );
 
-        // Load data from Firestore
-        try {
-          const [workoutData, dietData, calendarData] = await Promise.all([
-            loadWorkoutData(user.uid),
-            loadDietData(user.uid),
-            loadCalendarData(user.uid),
-          ]);
+      // `skip` — a re-fire for the uid we already own, OR an unexpected `null`
+      // (a transient emission, or a session loss not initiated in-app).
+      // Either way: nothing destructive. A resetStore/loadFromCloud here would
+      // wipe a live session — the bug this controller exists to prevent.
+      if (action === 'skip') {
+        setLoading(false);
+        return;
+      }
 
-          if (workoutData) {
-            useStore.getState().loadFromCloud(workoutData);
-          }
-          if (dietData) {
-            useDietStore.getState().loadFromCloud(dietData);
-          }
-          if (calendarData) {
-            useCalendarStore.getState().loadFromCloud(calendarData);
-          }
-        } catch (error) {
-          console.error('Failed to load cloud data:', error);
-        }
-
-        // Start syncing store changes to Firestore
-        startSync(user.uid);
-      } else {
-        // User logged out — stop syncing and clear local data
+      // `sign-out` — a genuine in-app sign-out (logout()/deleteAccount() set
+      // the flag before triggering this null emission). Tear the session down.
+      if (action === 'sign-out') {
+        intentionalSignOutRef.current = false;
+        controllerRef.current?.abort();
+        controllerRef.current = null;
+        establishedUidRef.current = null;
         stopSync();
         useStore.getState().resetStore();
         useDietStore.getState().resetStore();
         useCalendarStore.getState().resetStore();
+        setLoading(false);
+        return;
       }
 
+      // `action === 'establish'` — a newly signed-in user (cold sign-in or a
+      // user switch). resolveAuthAction only returns 'establish' for a
+      // non-null uid, so `user` is non-null here; the guard keeps the
+      // type-checker happy and fails safe.
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      intentionalSignOutRef.current = false;
+
+      // Supersede any in-flight chain, then claim the session up-front so a
+      // re-fire that lands mid-await dedups instead of starting a duplicate.
+      controllerRef.current?.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
+      const { signal } = controller;
+      establishedUidRef.current = user.uid;
+
+      // Drop any prior chain's subscribers + cancel its pending debounced
+      // writes before this chain loads.
+      stopSync();
+
+      let workoutData: Record<string, unknown> | null = null;
+      let dietData: Record<string, unknown> | null = null;
+      let calendarData: Record<string, unknown> | null = null;
+      try {
+        const results = await Promise.all([
+          loadWorkoutData(user.uid),
+          loadDietData(user.uid),
+          loadCalendarData(user.uid),
+        ]);
+        workoutData = results[0];
+        dietData = results[1];
+        calendarData = results[2];
+      } catch (error) {
+        if (signal.aborted) return;
+        console.error('Failed to load cloud data:', error);
+      }
+
+      // Still the owning chain? A newer establish or a sign-out aborts this
+      // controller and moves establishedUidRef. A transiently-null
+      // `auth.currentUser` is NOT treated as a transition — establishedUidRef
+      // is the authority (see docs/plans/fix-authcontext-race.md §2.6).
+      if (signal.aborted) return;
+      if (establishedUidRef.current !== user.uid) return;
+      if (auth.currentUser && auth.currentUser.uid !== user.uid) return;
+
+      // Destructive phase — reset + hydrate as one synchronous block. Nothing
+      // (no user write, no other chain) can interleave between the stores
+      // being emptied and being hydrated.
+      useStore.getState().resetStore();
+      useDietStore.getState().resetStore();
+      useCalendarStore.getState().resetStore();
+      if (workoutData) {
+        useStore.getState().loadFromCloud(workoutData);
+      }
+      if (dietData) {
+        useDietStore.getState().loadFromCloud(dietData);
+      }
+      if (calendarData) {
+        useCalendarStore.getState().loadFromCloud(calendarData);
+      }
+
+      // Subscribe AFTER hydration so the reset/load above never trips a sync
+      // subscriber (no empty-state write).
+      startSync(user.uid);
       setLoading(false);
     });
 
     return () => {
       unsubscribe();
+      // Abort the in-flight chain and drop the owned-session marker so a
+      // StrictMode remount (or a real remount) re-hydrates instead of
+      // dedup-bailing into a never-completed chain (stuck loading screen).
+      controllerRef.current?.abort();
+      controllerRef.current = null;
+      establishedUidRef.current = null;
       stopSync();
     };
   }, [startSync, stopSync]);
@@ -222,6 +313,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.error('Failed to save data before logout:', error);
       }
     }
+    // Mark this as an in-app sign-out so the onAuthStateChanged null emission
+    // is handled as a genuine sign-out, not ignored as a transient.
+    intentionalSignOutRef.current = true;
     await signOut(auth);
     // Clear persisted localStorage data on logout
     localStorage.removeItem('workout-tracker-storage');
@@ -277,6 +371,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Siri token may not exist — continue
     }
     await deleteUserCloudData(uid);
+
+    // Mark this as an in-app sign-out before the account deletion triggers
+    // the onAuthStateChanged null emission.
+    intentionalSignOutRef.current = true;
 
     // Delete the Firebase Auth account (point of no return)
     await deleteUser(user);

@@ -21,11 +21,10 @@ Two-layer test suite plus a discipline rule for what counts as "verified". Compa
 - Runner: `npm run test:e2e`. Headed/UI/debug variants in `package.json`.
 - Test files: `tests/e2e/*.spec.ts`.
 - Helpers: `tests/e2e/helpers/auth.ts` (sign-in / sign-out using `.env.test` credentials).
-- Web server: production build (`npm run build && npx vite preview --port 5173`). Not the
-  dev server. Reason: React 18 Strict Mode in dev double-invokes
-  `AuthContext.onAuthStateChanged`; combined with the AuthContext race finding, this wipes
-  local writes within ~300 ms of any click. Production matches what users at
-  `thetemple.web.app` actually run.
+- Web server: the Vite dev server (`npm run dev`). It previously ran the production build
+  because StrictMode's dev double-invoke amplified the cancellation-unsafe
+  `AuthContext.onAuthStateChanged` race; that race is fixed, so dev-build testing is correct
+  again. See `DECISIONS.md` D-12.
 - Single browser (Chromium), workers: 1, fullyParallel: false. Sequential by design — the
   test user has one Firestore doc per module and parallel writes produce non-deterministic
   outcomes.
@@ -39,29 +38,26 @@ Two-layer test suite plus a discipline rule for what counts as "verified". Compa
 | `src/utils/workoutMetrics.test.ts` | Vitest | Volume / 1RM / set-volume helpers |
 | `src/store/useStore.test.ts` | Vitest | Batch 1 null-emit invariants — `setExerciseGoal` clears `targetRIR/targetSets`, `updateSet({rir:null})` clears, `getCloudSyncData()` has no undefined paths |
 | `src/store/useCalendarStore.test.ts` | Vitest | Batch 1 null-emit invariants — `updateEvent({location:null})` clears, `getCloudSyncData()` has no undefined paths |
-| `tests/e2e/calendar-location-roundtrip.spec.ts` | Playwright | Calendar location create→clear→reload→sign-out-and-back round-trip. **`test.fixme`'d** — see below |
+| `tests/e2e/calendar-location-roundtrip.spec.ts` | Playwright | Calendar location create→clear→reload→sign-out-and-back round-trip. **Active.** |
+| `src/contexts/authSession.test.ts` | Vitest | `resolveAuthAction` — the auth-transition decision (audit C-1 fix), 11-case table |
+| `src/contexts/AuthContext.test.tsx` | Vitest | AuthContext cloud-sync race — multi-fire sequences vs. the real stores (audit C-1 fix), 8 cases |
 
-## The blocked-test discipline
+## Verification discipline
 
-The single e2e spec is `test.fixme()`'d because the AuthContext race wipes local writes within
-~300 ms of user interaction in the test environment. The spec is fully written and will start
-passing once the race is fixed (see `AUDIT_STATE.md` for the fix shape).
+**Verify at the layer where the fix was made.** Test the invariant at the lowest layer that
+can capture it; lift to higher layers only when the lower one can't.
+- Fix is in a Zustand action → store-level Vitest (see `useStore.test.ts`).
+- Fix is in a utility → utility Vitest.
+- Fix is in the auth controller → an integration test with mocked Firebase (see
+  `src/contexts/AuthContext.test.tsx`).
+- Fix is in a Cloud Function → functions emulator + targeted test.
+- Fix is in a component → component test (Testing Library).
+- End-to-end behavior through real Firebase → a `tests/e2e/*.spec.ts` Playwright spec.
 
-**Discipline:**
-1. Don't delete a `fixme`'d spec to "clean up". The intent is preserved for the day the
-   underlying issue is fixed; the diagnostic in the spec's top-of-file comment is part of the
-   bug record.
-2. Don't paper over the race in test code (e.g. by inserting waits before the first
-   interaction). The test must reproduce real-user conditions; if you compensate for the bug
-   in the test, you can no longer use the test to verify the fix.
-3. When you want to verify a Batch invariant whose e2e is blocked, **verify at the layer
-   where the fix was made**:
-   - Fix is in a Zustand action → store-level Vitest (see `useStore.test.ts`).
-   - Fix is in a utility → utility Vitest.
-   - Fix is in a Cloud Function → functions emulator + targeted test.
-   - Fix is in a component → component test (Testing Library).
-4. Note in the commit message that store-layer tests are the proof-of-fix because e2e is
-   blocked. Cite the e2e spec by path.
+If a spec ever has to be `test.fixme()`'d because an unrelated bug blocks it, keep it — don't
+delete it, don't paper over the bug with waits before the first interaction — and say so in
+the commit message, citing the spec by path. The lower-layer test is the proof-of-fix in the
+meantime.
 
 ## Running
 
@@ -72,15 +68,15 @@ npm test             # vitest run
 npm run test:watch   # vitest (watch mode)
 npm run test:coverage # vitest run --coverage
 
-npm run test:e2e         # Playwright (currently 0 passed, 1 skipped — that's expected)
+npm run test:e2e         # Playwright (needs .env + .env.test)
 npm run test:e2e:headed  # browser visible, normal speed
 npm run test:e2e:ui      # Playwright UI mode — best for picking selectors
 npm run test:e2e:debug   # step through with the inspector
 ```
 
 `npm run lint` and `npm run build` and `npm test` are the gate every batch must pass before
-merging. `npm run test:e2e` is **not** a gate while the only spec is `test.fixme()`'d — it
-exits 0 on `0 passed, 1 skipped`, which is uninformative.
+merging. `npm run test:e2e` is **not** part of that gate — it needs `.env.test` + network +
+the test user; run it when a change touches end-to-end behavior.
 
 ## Adding tests
 
@@ -128,7 +124,6 @@ check (the repo has no Vercel config); it does not run lint or tests.
 ## When to update this file
 
 - A new test layer is added (e.g. functions emulator).
-- The blocked-test discipline changes (e.g. when the AuthContext race is fixed and the e2e
-  harness becomes a real gate, this file should reflect the new "e2e as gate" expectation).
+- The verification discipline changes.
 - The test prerequisites change (new test user, new env keys).
 - A test layer's tooling changes (Vitest major upgrade, Playwright config shift).

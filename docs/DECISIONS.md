@@ -63,8 +63,10 @@ revokes it. Putting the lifecycle in a React context means it's tied to the Reac
 checks (see `DATA_POLICY.md` invariant 5). Adding a new persisted slice requires editing
 this file. Documented; live with it.
 
-**Status:** the controller has a known cancellation-unsafe race (see `AUDIT_STATE.md`).
-Decision still holds; race fix is a refinement, not a re-architecture.
+**Status:** holds. The controller's cancellation-unsafe race (audit C-1) is fixed —
+`onAuthStateChanged` is now guarded (`resolveAuthAction` + per-chain `AbortController`); see
+`docs/plans/fix-authcontext-race.md`. The fix was a refinement of this decision, not a
+re-architecture.
 
 ---
 
@@ -155,6 +157,9 @@ Today everything is built-in — keep the rule simple.
 
 ## D-8 — E2E tests run against the production build, not dev
 
+**Superseded by D-12 (2026-05-18)** — the AuthContext race that motivated this is fixed;
+e2e runs against the dev server again.
+
 **Date:** e2e harness setup `35cb018`.
 
 **Decision:** `playwright.config.ts` `webServer.command = 'npm run build && npx vite preview'`.
@@ -234,6 +239,22 @@ Cloud Function doesn't, and reads stored events raw.
 
 **Reversal trigger:** unlikely. If we ever need server-side validation or push delivery for
 invitations, Cloud Functions can absorb that.
+
+---
+
+## D-12 — E2E tests run against the dev server (supersedes D-8)
+
+**Date:** 2026-05-18. AuthContext race fix (`fix(auth): close AuthContext cloud-sync race`).
+
+**Decision:** `playwright.config.ts` `webServer.command = 'npm run dev -- --port 5173 --strictPort'`.
+
+**Why:** D-8 pinned e2e to the production build only because React StrictMode's dev
+double-invoke amplified the cancellation-unsafe `onAuthStateChanged` race — every spec failed
+for a reason unrelated to the invariant under test. That race is fixed; the callback is
+StrictMode-safe. Dev-build testing skips the ~3-5 s production build step and is the faster
+local loop. D-8's reversal trigger has fired.
+
+**See also:** D-8 (superseded), `docs/plans/fix-authcontext-race.md`, `tests/e2e/README.md`.
 
 ---
 

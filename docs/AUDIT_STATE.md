@@ -38,7 +38,8 @@ entirely for fields that aren't editor-controlled).
 
 **Verification:** Store-layer Vitest invariant tests landed on the e2e-harness branch
 (`80192dd`) — `src/store/useStore.test.ts`, `src/store/useCalendarStore.test.ts`. The intended
-e2e round-trip is fully written but `test.fixme()`'d (see "Cross-cutting blocker" below).
+e2e round-trip is now active — the AuthContext race that blocked it is fixed (see
+"Cross-cutting blocker" below).
 
 **Side findings flagged for later:**
 - `useStore.startWorkout` without `routineId` leaves `currentSession.routineId = undefined`.
@@ -153,31 +154,36 @@ deploy.
 - bundle-size warning (1.4 MB; manualChunks),
 - whatever else gets flagged on the way through.
 
-## Cross-cutting blocker — AuthContext race
+## Cross-cutting blocker — AuthContext race ✅ Resolved
 
-Not a batch of its own yet; will get sequenced once Batch 3 is closed.
+Audit finding C-1. Fixed on branch `claude/fix-authcontext-race-8mq2`
+(`fix(auth): close AuthContext cloud-sync race (A + B)`).
 
-`AuthContext.tsx` — the `onAuthStateChanged` callback in `AuthProvider`'s `useEffect` runs
-`resetStore()` on all three Zustand stores before awaiting `Promise.all` of the cloud loads. Firebase emits the listener more than
-once on initial page load (cached-user fire, then a verified fire). Each chain runs
-reset → load → start sync. If a chain whose `resetStore` lands AFTER user interaction wins
-the race, it wipes the local write. Reproduced reliably under bot-style fast interaction (~300
-ms post-click in Playwright).
+`AuthContext.tsx`'s `onAuthStateChanged` callback ran `resetStore()` then awaited the cloud
+loads then `loadFromCloud()` — both destructive whole-store overwrites. A duplicate or late
+emission (Firebase's cached-then-verified double-fire; React StrictMode's dev double-invoke)
+re-ran that pair after the UI had gone interactive, wiping a concurrent local write; the wipe
+then synced to Firestore.
 
-**Fix shape:**
-- Track an in-flight token / `AbortController` across callback runs.
-- Verify `auth.currentUser?.uid === user.uid` before resetting / loading / starting sync; bail
-  if a newer chain is already in flight.
-- Unsubscribe the prior `unsubXxxRef` before overwriting (currently leaks).
+**What landed:**
+- `resolveAuthAction` (`src/contexts/authSession.ts`) — pure helper classifying each
+  emission as `establish` / `skip` / `sign-out`. A same-uid re-fire is a `skip`; an
+  unexpected `null` (not an in-app sign-out) is also a `skip`. Closes Race B.
+- An `AbortController` per `establish` chain; a newer chain aborts the older, which bails
+  after its `await`. Closes Race A (overlap).
+- `resetStore()` fused with `loadFromCloud()` after the await as one synchronous block —
+  no empty-state TOCTOU write.
+- `startSync` unsubscribes prior refs first — no subscriber leak.
+- `logout()` / `deleteAccount()` set an intentional-sign-out flag, so a transient `null`
+  emission is never treated as a sign-out.
 
-**Why it's pending:** the e2e harness is the immediate payoff (it stays `test.fixme()`'d
-until then), but the in-app impact is rare in practice (real users pause between page-load
-and click). So Batch 3 went first because Diet UX bugs are user-visible today.
+**Verification:** `npm run lint` / `npm run build` clean; `npm test` 78/78 (adds an
+11-case `resolveAuthAction` table test and an 8-case `AuthContext` integration test that
+reproduces both races in jsdom). The e2e spec
+`tests/e2e/calendar-location-roundtrip.spec.ts` is un-`fixme`'d and
+`playwright.config.ts`'s `webServer.command` is back to `npm run dev`.
 
-When this lands, do these together:
-- Switch `tests/e2e/calendar-location-roundtrip.spec.ts` from `test.fixme` back to `test`.
-- Switch `playwright.config.ts`'s `webServer.command` back to `npm run dev` (faster local
-  iteration).
+Design and rationale: `docs/plans/fix-authcontext-race.md`.
 
 ## When to update this file
 

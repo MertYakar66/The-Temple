@@ -94,24 +94,28 @@ definition, `resetStore`, `getCloudSyncData`, `loadFromCloud`, and the
 `getCloudSyncData` ships a **lean projection** — `useStore` strips static
 `exercises` to `{id, name}`; never ship seed data to the cloud.
 
-## Known issue — the AuthContext race (unfixed)
+## Cancellation-safe `onAuthStateChanged` (audit C-1 fixed)
 
-`onAuthStateChanged` is **not cancellation-safe**. Firebase emits the listener
-more than once on a cold load (a cached-user fire, then a verified fire). Each
-chain runs `resetStore()` before awaiting its cloud loads. Failure modes:
+`onAuthStateChanged` is cancellation-safe. Firebase can emit the listener more
+than once for one cold load (a cached-user emission, then a verified emission),
+and React StrictMode double-invokes the effect in dev — so the callback is
+guarded:
 
-- **Interaction wipe** — if a chain's `resetStore` lands *after* the user has
-  interacted, it wipes the local write; the wipe propagates to cloud on the
-  next debounced save.
-- **Leaked subscribers** — `startSync` overwrites `unsubWorkoutRef.current`
-  (etc.) without calling the previous unsub, so a second fire orphans the
-  first chain's three subscriptions; they keep firing.
-- **Empty-state TOCTOU** — the synchronous `resetStore` can schedule a
-  debounced empty-state write that races a slow `loadFromCloud`.
+- **Same-uid dedup** — `resolveAuthAction` (`src/contexts/authSession.ts`)
+  classifies each emission from (owned uid, incoming uid, intentional-sign-out
+  flag). A re-fire for the uid already owned is a no-op — no reset, no reload.
+- **Cancellation** — each `establish` chain owns an `AbortController`; a newer
+  chain aborts the older, which bails after its `await` instead of clobbering.
+- **Fused destructive phase** — `resetStore()` runs *after* the cloud-load
+  await, fused with `loadFromCloud()` as one synchronous block; nothing can
+  interleave between the stores being emptied and being hydrated. (No
+  empty-state write — `resetStore` no longer sits exposed for ~2 s.)
+- **Unsubscribe before overwrite** — `startSync` calls `stopSync()` first, so
+  a prior chain's three subscriptions never leak.
+- **Transient null** — a `null` emission resets the stores only when it
+  follows an in-app `logout()` / `deleteAccount()` (tracked by an
+  intentional-sign-out flag); an unexpected `null` does nothing destructive.
 
-This blocks the e2e harness — `tests/e2e/calendar-location-roundtrip.spec.ts`
-is `test.fixme()`'d until it is fixed. Full reproduction and proposed fix
-shape: `docs/AUDIT_STATE.md` ("Cross-cutting blocker") and
-`docs/audits/2026-05-08-cross-module-audit.md` (C-1). Until then, e2e runs
-against the production build, not dev, because React Strict Mode's
-double-invoke amplifies the race — see `docs/DECISIONS.md` D-8.
+Fixed in `fix(auth): close AuthContext cloud-sync race` — design and rationale
+in `docs/plans/fix-authcontext-race.md`; audit finding C-1 in
+`docs/audits/2026-05-08-cross-module-audit.md`.

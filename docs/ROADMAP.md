@@ -6,24 +6,20 @@ What comes next, in what order, and why. Companion to `AUDIT_STATE.md` (per-batc
 ## Sequencing
 
 ```
-                      ┌─ AuthContext race fix ──┐
-                      │  (e2e becomes useful)   │
-                      ▼                         │
-Batch 3 (Diet UX)  ─►  Batch 4 (Recurrence)  ─► Batch 5 (Siri Functions)  ─► Batch 6 (Polish)
-                                                    ▲
-                                                    │
-                                                    │  may need shared
-                                                    │  recurrence code
-                                                    │  extracted to lib/
+[done] Batch 3 (Diet UX)  ─►  [done] AuthContext race fix  ─►  Batch 4 (Recurrence)
+   ─►  Batch 5 (Siri Functions)  ─►  Batch 6 (Polish)
+                                          ▲
+                                          │  may reuse Batch 4's recurrence
+                                          │  engine (extract to lib/ if needed)
 ```
 
 ## Order of operations
 
-1. **Batch 3 — Diet UX correctness.** Highest user-visible value (custom mealType bug, broken
-   meal-edit page, banned date pattern). Vitest-only verification — no AuthContext dependency.
-2. **AuthContext race fix.** Promotes the e2e harness from "decoration" to "actual gate".
-   After this lands, switch the fixme'd spec back on and revert the playwright config to dev.
-   Should be a single targeted PR, not bundled with anything.
+1. **Batch 3 — Diet UX correctness.** ✅ Done (`5bbd9a6`). Custom mealType rendering, the
+   broken meal-edit page, the banned date pattern.
+2. **AuthContext race fix.** ✅ Done (`claude/fix-authcontext-race-8mq2`). Promoted the e2e
+   harness from "decoration" to a real gate: the fixme'd spec is switched back on and
+   `playwright.config.ts` reverted to the dev server.
 3. **Batch 4 — Calendar recurrence.** Vitest-first against `src/utils/calendar.ts`. Lands the
    shared expansion logic that Batch 5 will reuse.
 4. **Batch 5 — Cloud Functions Siri TZ + server-side recurrence expansion.** Reuses Batch 4's
@@ -35,8 +31,8 @@ fixing user-visible Diet bugs before the recurrence engine matches the user's st
 
 ## Dependencies
 
-- **AuthContext race fix → e2e harness becomes useful.** Until it lands, every e2e spec must
-  be `test.fixme()`'d.
+- **AuthContext race fix → e2e harness becomes useful.** ✅ Landed — the harness is now a
+  real gate; e2e specs no longer need `test.fixme()`.
 - **Batch 4 → Batch 5.** Server-side recurrence expansion in Batch 5 should reuse the engine
   Batch 4 hardens. If they're done in the wrong order, Batch 5 either re-implements
   (duplication) or punts (incomplete).
