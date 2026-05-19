@@ -62,15 +62,16 @@ Rules (`firestore.rules`):
 
 ## Sync lifecycle
 
-`AuthContext.tsx` is the controller. **Note**: the controller has a known cancellation-unsafe
-race (see "Known issues" below). The lifecycle described here is the intended behavior; in
-practice the listener can fire more than once on cold load and step on its own state.
+`AuthContext.tsx` is the controller. The `onAuthStateChanged` callback is cancellation-safe:
+it can fire more than once on cold load, but `resolveAuthAction` + a per-chain
+`AbortController` ensure only a genuine new session resets and reloads (audit C-1 fixed — see
+`docs/plans/fix-authcontext-race.md`).
 
-1. **Login** — `onAuthStateChanged` fires with user.
-   - Reset all three stores.
-   - `Promise.all` load all three Firestore docs.
-   - `loadFromCloud` on each store.
-   - `startSync(uid)` — installs three Zustand subscriptions.
+1. **Login** — `onAuthStateChanged` fires with user; `resolveAuthAction` confirms it is a
+   genuine new session (a same-uid re-fire is skipped).
+   - `Promise.all` load all three Firestore docs (under a per-chain `AbortController`).
+   - Reset all three stores, then `loadFromCloud` on each — one fused synchronous block.
+   - `startSync(uid)` — installs three Zustand subscriptions (after `stopSync()`).
 
 2. **Subscriptions** — each subscription receives `(state, prevState)`. Compares only the slices
    that should sync by reference equality. If all relevant slices unchanged, returns. Otherwise
@@ -166,29 +167,18 @@ Each store sets `persist({ name, version, migrate, merge })`:
 These are documented in `AUDIT_STATE.md` and have audit batches scheduled. Listed here for
 agents reading architecture docs.
 
-### AuthContext race (cancellation-unsafe `onAuthStateChanged`)
+### AuthContext race — ✅ fixed
 
-The `onAuthStateChanged` handler in `AuthProvider`'s `useEffect` runs `resetStore()` on all
-three Zustand stores before awaiting `Promise.all` of the cloud loads. Firebase emits the listener more than once on initial page
-load — typically a cached-user fire followed by a verified-user fire. Each chain runs the same
-sequence (reset → load → start sync). If a chain whose `resetStore` lands AFTER the user
-interacts with the app wins the race, it wipes the local write the user just made. The wipe
-then propagates to cloud on the next debounced sync.
+The `onAuthStateChanged` callback was not cancellation-safe: it ran `resetStore()` then
+awaited the cloud loads then `loadFromCloud()`, so a duplicate or late emission (Firebase
+cached-then-verified; StrictMode dev double-invoke) re-ran that destructive pair after the UI
+went interactive and wiped a concurrent local write — which then synced to Firestore.
 
-Reproduction (Playwright, prod build, Chromium):
-- click Add at t=0 → `addEvent` succeeds, localStorage `events.length === 1`.
-- t = 150 ms: still 1.
-- t = 300 ms: `events.length === 0`. Stack: `AuthContext.resetStore` from the second listener
-  callback.
-
-Fix shape (Batch — sequencing TBD):
-- Track an in-flight token / `AbortController` across callback runs.
-- Verify `auth.currentUser?.uid === user.uid` before resetting / loading / starting sync; bail
-  if a newer chain is already in flight.
-- Unsubscribe the prior `unsubXxxRef` before overwriting (currently leaks).
-
-This blocks the e2e harness — `tests/e2e/calendar-location-roundtrip.spec.ts` is `test.fixme()`'d
-with the full diagnostic timeline in its top-of-file comment block.
+Fixed (audit C-1): `resolveAuthAction` skips a same-uid re-fire and an unexpected `null`;
+each `establish` chain owns an `AbortController`; `resetStore()` is fused with
+`loadFromCloud()` after the await as one synchronous block; `startSync` unsubscribes prior
+refs first. Design: `docs/plans/fix-authcontext-race.md`. The e2e spec
+`tests/e2e/calendar-location-roundtrip.spec.ts` is active again.
 
 ### Cloud Functions Siri TZ fallback + recurrence expansion (Batch 5)
 

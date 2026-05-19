@@ -8,6 +8,30 @@ rather than by version — there are no semver tags. Newest first.
 
 ---
 
+## AuthContext cloud-sync race fix — `claude/fix-authcontext-race-8mq2`
+
+Standalone fix for audit finding C-1 — the cancellation-unsafe `onAuthStateChanged`
+callback. Not an audit batch; sequenced after Batch 3 per `ROADMAP.md`.
+
+- `2f32c6e` `fix(auth)` Rework the `onAuthStateChanged` callback. New pure helper
+  `resolveAuthAction` (`src/contexts/authSession.ts`) classifies each emission as
+  `establish` / `skip` / `sign-out`; a same-uid re-fire and an unexpected `null` are both
+  no-ops. Each `establish` chain owns an `AbortController` (a newer chain aborts the older).
+  `resetStore()` is fused with `loadFromCloud()` after the cloud-load await as one
+  synchronous block — no empty-state write. `startSync` unsubscribes prior refs first — no
+  subscriber leak. `logout()` / `deleteAccount()` set an intentional-sign-out flag so a
+  transient `null` emission is never treated as a sign-out. Adds an 11-case
+  `resolveAuthAction` table test and an 8-case `AuthContext` integration test (78/78 tests).
+- `34fbd11` `e2e` Un-`fixme` `calendar-location-roundtrip.spec.ts`; `playwright.config.ts`
+  `webServer.command` back to `npm run dev` (DECISIONS.md D-8 reversal trigger fired → D-12).
+- `docs` Mark the race resolved across the doc set (`sync-model`, `AUDIT_STATE`,
+  `PROJECT_STATE`, `ARCHITECTURE`, `DECISIONS`, `ROADMAP`, `MODULES`, `TESTING`, `CLAUDE.md`,
+  `tests/e2e/README.md`).
+
+Design + rationale: `docs/plans/fix-authcontext-race.md`.
+
+---
+
 ## Audit Batch 3 — Diet UX correctness — `claude/audit-batch3-diet-ux` ✅ Merged in 5bbd9a6
 
 Branch off main at `6836f5a`. Eight commits. All five scope items landed with full Vitest
