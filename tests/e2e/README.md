@@ -7,29 +7,21 @@ verification step from one of the audit batches that's already shipped on
 
 | Spec | Batch | Invariant covered | Status |
 |---|---|---|---|
-| `calendar-location-roundtrip.spec.ts` | Batch 1 | Clearing an event's location field actually clears it under `setDoc({merge:true})` — the null-emit pattern from `b484873` | **blocked** (`test.fixme`) — see below |
+| `calendar-location-roundtrip.spec.ts` | Batch 1 | Clearing an event's location field actually clears it under `setDoc({merge:true})` — the null-emit pattern from `b484873` | **active** |
 
 Future batches add a new `*.spec.ts` here per logical invariant.
 
-## Currently blocked tests
+## Test status
 
-**`calendar-location-roundtrip`** — marked `test.fixme()`. The end-to-end
-round-trip fails not because the Batch 1 invariant is wrong, but because of
-an unrelated audit finding (`AuthContext.onAuthStateChanged` is not
-cancellation-safe). The auth listener fires twice on page load and each chain
-calls `resetStore()` before awaiting cloud loads, so user writes between the
-two chains get wiped within ~300ms of any click. The full diagnostic
-timeline is in the comment block at the top of the spec file.
+All specs here are active. `calendar-location-roundtrip` was `test.fixme()`'d
+while the cancellation-unsafe `onAuthStateChanged` race (audit C-1) wiped local
+writes within ~300 ms of any click — every run failed for a reason unrelated to
+the invariant under test. That race is fixed
+(`docs/plans/fix-authcontext-race.md`), so the spec runs again.
 
-**Until that race is fixed**, Batch 1's actual invariant is verified at the
-**store layer** in `src/store/useCalendarStore.test.ts` and
-`src/store/useStore.test.ts`. The null-emit fixes are pure JS state
-mutations — Vitest can prove them without React or Firebase, and that's the
-layer where the fix was made. Use the Vitest store tests as the first stop
-for batch verification until the e2e suite is unblocked.
-
-Once `AuthContext` is made cancellation-safe in a future audit batch, switch
-`test.fixme` back to `test` here.
+Batch 1's null-emit invariant is also covered at the store layer in
+`src/store/useCalendarStore.test.ts` / `src/store/useStore.test.ts` — the
+fastest first stop; the e2e spec is the end-to-end confirmation.
 
 ## Prerequisites
 
@@ -61,36 +53,22 @@ TEST_USER_PASSWORD=
 npm run test:e2e
 ```
 
-Playwright auto-starts a Vite **preview** (production build) on
-`http://localhost:5173` and reuses it if already running locally
-(`reuseExistingServer: !process.env.CI`). On a cold run the build adds
-~3-5 seconds; subsequent runs reuse the running preview.
+Playwright auto-starts the Vite **dev** server on `http://localhost:5173`
+and reuses it if already running locally (`reuseExistingServer:
+!process.env.CI`).
 
-Note: while the only spec here is `test.fixme()`'d, `npm run test:e2e` will
-report `0 passed, 1 skipped` and exit zero — that's expected. Do not rely
-on it for verification of audit batches until at least one spec is
-unblocked.
+`npm run test:e2e` runs the spec against the dev server and real Firebase
+(the `e2e-test@thetemple.test` user); it needs both `.env` and `.env.test`
+present.
 
-## Why production build, not dev
+## Dev server, not production build
 
-React 18 Strict Mode runs effects twice in dev only. `AuthContext`'s
-`onAuthStateChanged` callback (`src/contexts/AuthContext.tsx:135-176`)
-begins with `resetStore()` on all three Zustand stores, so the
-double-invocation can wipe local writes that happen in between the two
-mounts. This is a known audit finding (AuthContext race, high severity)
-— in dev the race fires reproducibly within ~300 ms of any user
-interaction; in production builds Strict Mode is a no-op and the
-listener fires once.
-
-For verification of behavior, prod-build testing matches what users at
-`thetemple.web.app` actually run. Until the AuthContext race is fixed
-in its own audit batch (cancellation-safe callback + uid stale-check),
-testing against `npm run dev` would fail not because of the invariant
-under test but because of an unrelated bug.
-
-**TODO**: when the AuthContext race is fixed in a future audit batch,
-switch the `webServer.command` in `playwright.config.ts` back to
-`npm run dev` for faster local iteration (saves the build step).
+The harness runs against the Vite **dev** server. It previously ran against
+the production build because React StrictMode's dev double-invoke amplified
+the cancellation-unsafe `onAuthStateChanged` race — every spec failed for a
+reason unrelated to the invariant under test. That race is fixed (the callback
+is StrictMode-safe), so dev-build testing is correct again and skips the
+~3-5 s build step. See `docs/DECISIONS.md` D-12 (supersedes D-8).
 
 ## Debug
 

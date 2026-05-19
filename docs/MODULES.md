@@ -160,12 +160,9 @@ Existing tests:
   invariants at the store layer (proof-of-fix for `b484873` etc., since the e2e equivalent is
   blocked).
 
-**End-to-end (Playwright)** — `tests/e2e/*.spec.ts`. Configured against the production build
-(`vite preview`), not dev — see `playwright.config.ts` comment for why (Strict Mode
-double-invocation collides with the AuthContext race in dev). Workers: 1, Chromium only,
-sequential by design.
+**End-to-end (Playwright)** — `tests/e2e/*.spec.ts`. Configured against the Vite dev server
+(`playwright.config.ts`). Workers: 1, Chromium only, sequential by design.
 
-Currently blocked: `tests/e2e/calendar-location-roundtrip.spec.ts` is `test.fixme()`'d. The
-spec is fully written; it will start passing once the AuthContext race is fixed. Until then,
-batch verifications happen at the layer where the fix was made (store-level Vitest tests).
-See `tests/e2e/README.md` for run instructions and the diagnostic timeline.
+`tests/e2e/calendar-location-roundtrip.spec.ts` is active — it was `test.fixme()`'d while the
+AuthContext `onAuthStateChanged` race wiped local writes; that race is fixed (audit C-1,
+`docs/plans/fix-authcontext-race.md`). See `tests/e2e/README.md` for run instructions.

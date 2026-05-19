@@ -35,8 +35,9 @@ Before declaring any task done:
 - `npm test` — if logic changed.
 - If `functions/` changed: `cd functions && npm run build && npm test`.
 
-`npm run test:e2e` is currently `test.fixme()`'d and is **not** a gate. Quick
-gate: the `/preflight` slash command.
+`npm run test:e2e` is **not** part of the standard gate — it needs `.env.test`,
+network, and the test user. Its one spec is active again (the AuthContext race
+that blocked it is fixed). Quick gate: the `/preflight` slash command.
 
 ## Branch & PR rules
 
@@ -58,8 +59,9 @@ One line per load-bearing module:
 - **`src/store/useCalendarStore.ts`** — Calendar: events, multi-calendar,
   recurrence, invitations. Soft-delete via `isDeleted`.
 - **`src/contexts/AuthContext.tsx`** — Auth + cloud-sync wiring.
-  `onAuthStateChanged` → `resetStore` → `Promise.all` cloud loads →
-  `loadFromCloud` → `startSync(uid)`. ⚠️ has a known cancellation-unsafe race.
+  `onAuthStateChanged` → `resolveAuthAction` → `Promise.all` cloud loads →
+  fused `resetStore`+`loadFromCloud` → `startSync(uid)`. Cancellation-safe
+  (audit C-1 fixed).
 - **`src/lib/firestoreSync.ts`** — reads/writes `users/{uid}/data/*`, debounced
   2 s (`SYNC_DEBOUNCE_MS`).
 - **`functions/src/index.ts`** — Siri endpoints (Apple Shortcuts → Cloud
@@ -74,7 +76,7 @@ Per-module map + gotchas: `docs/MODULES.md`.
 | Concern | File |
 |---|---|
 | Routes / app shell | `src/App.tsx` |
-| Auth + cloud sync wiring | `src/contexts/AuthContext.tsx` (⚠️ known race — see below) |
+| Auth + cloud sync wiring | `src/contexts/AuthContext.tsx` |
 | Workout state | `src/store/useStore.ts` (~950 lines, the big one) |
 | Diet state | `src/store/useDietStore.ts` |
 | Calendar state | `src/store/useCalendarStore.ts` |
@@ -85,17 +87,18 @@ Per-module map + gotchas: `docs/MODULES.md`.
 | Type definitions | `src/types/index.ts`, `src/types/calendar.ts` |
 | Firestore security rules | `firestore.rules` |
 | Backup/restore | `scripts/backup.cjs`, `scripts/restore.cjs` |
-| E2E harness | `tests/e2e/`, `playwright.config.ts` (⚠️ blocked — see below) |
+| E2E harness | `tests/e2e/`, `playwright.config.ts` |
 
 ## How the app boots
 
 1. `main.tsx` mounts `<App />`.
 2. `<App>` wraps `<AppRoutes>` in `<AuthProvider>` (in `AuthContext.tsx`).
-3. `AuthProvider` runs `onAuthStateChanged`. On user present:
-   - `resetStore()` on all three Zustand stores (clears prior user's data).
+3. `AuthProvider` runs `onAuthStateChanged`. `resolveAuthAction` classifies the
+   emission; on a genuine sign-in:
    - `Promise.all([loadWorkoutData, loadDietData, loadCalendarData])` from
-     Firestore.
-   - `loadFromCloud(...)` on each store.
+     Firestore (under a per-chain `AbortController`).
+   - `resetStore()` then `loadFromCloud(...)` on all three stores — one fused
+     synchronous block.
    - `startSync(uid)` — subscribes to each store, filters out ephemeral
      changes, writes debounced.
 4. `<AppRoutes>` decides: not logged in → `/login`; logged in but no
@@ -187,20 +190,16 @@ A quick-scan restatement of the prohibitions above:
   `functions/` and `scripts/` (removed from frontend deps in commit `9df1176`).
 - Push directly to `main`, or open a PR unless the user asks.
 
-## Known issues (active blockers)
+## Known issues
 
-- **AuthContext race — cancellation-unsafe `onAuthStateChanged`.** The callback
-  in `AuthContext.tsx` (the `onAuthStateChanged` handler inside `AuthProvider`'s
-  `useEffect`) calls `resetStore()` on all three Zustand stores before awaiting
-  `Promise.all` of the cloud loads. Firebase emits the listener more than once
-  on cold load (cached-user fire, then a verified fire). If a chain whose
-  `resetStore` lands AFTER user interaction wins the race, it wipes local
-  writes — and the wipe propagates to cloud on the next debounced sync. It also
-  leaks Zustand subscribers. Reproducible at ~300 ms post-click under bot-style
-  fast interaction. Blocks the e2e harness
-  (`tests/e2e/calendar-location-roundtrip.spec.ts` — currently `test.fixme()`'d).
-  Detail and fix shape: `docs/sync-model.md`, `docs/AUDIT_STATE.md`
-  ("Cross-cutting blocker"), `docs/audits/2026-05-08-cross-module-audit.md` (C-1).
+No active blockers. The AuthContext cloud-sync race (audit C-1) — long the
+project's one critical blocker — is **fixed**: `onAuthStateChanged` is
+cancellation-safe (`resolveAuthAction` classifies each emission, a per-chain
+`AbortController` cancels superseded chains, `resetStore`+`loadFromCloud` are
+fused after the await). Design: `docs/plans/fix-authcontext-race.md`; flow:
+`docs/sync-model.md`. Remaining audit work — Batches 4–6 (calendar recurrence,
+Siri Cloud Functions TZ + recurrence expansion, polish) — is tracked in
+`docs/AUDIT_STATE.md`; pending, not blocking.
 
 ## Repo conventions
 
@@ -211,8 +210,8 @@ A quick-scan restatement of the prohibitions above:
   Min Max program).
 - Unit tests are colocated `*.test.ts` next to the file they test (Vitest);
   setup in `src/test/setup.ts`. End-to-end tests live under `tests/e2e/`
-  (Playwright); the single e2e spec is currently `test.fixme()`'d — see
-  `docs/TESTING.md` for the verification discipline.
+  (Playwright); the one e2e spec is active (it needs `.env.test` + network) —
+  see `docs/TESTING.md` for the verification discipline.
 - Don't add `firebase-admin` to the frontend deps — it's only for `functions/`
   and `scripts/`.
 - Mobile is the primary form factor. Bottom nav is

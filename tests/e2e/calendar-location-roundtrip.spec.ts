@@ -23,45 +23,15 @@ async function openEventByTitle(page: Page, title: string): Promise<void> {
 }
 
 /**
- * BLOCKED — calendar-location round-trip cannot pass against current `main`.
+ * Batch 1 verification — clearing CalendarEvent.location (the null-emit
+ * pattern from commit b484873) survives a save → reload → sign-out →
+ * sign-in round trip.
  *
- * Batch 1 verification was supposed to confirm that clearing CalendarEvent.location
- * (null-emit pattern from commit b484873) survives a save → reload → sign-out →
- * sign-in round trip. That invariant CAN be proved at the store layer (see
- * src/store/useCalendarStore.test.ts) but the end-to-end version trips on a
- * separate, already-audited bug:
- *
- *   AuthContext.onAuthStateChanged callback isn't cancellation-safe
- *   (audit finding, "high severity" — should probably be re-rated critical
- *   based on the reproduction below).
- *
- * Reproduction observed in production build (`vite preview`):
- *   - User clicks the Add button. addEvent fires, events: [newEvent].
- *   - At click+150ms, polling localStorage shows events.length === 1.
- *   - At click+300ms, polling shows events.length === 0.
- *   - Stack trace of the wipe: AuthContext.resetStore (called by the
- *     async onAuthStateChanged callback). Firebase emits the listener
- *     more than once on initial page load (cached-user fire, then a
- *     verified fire), and each chain runs resetStore() before awaiting
- *     loadFromCloud — so a chain whose resetStore lands AFTER user
- *     interaction wipes the local write. The wipe then propagates to
- *     cloud on the next debounced sync.
- *   - This happens reliably under fast bot-style interaction. Real users
- *     who pause briefly between page-load and click usually finish the
- *     auth chain before interacting and don't see it.
- *
- * Fix shape (for the future AuthContext-cleanup batch):
- *   - Track an in-flight token / AbortController across onAuthStateChanged
- *     callback runs.
- *   - Before resetStore + load + startSync, verify
- *     auth.currentUser?.uid === user.uid; bail if a newer chain is already
- *     in flight.
- *   - Make startSync's old subscriber be unsubscribed before a new one
- *     overwrites unsubXxxRef (currently leaks).
- *
- * Once that's fixed, switch test.fixme back to test, and switch
- * playwright.config.ts's webServer command back to `npm run dev` for
- * faster iteration (per the TODO in tests/e2e/README.md).
+ * Previously test.fixme()'d: the AuthContext onAuthStateChanged race
+ * (audit C-1) wiped local writes within ~300 ms of any click, so the
+ * round trip failed for an unrelated reason. That race is now fixed —
+ * `fix(auth): close AuthContext cloud-sync race`, see
+ * docs/plans/fix-authcontext-race.md — and this spec is active again.
  */
 test.describe('Calendar event location round-trip (Batch 1 verification)', () => {
   let uniqueTitle: string;
@@ -91,7 +61,7 @@ test.describe('Calendar event location round-trip (Batch 1 verification)', () =>
     }
   });
 
-  test.fixme('location: persists, clears, survives sign-out round trip', async ({ page }) => {
+  test('location: persists, clears, survives sign-out round trip', async ({ page }) => {
     // 1. Create event with title + location.
     //    Visit /calendar first so the editor's navigate(-1) on save lands
     //    here (the editor uses history-back rather than an explicit route).
