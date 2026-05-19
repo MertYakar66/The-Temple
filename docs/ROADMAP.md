@@ -56,7 +56,8 @@ fixing user-visible Diet bugs before the recurrence engine matches the user's st
 After Batch 6 there's no shipped work scheduled. The product is the owner's personal app —
 features ship as the owner has new needs, not on a roadmap. Likely follow-ups when they come up:
 
-- Functions emulator + minimal CI gating for Cloud Functions (no CI today).
+- Functions emulator for integration coverage of the Cloud Functions (CI already runs the
+  `functions/` build + test on every PR — see `.github/workflows/ci.yml`).
 - Bundle splitting (current bundle is 1.4 MB; Vite warns).
 - Native push for invitation delivery (currently in-app only).
 - Onboarding flow polish.

@@ -57,7 +57,7 @@ Sections that are empty get omitted entirely. The minimum useful body is `Change
 | `docs` | Documentation only |
 | `chore` | Tooling, dependencies, gitignore, etc. |
 | `build` | Vite / TypeScript / Tailwind config |
-| `ci` | (Reserved — no CI today) |
+| `ci` | CI / GitHub Actions workflow changes (`.github/workflows/`) |
 | `e2e` | Playwright harness change |
 
 ### Scopes

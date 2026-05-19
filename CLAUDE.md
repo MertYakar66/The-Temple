@@ -36,7 +36,9 @@ Before declaring any task done:
 - If `functions/` changed: `cd functions && npm run build && npm test`.
 
 `npm run test:e2e` is currently `test.fixme()`'d and is **not** a gate. Quick
-gate: the `/preflight` slash command.
+gate: the `/preflight` slash command. GitHub Actions
+(`.github/workflows/ci.yml`) runs this same lint/build/test gate on every
+pull request — but run it locally first; don't lean on CI to catch it.
 
 ## Branch & PR rules
 
