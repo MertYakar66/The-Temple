@@ -136,6 +136,11 @@ interface AppState {
   reorderExercisesInDay: (programId: string, blockIdx: number, weekIdx: number, dayIdx: number, fromIdx: number, toIdx: number) => void;
   resetWeekToDefault: (programId: string, blockIdx: number, weekIdx: number) => void;
 
+  // Completed block workouts — manually ticked on the Blocks screen.
+  // Each entry is a key `"${programId}-${blockIdx}-${weekIdx}-${dayName}"`.
+  completedBlockDays: string[];
+  toggleBlockDayDone: (programId: string, blockIdx: number, weekIdx: number, dayName: string) => void;
+
   // Cloud sync
   loadFromCloud: (data: Record<string, unknown>) => void;
   getCloudSyncData: () => Record<string, unknown>;
@@ -911,6 +916,18 @@ export const useStore = create<AppState>()(
         });
       },
 
+      // Completed block workouts
+      completedBlockDays: [],
+
+      toggleBlockDayDone: (programId, blockIdx, weekIdx, dayName) => {
+        const key = `${programId}-${blockIdx}-${weekIdx}-${dayName}`;
+        set((state) => ({
+          completedBlockDays: state.completedBlockDays.includes(key)
+            ? state.completedBlockDays.filter((k) => k !== key)
+            : [...state.completedBlockDays, key],
+        }));
+      },
+
       // Cloud sync
       loadFromCloud: (data) => {
         set({
@@ -922,6 +939,7 @@ export const useStore = create<AppState>()(
           weightEntries: (data.weightEntries as WeightEntry[]) ?? get().weightEntries,
           exerciseGoals: (data.exerciseGoals as ExerciseGoal[]) ?? get().exerciseGoals,
           blockCustomizations: normalizeLoadedCustomizations(data.blockCustomizations) ?? get().blockCustomizations,
+          completedBlockDays: (data.completedBlockDays as string[]) ?? get().completedBlockDays,
         });
       },
 
@@ -942,6 +960,7 @@ export const useStore = create<AppState>()(
           weightEntries: state.weightEntries,
           exerciseGoals: state.exerciseGoals,
           blockCustomizations: state.blockCustomizations,
+          completedBlockDays: state.completedBlockDays,
         };
       },
 
@@ -958,12 +977,13 @@ export const useStore = create<AppState>()(
           exerciseGoals: [],
           newPRs: [],
           blockCustomizations: { weekOverrides: {}, updatedAt: new Date().toISOString() },
+          completedBlockDays: [],
         });
       },
     }),
     {
       name: 'workout-tracker-storage',
-      version: 3,
+      version: 4,
       migrate: (persistedState: unknown, version: number) => {
         let state = persistedState as Partial<AppState>;
         if (version < 2) {

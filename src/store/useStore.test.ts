@@ -109,3 +109,43 @@ describe('useStore — Batch 1 null-emit invariants', () => {
     expect(roundtripped).toStrictEqual(cloudData);
   });
 });
+
+describe('useStore — completed block days', () => {
+  beforeEach(() => {
+    useStore.getState().resetStore();
+  });
+
+  it('toggleBlockDayDone adds then removes a namespaced day key', () => {
+    expect(useStore.getState().completedBlockDays).toEqual([]);
+
+    useStore.getState().toggleBlockDayDone('powerbuilding', 0, 0, 'Full Body 1');
+    expect(useStore.getState().completedBlockDays).toEqual([
+      'powerbuilding-0-0-Full Body 1',
+    ]);
+
+    useStore.getState().toggleBlockDayDone('powerbuilding', 0, 0, 'Full Body 1');
+    expect(useStore.getState().completedBlockDays).toEqual([]);
+  });
+
+  it('keeps each program/week/day independent', () => {
+    useStore.getState().toggleBlockDayDone('powerbuilding', 0, 0, 'Full Body 1');
+    useStore.getState().toggleBlockDayDone('minmax', 0, 0, 'Upper 1');
+    useStore.getState().toggleBlockDayDone('powerbuilding', 0, 1, 'Lower 1');
+    expect(useStore.getState().completedBlockDays).toHaveLength(3);
+
+    useStore.getState().toggleBlockDayDone('powerbuilding', 0, 0, 'Full Body 1');
+    expect(useStore.getState().completedBlockDays).toEqual([
+      'minmax-0-0-Upper 1',
+      'powerbuilding-0-1-Lower 1',
+    ]);
+  });
+
+  it('includes completedBlockDays in the cloud projection and resetStore clears it', () => {
+    useStore.getState().toggleBlockDayDone('powerbuilding', 0, 0, 'Full Body 1');
+    expect(useStore.getState().getCloudSyncData().completedBlockDays).toEqual([
+      'powerbuilding-0-0-Full Body 1',
+    ]);
+    useStore.getState().resetStore();
+    expect(useStore.getState().completedBlockDays).toEqual([]);
+  });
+});

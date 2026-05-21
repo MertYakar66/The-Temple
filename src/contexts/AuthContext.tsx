@@ -143,7 +143,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         state.personalRecords === prevState.personalRecords &&
         state.weightEntries === prevState.weightEntries &&
         state.exerciseGoals === prevState.exerciseGoals &&
-        state.blockCustomizations === prevState.blockCustomizations
+        state.blockCustomizations === prevState.blockCustomizations &&
+        state.completedBlockDays === prevState.completedBlockDays
       ) return;
       debouncedSaveWorkoutData(uid, state.getCloudSyncData());
     });
