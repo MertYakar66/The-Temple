@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, X, Clock, Save, Play, Layers, Dumbbell, ChevronDown, ChevronRight, Edit2, Calendar } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { minMaxProgram } from '../data/minMaxProgram';
+import { blockPrograms } from '../data/blockPrograms';
+import type { BlockProgram } from '../data/minMaxProgram';
 import type { Exercise, Routine, CustomBlockExercise } from '../types';
 import { ExerciseSelector } from '../components/workout/ExerciseSelector';
 import { WorkoutExerciseCard } from '../components/workout/WorkoutExerciseCard';
@@ -97,13 +98,12 @@ function ProgramAccordion({
   );
 }
 
-function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: string, exercises: CustomBlockExercise[]) => void }) {
+function BlockAccordion({ program, onStartFromBlock }: { program: BlockProgram; onStartFromBlock: (dayName: string, exercises: CustomBlockExercise[]) => void }) {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
   const getBlockWeekDays = useStore((s) => s.getBlockWeekDays);
 
-  const program = minMaxProgram;
   const totalWeeks = program.blocks.reduce((sum, b) => sum + b.weeks.length, 0);
 
   const toggleWeek = (key: string) => {
@@ -118,7 +118,7 @@ function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: stri
         className="w-full flex items-center gap-3 px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
       >
         <div
-          onClick={(e) => { e.stopPropagation(); navigate('/blocks'); }}
+          onClick={(e) => { e.stopPropagation(); navigate(`/blocks?program=${program.id}`); }}
           className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
         >
           <Layers className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -152,7 +152,7 @@ function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: stri
                 {block.weeks.map((week, weekIdx) => {
                   const weekKey = `${blockIdx}-${weekIdx}`;
                   const isWeekExpanded = expandedWeek === weekKey;
-                  const customDays = getBlockWeekDays(blockIdx, weekIdx);
+                  const customDays = getBlockWeekDays(program.id, blockIdx, weekIdx);
                   const trainingDays = customDays.filter((d) => d.exercises.length > 0);
 
                   return (
@@ -190,7 +190,7 @@ function BlockAccordion({ onStartFromBlock }: { onStartFromBlock: (dayName: stri
                           {trainingDays.map((day, dayIdx) => (
                             <div key={dayIdx} className="flex items-center gap-2">
                               <button
-                                onClick={() => navigate(`/blocks?block=${blockIdx}&week=${weekIdx}&day=${day.dayName}`)}
+                                onClick={() => navigate(`/blocks?program=${program.id}&block=${blockIdx}&week=${weekIdx}&day=${day.dayName}`)}
                                 className="flex-1 flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                               >
                                 <div className="w-8 h-8 bg-accent-100 dark:bg-accent-900/30 rounded-md flex items-center justify-center">
@@ -424,7 +424,11 @@ export function Workout() {
         {/* Blocks */}
         <div className="mt-6">
           <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Blocks</h2>
-          <BlockAccordion onStartFromBlock={handleStartFromBlock} />
+          <div className="space-y-3">
+            {blockPrograms.map((p) => (
+              <BlockAccordion key={p.id} program={p} onStartFromBlock={handleStartFromBlock} />
+            ))}
+          </div>
         </div>
       </div>
     );

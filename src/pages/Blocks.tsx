@@ -4,7 +4,7 @@ import {
   ChevronLeft, ChevronDown, ChevronUp, Info, Repeat, Dumbbell, Clock,
   AlertTriangle, Play, Pencil, Trash2, Plus, RotateCcw, GripVertical,
 } from 'lucide-react';
-import { minMaxProgram } from '../data/minMaxProgram';
+import { blockPrograms } from '../data/blockPrograms';
 import type { CustomBlockExercise, CustomBlockDay } from '../types';
 import { useStore } from '../store/useStore';
 import { BlockExerciseEditModal } from '../components/blocks/BlockExerciseEditModal';
@@ -25,16 +25,22 @@ export function Blocks() {
   const resetWeekToDefault = useStore((s) => s.resetWeekToDefault);
   const blockCustomizations = useStore((s) => s.blockCustomizations);
 
+  const initProgram = (() => {
+    const id = searchParams.get('program');
+    const idx = id ? blockPrograms.findIndex((p) => p.id === id) : 0;
+    return idx >= 0 ? idx : 0;
+  })();
   const initBlock = Number(searchParams.get('block') || 0);
   const initWeek = Number(searchParams.get('week') || 0);
   const initDay = searchParams.get('day') || null;
 
+  const [selectedProgramIdx, setSelectedProgramIdx] = useState(initProgram);
   const [selectedBlockIdx, setSelectedBlockIdx] = useState(initBlock);
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(initWeek);
   // Auto-expand day from query params
   const initExpandedDay = (() => {
     if (!initDay) return null;
-    const block = minMaxProgram.blocks[initBlock];
+    const block = blockPrograms[initProgram]?.blocks[initBlock];
     if (!block) return null;
     const week = block.weeks[initWeek];
     if (!week) return null;
@@ -61,13 +67,13 @@ export function Blocks() {
     navigate('/workout');
   };
 
-  const program = minMaxProgram;
+  const program = blockPrograms[selectedProgramIdx];
   const block = program.blocks[selectedBlockIdx];
   const week = block.weeks[selectedWeekIdx];
 
   // Get customized days (overrides or defaults)
-  const days: CustomBlockDay[] = getBlockWeekDays(selectedBlockIdx, selectedWeekIdx);
-  const weekKey = `${selectedBlockIdx}-${selectedWeekIdx}`;
+  const days: CustomBlockDay[] = getBlockWeekDays(program.id, selectedBlockIdx, selectedWeekIdx);
+  const weekKey = `${program.id}-${selectedBlockIdx}-${selectedWeekIdx}`;
   const hasOverrides = weekKey in blockCustomizations.weekOverrides;
 
   const toggleDay = (dayKey: string) => {
@@ -103,18 +109,18 @@ export function Blocks() {
 
   const handleDeleteExercise = (dayIdx: number, exIdx: number) => {
     if (!window.confirm('Delete this exercise?')) return;
-    removeExerciseFromDay(selectedBlockIdx, selectedWeekIdx, dayIdx, exIdx);
+    removeExerciseFromDay(program.id, selectedBlockIdx, selectedWeekIdx, dayIdx, exIdx);
   };
 
   const handleDeleteDay = (dayIdx: number) => {
     if (!window.confirm('Delete this day and all its exercises?')) return;
-    removeDayFromWeek(selectedBlockIdx, selectedWeekIdx, dayIdx);
+    removeDayFromWeek(program.id, selectedBlockIdx, selectedWeekIdx, dayIdx);
     setExpandedDay(null);
   };
 
   const handleResetWeek = () => {
     if (!window.confirm('Reset this week to the default program? All customizations will be lost.')) return;
-    resetWeekToDefault(selectedBlockIdx, selectedWeekIdx);
+    resetWeekToDefault(program.id, selectedBlockIdx, selectedWeekIdx);
   };
 
   const handleAddNewExercise = (dayIdx: number) => {
@@ -128,9 +134,9 @@ export function Blocks() {
       rirS2: 'N/A',
       rest: '2-3 min',
     };
-    addExerciseToDay(selectedBlockIdx, selectedWeekIdx, dayIdx, newExercise);
+    addExerciseToDay(program.id, selectedBlockIdx, selectedWeekIdx, dayIdx, newExercise);
     // Open edit modal for the new exercise
-    const currentDays = getBlockWeekDays(selectedBlockIdx, selectedWeekIdx);
+    const currentDays = getBlockWeekDays(program.id, selectedBlockIdx, selectedWeekIdx);
     const newIdx = currentDays[dayIdx].exercises.length; // it was just added
     setEditingExercise({ dayIdx, exIdx: newIdx - 1, exercise: newExercise });
   };
@@ -147,7 +153,7 @@ export function Blocks() {
           {editMode && (
             <div className="flex flex-col items-center pl-2 py-1 gap-0.5">
               <button
-                onClick={() => { if (exIdx > 0) reorderExercisesInDay(selectedBlockIdx, selectedWeekIdx, dayIdx, exIdx, exIdx - 1); }}
+                onClick={() => { if (exIdx > 0) reorderExercisesInDay(program.id, selectedBlockIdx, selectedWeekIdx, dayIdx, exIdx, exIdx - 1); }}
                 disabled={exIdx === 0}
                 className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-30"
               >
@@ -155,7 +161,7 @@ export function Blocks() {
               </button>
               <GripVertical className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
               <button
-                onClick={() => { if (exIdx < totalExercises - 1) reorderExercisesInDay(selectedBlockIdx, selectedWeekIdx, dayIdx, exIdx, exIdx + 1); }}
+                onClick={() => { if (exIdx < totalExercises - 1) reorderExercisesInDay(program.id, selectedBlockIdx, selectedWeekIdx, dayIdx, exIdx, exIdx + 1); }}
                 disabled={exIdx === totalExercises - 1}
                 className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-30"
               >
@@ -322,10 +328,31 @@ export function Blocks() {
       )}
 
       <div className="px-4 py-4 space-y-4">
+        {/* Program Selector */}
+        {blockPrograms.length > 1 && (
+          <div className="flex gap-2">
+            {blockPrograms.map((p, idx) => (
+              <button
+                key={p.id}
+                onClick={() => { setSelectedProgramIdx(idx); setSelectedBlockIdx(0); setSelectedWeekIdx(0); setExpandedDay(null); }}
+                className={`flex-1 py-2 px-3 rounded-lg font-medium text-xs transition-colors ${
+                  selectedProgramIdx === idx
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+                }`}
+              >
+                {p.name.replace('Jeff Nippard ', '')}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Program Title */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl p-4 text-white">
           <h2 className="text-lg font-bold">{program.name}</h2>
-          <p className="text-primary-100 text-sm mt-1">{program.frequency} &middot; 12 Weeks &middot; 2 Blocks</p>
+          <p className="text-primary-100 text-sm mt-1">
+            {program.frequency} &middot; {program.blocks.reduce((s, b) => s + b.weeks.length, 0)} Weeks &middot; {program.blocks.length === 1 ? '1 Block' : `${program.blocks.length} Blocks`}
+          </p>
         </div>
 
         {/* Block Selector */}
@@ -487,6 +514,13 @@ export function Blocks() {
             );
           })}
 
+          {/* Empty week (e.g. a placeholder week not yet added) */}
+          {days.length === 0 && !editMode && (
+            <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-10">
+              This week hasn't been added to the program yet.
+            </div>
+          )}
+
           {/* Add Day at end (edit mode, when no days or after last day) */}
           {editMode && days.length === 0 && (
             <button
@@ -505,7 +539,7 @@ export function Blocks() {
         <BlockExerciseEditModal
           exercise={editingExercise.exercise}
           onSave={(updated) => {
-            updateExerciseInDay(selectedBlockIdx, selectedWeekIdx, editingExercise.dayIdx, editingExercise.exIdx, updated);
+            updateExerciseInDay(program.id, selectedBlockIdx, selectedWeekIdx, editingExercise.dayIdx, editingExercise.exIdx, updated);
             setEditingExercise(null);
           }}
           onClose={() => setEditingExercise(null)}
@@ -516,7 +550,7 @@ export function Blocks() {
       {showAddDay !== null && (
         <BlockDayAddModal
           onSave={(day) => {
-            addDayToWeek(selectedBlockIdx, selectedWeekIdx, showAddDay, day);
+            addDayToWeek(program.id, selectedBlockIdx, selectedWeekIdx, showAddDay, day);
             setShowAddDay(null);
           }}
           onClose={() => setShowAddDay(null)}
