@@ -31,7 +31,9 @@ export interface Block {
   weeks: BlockWeek[];
 }
 
-export interface MinMaxProgram {
+// Shared shape for all hardcoded block programs (Min Max, PowerBuilding, ...).
+export interface BlockProgram {
+  id: string;
   name: string;
   frequency: string;
   programNotes: string[];
@@ -393,7 +395,8 @@ function intensificationWeek(weekNum: number): BlockWeek {
   };
 }
 
-export const minMaxProgram: MinMaxProgram = {
+export const minMaxProgram: BlockProgram = {
+  id: 'minmax',
   name: 'Jeff Nippard Min Max Program',
   frequency: '5x Per Week',
   programNotes: [
