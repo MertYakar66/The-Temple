@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft, ChevronDown, ChevronUp, Info, Repeat, Dumbbell, Clock,
-  AlertTriangle, Play, Pencil, Trash2, Plus, RotateCcw, GripVertical,
+  AlertTriangle, Play, Pencil, Trash2, Plus, RotateCcw, GripVertical, Check,
 } from 'lucide-react';
 import { blockPrograms } from '../data/blockPrograms';
 import type { CustomBlockExercise, CustomBlockDay } from '../types';
@@ -24,6 +24,8 @@ export function Blocks() {
   const reorderExercisesInDay = useStore((s) => s.reorderExercisesInDay);
   const resetWeekToDefault = useStore((s) => s.resetWeekToDefault);
   const blockCustomizations = useStore((s) => s.blockCustomizations);
+  const completedBlockDays = useStore((s) => s.completedBlockDays);
+  const toggleBlockDayDone = useStore((s) => s.toggleBlockDayDone);
 
   const initProgram = (() => {
     const id = searchParams.get('program');
@@ -429,6 +431,7 @@ export function Blocks() {
             }
 
             const isExpanded = expandedDay === `${dayIdx}`;
+            const isDone = completedBlockDays.includes(`${program.id}-${selectedBlockIdx}-${selectedWeekIdx}-${day.dayName}`);
             return (
               <div key={dayIdx}>
                 <div className={`bg-white dark:bg-gray-800 rounded-xl border overflow-hidden ${
@@ -460,6 +463,20 @@ export function Blocks() {
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{day.exercises.length} exercises</p>
                     </div>
+                    {!editMode && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleBlockDayDone(program.id, selectedBlockIdx, selectedWeekIdx, day.dayName); }}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-colors ${
+                          isDone
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                            : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-400'
+                        }`}
+                        aria-label={isDone ? 'Mark workout not done' : 'Mark workout done'}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        {isDone ? 'Done' : 'Mark'}
+                      </button>
+                    )}
                     {editMode && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDeleteDay(dayIdx); }}

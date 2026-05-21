@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { blockPrograms } from '../data/blockPrograms';
 import {
   Plus,
   Dumbbell,
@@ -153,7 +154,7 @@ export function Dashboard() {
             </div>
             <div className="flex-1">
               <p className="font-semibold text-gray-900 dark:text-white">Training Blocks</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Jeff Nippard Min Max Program</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{blockPrograms.length === 1 ? '1 program' : `${blockPrograms.length} programs`}</p>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </div>
