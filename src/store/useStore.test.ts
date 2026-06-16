@@ -149,3 +149,68 @@ describe('useStore — completed block days', () => {
     expect(useStore.getState().completedBlockDays).toEqual([]);
   });
 });
+
+describe('useStore — getLastWorkoutForExercise occurrence disambiguation', () => {
+  beforeEach(() => {
+    useStore.getState().resetStore();
+  });
+
+  // Build a WorkoutExercise carrying a recognisable note, for the same
+  // underlying exercise id (simulating two Squats with different intensities
+  // in one day).
+  function we(note: string) {
+    return {
+      id: `we-${note}`,
+      exerciseId: 'squat',
+      exercise: { ...STUB_EXERCISE, id: 'squat', name: 'Squat' },
+      sets: [{ id: `s-${note}`, reps: 5, weight: 100, completed: true }],
+      restSeconds: 180,
+      notes: note,
+    };
+  }
+
+  function session(id: string, notes: string[]) {
+    return {
+      id,
+      name: 'Lower 1',
+      date: '2026-05-01',
+      exercises: notes.map(we),
+      completed: true,
+    };
+  }
+
+  it('returns the matching occurrence, not always the first, for duplicates in a day', () => {
+    // A past Lower-1 day with a heavy Squat then a back-off Squat.
+    useStore.setState({ workoutSessions: [session('sess-1', ['heavy', 'backoff'])] });
+
+    const first = useStore.getState().getLastWorkoutForExercise('squat', 1);
+    const second = useStore.getState().getLastWorkoutForExercise('squat', 2);
+
+    expect(first?.notes).toBe('heavy');
+    expect(second?.notes).toBe('backoff');
+  });
+
+  it('defaults to the first occurrence (original behaviour) when no occurrence is given', () => {
+    useStore.setState({ workoutSessions: [session('sess-1', ['heavy', 'backoff'])] });
+    expect(useStore.getState().getLastWorkoutForExercise('squat')?.notes).toBe('heavy');
+  });
+
+  it('skips back to an older session that actually has the requested occurrence', () => {
+    // Most recent day had a single Squat; the older day had two. Occurrence 2
+    // must skip the single-squat day and resolve from the two-squat day.
+    useStore.setState({
+      workoutSessions: [
+        session('old', ['old-heavy', 'old-backoff']),
+        session('recent', ['recent-single']),
+      ],
+    });
+
+    expect(useStore.getState().getLastWorkoutForExercise('squat', 1)?.notes).toBe('recent-single');
+    expect(useStore.getState().getLastWorkoutForExercise('squat', 2)?.notes).toBe('old-backoff');
+  });
+
+  it('returns undefined when no session has that many occurrences', () => {
+    useStore.setState({ workoutSessions: [session('sess-1', ['only-one'])] });
+    expect(useStore.getState().getLastWorkoutForExercise('squat', 2)).toBeUndefined();
+  });
+});

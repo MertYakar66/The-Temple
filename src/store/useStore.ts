@@ -122,7 +122,7 @@ interface AppState {
   exerciseGoals: ExerciseGoal[];
   setExerciseGoal: (goal: Omit<ExerciseGoal, 'createdAt' | 'updatedAt'>) => void;
   getExerciseGoal: (exerciseId: string) => ExerciseGoal | undefined;
-  getLastWorkoutForExercise: (exerciseId: string) => WorkoutExercise | undefined;
+  getLastWorkoutForExercise: (exerciseId: string, occurrence?: number) => WorkoutExercise | undefined;
 
   // Block Customizations
   blockCustomizations: BlockCustomizations;
@@ -776,15 +776,26 @@ export const useStore = create<AppState>()(
         return get().exerciseGoals.find((g) => g.exerciseId === exerciseId);
       },
 
-      getLastWorkoutForExercise: (exerciseId) => {
+      getLastWorkoutForExercise: (exerciseId, occurrence = 1) => {
         const sessions = get().workoutSessions;
-        // Go through sessions in reverse (most recent first)
+        // Go through sessions in reverse (most recent first).
+        //
+        // The same exercise can appear multiple times in one day with
+        // different intensities (e.g. a heavy top-set Squat + a back-off
+        // Squat) — they share the same exerciseId. `occurrence` (1-based)
+        // selects WHICH instance to track, by its position among same-id
+        // exercises within a day, so each card resolves its own history
+        // instead of both collapsing onto the first match. Position is
+        // stable across repeats of the same day, and computed at read time
+        // so it works retroactively on existing sessions. occurrence = 1
+        // reproduces the original behaviour for every non-duplicated
+        // exercise and every other caller.
         for (let i = sessions.length - 1; i >= 0; i--) {
-          const exercise = sessions[i].exercises.find(
+          const matches = sessions[i].exercises.filter(
             (e) => e.exerciseId === exerciseId
           );
-          if (exercise) {
-            return exercise;
+          if (matches.length >= occurrence) {
+            return matches[occurrence - 1];
           }
         }
         return undefined;

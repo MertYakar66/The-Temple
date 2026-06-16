@@ -13,6 +13,14 @@ interface WorkoutExerciseCardProps {
   onToggleSetComplete: (setId: string) => void;
   onRemove: () => void;
   unitSystem: UnitSystem;
+  /**
+   * 1-based position of this exercise among same-exercise instances in the
+   * current session. Distinguishes repeats of the same movement in one day
+   * (e.g. a heavy + a back-off Squat) so each tracks its own history.
+   */
+  occurrence?: number;
+  /** Total count of same-exercise instances in the current session. */
+  instanceCount?: number;
 }
 
 export function WorkoutExerciseCard({
@@ -23,6 +31,8 @@ export function WorkoutExerciseCard({
   onToggleSetComplete,
   onRemove,
   unitSystem,
+  occurrence = 1,
+  instanceCount = 1,
 }: WorkoutExerciseCardProps) {
   const [expanded, setExpanded] = useState(true);
   const [showHistory, setShowHistory] = useState(true);
@@ -35,7 +45,8 @@ export function WorkoutExerciseCard({
   const weightUnit = getWeightUnit(unitSystem);
 
   const completedSets = workoutExercise.sets.filter((s) => s.completed).length;
-  const lastWorkout = getLastWorkoutForExercise(workoutExercise.exerciseId);
+  const isDuplicate = instanceCount > 1;
+  const lastWorkout = getLastWorkoutForExercise(workoutExercise.exerciseId, occurrence);
   const currentGoal = getExerciseGoal(workoutExercise.exerciseId);
 
   // Goal editor state
@@ -67,9 +78,16 @@ export function WorkoutExerciseCard({
           className="flex-1 flex items-center gap-2 text-left"
         >
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">
-              {workoutExercise.exercise.name}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                {workoutExercise.exercise.name}
+              </h3>
+              {isDuplicate && (
+                <span className="text-xs font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full whitespace-nowrap">
+                  {occurrence} of {instanceCount}
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {completedSets}/{workoutExercise.sets.length} sets completed
             </p>
