@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft,
   Plus,
@@ -16,7 +16,11 @@ type TabType = 'meals' | 'recipes' | 'diets';
 
 export function DietMeals() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('meals');
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const initialTab: TabType =
+    requestedTab === 'recipes' || requestedTab === 'diets' ? requestedTab : 'meals';
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
   const meals = useDietStore((s) => s.meals);
   const recipes = useDietStore((s) => s.recipes);
