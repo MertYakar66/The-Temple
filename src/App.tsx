@@ -20,6 +20,7 @@ import { Signup } from './pages/Signup';
 import { Diet } from './pages/Diet';
 import { DietLog } from './pages/DietLog';
 import { DietMeals } from './pages/DietMeals';
+import { DietPlanDetail } from './pages/DietPlanDetail';
 import { DietMealEditor } from './pages/DietMealEditor';
 import { DietWeekly } from './pages/DietWeekly';
 import { DietSettings } from './pages/DietSettings';
@@ -118,6 +119,7 @@ function AppRoutes() {
       {/* Diet routes without bottom nav */}
       <Route path="/diet/log" element={<DietLog />} />
       <Route path="/diet/meals" element={<DietMeals />} />
+      <Route path="/diet/diets/:id" element={<DietPlanDetail />} />
       <Route path="/diet/meals/new" element={<DietMealEditor />} />
       <Route path="/diet/meals/:id/edit" element={<DietMealEditor />} />
       <Route path="/diet/weekly" element={<DietWeekly />} />

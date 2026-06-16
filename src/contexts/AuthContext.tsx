@@ -157,7 +157,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         state.foodLog === prevState.foodLog &&
         state.recentFoodIds === prevState.recentFoodIds &&
         state.dietSettings === prevState.dietSettings &&
-        state.streaks === prevState.streaks
+        state.streaks === prevState.streaks &&
+        state.activeDietId === prevState.activeDietId
       ) return;
       debouncedSaveDietData(uid, state.getCloudSyncData());
     });

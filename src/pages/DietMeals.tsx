@@ -5,12 +5,14 @@ import {
   Plus,
   Utensils,
   BookOpen,
+  Target,
   Trash2,
   Edit2,
 } from 'lucide-react';
 import { useDietStore } from '../store/useDietStore';
+import { dietPlans } from '../data/diets';
 
-type TabType = 'meals' | 'recipes';
+type TabType = 'meals' | 'recipes' | 'diets';
 
 export function DietMeals() {
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ export function DietMeals() {
 
   const meals = useDietStore((s) => s.meals);
   const recipes = useDietStore((s) => s.recipes);
+  const activeDietId = useDietStore((s) => s.activeDietId);
   const deleteMeal = useDietStore((s) => s.deleteMeal);
   const deleteRecipe = useDietStore((s) => s.deleteRecipe);
 
@@ -45,13 +48,17 @@ export function DietMeals() {
             <ChevronLeft className="w-5 h-5 mr-1" />
             Back
           </button>
-          <Link
-            to={activeTab === 'meals' ? '/diet/meals/new' : '/diet/recipes/new'}
-            className="text-primary-600 dark:text-primary-400 font-medium flex items-center gap-1"
-          >
-            <Plus className="w-5 h-5" />
-            New
-          </Link>
+          {activeTab === 'diets' ? (
+            <span className="w-12" aria-hidden="true" />
+          ) : (
+            <Link
+              to={activeTab === 'meals' ? '/diet/meals/new' : '/diet/recipes/new'}
+              className="text-primary-600 dark:text-primary-400 font-medium flex items-center gap-1"
+            >
+              <Plus className="w-5 h-5" />
+              New
+            </Link>
+          )}
         </div>
       </header>
 
@@ -60,7 +67,7 @@ export function DietMeals() {
         <div className="flex">
           <button
             onClick={() => setActiveTab('meals')}
-            className={`flex-1 py-3 text-center font-medium border-b-2 transition-colors ${
+            className={`flex-1 py-3 text-center text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'meals'
                 ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
@@ -71,7 +78,7 @@ export function DietMeals() {
           </button>
           <button
             onClick={() => setActiveTab('recipes')}
-            className={`flex-1 py-3 text-center font-medium border-b-2 transition-colors ${
+            className={`flex-1 py-3 text-center text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'recipes'
                 ? 'border-primary-600 text-primary-600 dark:text-primary-400'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
@@ -79,6 +86,17 @@ export function DietMeals() {
           >
             <BookOpen className="w-5 h-5 mx-auto mb-1" />
             Recipes
+          </button>
+          <button
+            onClick={() => setActiveTab('diets')}
+            className={`flex-1 py-3 text-center text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'diets'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+          >
+            <Target className="w-5 h-5 mx-auto mb-1" />
+            Diets
           </button>
         </div>
       </div>
@@ -205,6 +223,54 @@ export function DietMeals() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Diets Tab */}
+        {activeTab === 'diets' && (
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Pick a diet plan that fits your goal. Apply its daily targets and log
+              its meals with one tap.
+            </p>
+
+            <div className="space-y-3">
+              {dietPlans.map((plan) => {
+                const isActive = plan.id === activeDietId;
+                return (
+                  <Link
+                    key={plan.id}
+                    to={`/diet/diets/${plan.id}`}
+                    className="card block hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                            {plan.name}
+                          </h3>
+                          {isActive && (
+                            <span className="text-xs font-medium bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-full">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                          {plan.goal} • {plan.meals.length} meals
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                          {Math.round(plan.totalMacros.calories)} cal •{' '}
+                          {Math.round(plan.totalMacros.protein)}g P •{' '}
+                          {Math.round(plan.totalMacros.carbs)}g C •{' '}
+                          {Math.round(plan.totalMacros.fat)}g F
+                        </p>
+                      </div>
+                      <Target className="w-5 h-5 text-gray-300 dark:text-gray-600 shrink-0 mt-1" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

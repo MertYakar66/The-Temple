@@ -208,3 +208,74 @@ describe('dietStoreMigrate (persist v1)', () => {
     expect(dietStoreMigrate('not an object')).toBe('not an object');
   });
 });
+
+describe('useDietStore — active diet plan slice', () => {
+  beforeEach(() => {
+    useDietStore.getState().resetStore();
+  });
+
+  it('starts null and setActiveDiet updates it', () => {
+    expect(useDietStore.getState().activeDietId).toBeNull();
+    useDietStore.getState().setActiveDiet('low-carb-2500');
+    expect(useDietStore.getState().activeDietId).toBe('low-carb-2500');
+    useDietStore.getState().setActiveDiet(null);
+    expect(useDietStore.getState().activeDietId).toBeNull();
+  });
+
+  it('resetStore clears the active diet', () => {
+    useDietStore.getState().setActiveDiet('low-carb-2500');
+    useDietStore.getState().resetStore();
+    expect(useDietStore.getState().activeDietId).toBeNull();
+  });
+
+  it('round-trips activeDietId through getCloudSyncData / loadFromCloud', () => {
+    useDietStore.getState().setActiveDiet('low-carb-2500');
+    const cloud = useDietStore.getState().getCloudSyncData();
+    expect(cloud.activeDietId).toBe('low-carb-2500');
+
+    useDietStore.getState().resetStore();
+    expect(useDietStore.getState().activeDietId).toBeNull();
+
+    useDietStore.getState().loadFromCloud(cloud);
+    expect(useDietStore.getState().activeDietId).toBe('low-carb-2500');
+  });
+});
+
+describe('useDietStore — logDietMeal', () => {
+  beforeEach(() => {
+    useDietStore.getState().resetStore();
+  });
+
+  it('writes a synthetic meal-type entry carrying the plan macros', () => {
+    const macros = { calories: 955, protein: 149, carbs: 15, fat: 33 };
+    useDietStore.getState().logDietMeal(
+      { name: 'High-Protein Core (Lunch)', mealType: 'lunch', macros },
+      '2026-05-05',
+    );
+
+    const entries = useDietStore.getState().getLogEntriesForDate('2026-05-05');
+    expect(entries).toHaveLength(1);
+    const entry = entries[0];
+    expect(entry.type).toBe('meal');
+    expect(entry.mealType).toBe('lunch');
+    expect(entry.servings).toBe(1);
+    expect(entry.macros).toEqual(macros);
+    expect(entry.meal?.name).toBe('High-Protein Core (Lunch)');
+    // No saved-meal pollution: the embedded meal is inline-only.
+    expect(useDietStore.getState().meals).toHaveLength(0);
+    // No undefined fields reach the synced entry (Firestore rejects them).
+    expect(entry.mealId).toBeUndefined();
+    expect('mealId' in entry).toBe(false);
+  });
+
+  it('contributes to the daily macro total and bumps the logging streak', () => {
+    useDietStore.getState().logDietMeal(
+      { name: 'Salad / Dressing Side', mealType: 'snack', macros: { calories: 215, protein: 3, carbs: 22, fat: 14 } },
+      '2026-05-05',
+    );
+
+    expect(useDietStore.getState().getDailyMacros('2026-05-05').calories).toBe(215);
+    expect(useDietStore.getState().streaks.lastLogDate).toBe('2026-05-05');
+    expect(useDietStore.getState().streaks.loggingStreak).toBe(1);
+  });
+});
