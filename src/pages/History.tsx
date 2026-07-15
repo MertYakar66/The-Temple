@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -38,6 +38,7 @@ import {
   getTotalVolume,
 } from '../utils/workoutMetrics';
 import { kgToDisplay, getWeightUnit } from '../utils/weight';
+import { getDateStamp } from '../utils/date';
 
 // Known display labels for the canonical mealTypes. Custom mealType strings
 // (anything not listed here) are humanized at render time via humanizeMealType.
@@ -72,6 +73,7 @@ export function History() {
   const getDailyMacros = useDietStore((state) => state.getDailyMacros);
   const dietSettings = useDietStore((state) => state.dietSettings);
   const deleteLogEntry = useDietStore((state) => state.deleteLogEntry);
+  const foodLog = useDietStore((state) => state.foodLog);
 
   const unitSystem = user?.unitSystem || 'metric';
 
@@ -85,6 +87,18 @@ export function History() {
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+  // Presence sets for the calendar grid: build each in a single pass over its
+  // source array, then do O(1) membership per day cell (was ~42 full-array
+  // filters of workoutSessions and foodLog on every render).
+  const workoutDaySet = useMemo(
+    () => new Set(workoutSessions.map((ws) => ws.date)),
+    [workoutSessions]
+  );
+  const dietDaySet = useMemo(
+    () => new Set(foodLog.map((e) => e.date)),
+    [foodLog]
+  );
 
   const getWorkoutsForDate = (date: Date): WorkoutSession[] => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -119,7 +133,7 @@ export function History() {
   // Build the visible mealType list from this day's entries: known
   // mealTypes first (in canonical order), then any custom strings appended
   // in first-appearance order. Empty mealTypes are filtered out — History
-  // only shows what was logged. Cheap recomputation; no useMemo.
+  // only shows what was logged. Cheap: operates on the selected day only.
   const presentMealTypes = new Set(selectedDateDiet.map((e) => e.mealType));
   const knownVisible = KNOWN_ORDER.filter((mt) => presentMealTypes.has(mt));
   const seenForCustom = new Set<string>(KNOWN_ORDER);
@@ -177,10 +191,9 @@ export function History() {
         {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-1">
           {calendarDays.map((day) => {
-            const dayWorkouts = getWorkoutsForDate(day);
-            const dayDiet = getDietEntriesForDate(day);
-            const hasWorkout = dayWorkouts.length > 0;
-            const hasDiet = dayDiet.length > 0;
+            const dayStr = getDateStamp(day);
+            const hasWorkout = workoutDaySet.has(dayStr);
+            const hasDiet = dietDaySet.has(dayStr);
             const isSelected = selectedDate && isSameDay(day, selectedDate);
             const isCurrentMonth = isSameMonth(day, currentMonth);
             const isToday = isSameDay(day, new Date());
@@ -546,12 +559,16 @@ function WorkoutCard({
         </div>
       )}
 
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full text-left"
-      >
-        <div className="flex items-start justify-between mb-2">
-          <div>
+      {/* Header row: the expand toggle, delete, and chevron are sibling buttons —
+          never nested (a <button> inside a <button> is invalid HTML and
+          ambiguous for assistive tech). */}
+      <div className="flex items-start justify-between gap-2">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          aria-expanded={compact ? undefined : expanded}
+          className="flex-1 min-w-0 text-left"
+        >
+          <div className="mb-2">
             <h3 className="font-semibold text-gray-900 dark:text-white">{workout.name}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">{workout.date}</p>
             {routine && (
@@ -560,66 +577,73 @@ function WorkoutCard({
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            {duration && (
-              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">
-                <Clock className="w-4 h-4" />
-                {duration} min
-              </div>
-            )}
-            {onDelete && !compact && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteConfirm(true);
-                }}
-                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                title="Delete workout"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-            {!compact && (
-              expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />
-            )}
+
+          <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-300">
+            <span>{workout.exercises.length} exercises</span>
+            <span>{totalSets} sets</span>
+            <span>{Math.round(kgToDisplay(totalVolume, unitSystem)).toLocaleString()} {weightUnit}</span>
           </div>
-        </div>
 
-        <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-300">
-          <span>{workout.exercises.length} exercises</span>
-          <span>{totalSets} sets</span>
-          <span>{Math.round(kgToDisplay(totalVolume, unitSystem)).toLocaleString()} {weightUnit}</span>
-        </div>
-
-        {/* Planned vs Actual comparison */}
-        {routine && (
-          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Planned vs Actual</p>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Exercises:</span>
-                <span className={`font-medium ${
-                  workout.exercises.length >= (plannedExercises || 0)
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-yellow-600 dark:text-yellow-400'
-                }`}>
-                  {workout.exercises.length} / {plannedExercises}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Sets:</span>
-                <span className={`font-medium ${
-                  totalSets >= (plannedSets || 0)
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-yellow-600 dark:text-yellow-400'
-                }`}>
-                  {totalSets} / {plannedSets}
-                </span>
+          {/* Planned vs Actual comparison */}
+          {routine && (
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Planned vs Actual</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Exercises:</span>
+                  <span className={`font-medium ${
+                    workout.exercises.length >= (plannedExercises || 0)
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-yellow-600 dark:text-yellow-400'
+                  }`}>
+                    {workout.exercises.length} / {plannedExercises}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">Sets:</span>
+                  <span className={`font-medium ${
+                    totalSets >= (plannedSets || 0)
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-yellow-600 dark:text-yellow-400'
+                  }`}>
+                    {totalSets} / {plannedSets}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </button>
+          )}
+        </button>
+
+        {/* Controls hoisted out of the toggle button so no interactive element
+            is nested inside another. */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {duration && (
+            <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">
+              <Clock className="w-4 h-4" />
+              {duration} min
+            </div>
+          )}
+          {onDelete && !compact && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+              title="Delete workout"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+          {!compact && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Collapse workout' : 'Expand workout'}
+              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              {expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+            </button>
+          )}
+        </div>
+      </div>
 
       {expanded && !compact && (
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
