@@ -639,11 +639,18 @@ function WorkoutCard({
 
       {expanded && !compact && (
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
+          {/* Session notes */}
+          {workout.notes && (
+            <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-800 dark:text-blue-200">
+              {workout.notes}
+            </div>
+          )}
           {workout.exercises.map((ex) => {
             // Find planned exercise from routine
             const plannedExercise = routine?.exercises.find(re => re.exerciseId === ex.exerciseId);
             const completedSets = ex.sets.filter(s => s.completed).length;
             const plannedSetCount = plannedExercise?.targetSets || ex.sets.length;
+            const hasSetNotes = ex.sets.some((s) => s.notes);
 
             return (
               <div key={ex.id} className="text-sm">
@@ -659,6 +666,10 @@ function WorkoutCard({
                     </span>
                   )}
                 </div>
+                {/* Exercise notes (e.g. carried from the routine prescription) */}
+                {ex.notes && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic mb-1">{ex.notes}</p>
+                )}
                 <div className="flex flex-wrap gap-2 mt-1">
                   {ex.sets.map((set, index) => (
                     <span
@@ -670,6 +681,9 @@ function WorkoutCard({
                       }`}
                     >
                       {Math.round(kgToDisplay(set.weight, unitSystem) * 10) / 10}{weightUnit} × {set.reps}
+                      {set.rir != null && (
+                        <span className="ml-1 opacity-70">· {set.rir} RIR</span>
+                      )}
                       {plannedExercise && index < plannedSetCount && (
                         <span className="ml-1 opacity-60">
                           (target: {plannedExercise.targetReps})
@@ -678,6 +692,18 @@ function WorkoutCard({
                     </span>
                   ))}
                 </div>
+                {/* Per-set notes captured during logging */}
+                {hasSetNotes && (
+                  <div className="mt-1.5 space-y-0.5">
+                    {ex.sets.map((set, index) =>
+                      set.notes ? (
+                        <p key={set.id} className="text-xs text-gray-500 dark:text-gray-400 italic">
+                          <span className="not-italic text-gray-400 dark:text-gray-500">Set {index + 1}:</span> “{set.notes}”
+                        </p>
+                      ) : null
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
