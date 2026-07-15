@@ -32,38 +32,47 @@ function ProgramAccordion({
 
   return (
     <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
-      >
-        <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
-          <Dumbbell className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-        </div>
-        <div className="flex-1 text-left">
-          <h3 className="font-bold text-gray-900 dark:text-white text-base">
-            {programName}
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {pluralize(routines.length, 'day')} &middot; {pluralize(totalExercises, 'exercise')}
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleEditProgram}
-            className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-            title="Edit Routine Name"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-          <div className="p-1">
-            {expanded ? (
-              <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-            ) : (
-              <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-            )}
+      {/* Header row: the expand toggle, edit, and chevron are sibling buttons —
+          never nested (a <button> inside a <button> is invalid HTML and
+          ambiguous for assistive tech). */}
+      <div className="flex items-center pr-2">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          aria-expanded={expanded}
+          className="flex-1 flex items-center gap-3 px-4 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+            <Dumbbell className="w-5 h-5 text-primary-600 dark:text-primary-400" />
           </div>
-        </div>
-      </button>
+          <div className="flex-1 text-left">
+            <h3 className="font-bold text-gray-900 dark:text-white text-base">
+              {programName}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {pluralize(routines.length, 'day')} &middot; {pluralize(totalExercises, 'exercise')}
+            </p>
+          </div>
+        </button>
+        <button
+          onClick={handleEditProgram}
+          className="p-2 flex-shrink-0 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+          title="Edit Routine Name"
+        >
+          <Edit2 className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Collapse program' : 'Expand program'}
+          className="p-1 flex-shrink-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          {expanded ? (
+            <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          ) : (
+            <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          )}
+        </button>
+      </div>
 
       {expanded && (
         <div className="px-4 pb-4 space-y-2">
@@ -112,33 +121,36 @@ function BlockAccordion({ program, onStartFromBlock }: { program: BlockProgram; 
 
   return (
     <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-      {/* Program Header */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
-      >
-        <div
-          onClick={(e) => { e.stopPropagation(); navigate(`/blocks?program=${program.id}`); }}
-          className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+      {/* Program Header: the navigate (Layers) control and the expand toggle are
+          sibling buttons — never nested interactive elements. */}
+      <div className="flex items-center">
+        <button
+          onClick={() => navigate(`/blocks?program=${program.id}`)}
+          aria-label={`Open ${program.name} block program`}
+          className="w-10 h-10 ml-4 my-4 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
         >
           <Layers className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-        </div>
-        <div className="flex-1 text-left">
-          <h3 className="font-bold text-gray-900 dark:text-white text-base">
-            {program.name}
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {program.frequency} &middot; {totalWeeks} Weeks &middot; {program.blocks.length} Blocks
-          </p>
-        </div>
-        <div className="p-1">
+        </button>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          aria-expanded={expanded}
+          className="flex-1 flex items-center gap-3 pl-3 pr-4 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          <div className="flex-1 text-left">
+            <h3 className="font-bold text-gray-900 dark:text-white text-base">
+              {program.name}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {program.frequency} &middot; {totalWeeks} Weeks &middot; {program.blocks.length} Blocks
+            </p>
+          </div>
           {expanded ? (
-            <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
           ) : (
-            <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
           )}
-        </div>
-      </button>
+        </button>
+      </div>
 
       {/* Expanded: Blocks > Weeks > Days */}
       {expanded && (
