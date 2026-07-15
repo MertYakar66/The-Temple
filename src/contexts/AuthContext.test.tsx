@@ -15,7 +15,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 const h = vi.hoisted(() => ({
   authCb: { fn: null as null | ((user: unknown) => unknown) },
   authUnsub: vi.fn(),
-  fakeAuth: { currentUser: null as null | { uid: string } },
+  fakeAuth: { currentUser: null as null | { uid: string; email?: string } },
   loadWorkoutData: vi.fn(),
   loadDietData: vi.fn(),
   loadCalendarData: vi.fn(),
@@ -69,7 +69,12 @@ vi.mock('../lib/siriToken', () => ({ revokeSiriToken: h.revokeSiriToken }));
 // Imported after the mocks so the mocked modules are wired in.
 import { StrictMode, act, useEffect } from 'react';
 import { render, cleanup } from '@testing-library/react';
+import { signOut, deleteUser } from 'firebase/auth';
 import { AuthProvider, useAuth } from './AuthContext';
+// Raw source text of AuthContext (Vite `?raw`) — used by the invariant-#5
+// guard to assert the startSync equality filter covers every persisted slice.
+// Avoids Node fs/path/process, which aren't in tsconfig.app's type surface.
+import authContextSource from './AuthContext.tsx?raw';
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
 import { useCalendarStore } from '../store/useCalendarStore';
@@ -321,5 +326,221 @@ describe('AuthContext — cloud-sync race', () => {
     });
     expect(useCalendarStore.getState().events).toHaveLength(1);
     expect(h.debouncedSaveCalendarData).toHaveBeenCalledTimes(1);
+  });
+});
+
+// -------------------------------------------------------------------------
+// Data-loss hardening (auth-sync-integrity): three silent-data-loss bugs in
+// the sign-in / logout / delete lifecycle. Each behavioural test below fails
+// on the pre-fix code and passes after; test 6 is a standing invariant guard.
+// -------------------------------------------------------------------------
+
+describe('AuthContext — data-loss hardening (auth-sync-integrity)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    cap.current = null;
+    h.authCb.fn = null;
+    h.fakeAuth.currentUser = null;
+    h.loadWorkoutData.mockResolvedValue(null);
+    h.loadDietData.mockResolvedValue(null);
+    h.loadCalendarData.mockResolvedValue(null);
+    h.saveWorkoutData.mockResolvedValue(undefined);
+    h.saveDietData.mockResolvedValue(undefined);
+    h.saveCalendarData.mockResolvedValue(undefined);
+    h.deleteUserCloudData.mockResolvedValue(undefined);
+    useStore.getState().resetStore();
+    useDietStore.getState().resetStore();
+    useCalendarStore.getState().resetStore();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  // Bug 1 — the clobber guard (RED before fix).
+  it('Bug 1: a cloud-read error does NOT reset stores, start sync, or write', async () => {
+    const X = { uid: 'user-X' };
+    h.fakeAuth.currentUser = X;
+    renderProvider();
+
+    // localStorage-hydrated last-known state already present in memory.
+    act(() => {
+      useCalendarStore.getState().addEvent(makeCalendarEvent('local-known'));
+    });
+    expect(useCalendarStore.getState().events).toHaveLength(1);
+
+    // One of the three cloud reads fails transiently.
+    h.loadWorkoutData.mockRejectedValueOnce(new Error('network down'));
+    await fire(X);
+
+    // Stores retained their data — never reset to empty.
+    expect(useCalendarStore.getState().events).toHaveLength(1);
+    expect(useCalendarStore.getState().events[0].title).toBe('local-known');
+
+    // No cloud write of any kind was issued for this session.
+    expect(h.debouncedSaveWorkoutData).not.toHaveBeenCalled();
+    expect(h.debouncedSaveDietData).not.toHaveBeenCalled();
+    expect(h.debouncedSaveCalendarData).not.toHaveBeenCalled();
+    expect(h.saveWorkoutData).not.toHaveBeenCalled();
+    expect(h.saveDietData).not.toHaveBeenCalled();
+    expect(h.saveCalendarData).not.toHaveBeenCalled();
+
+    // Sync is NOT running: a later edit schedules no debounced write.
+    act(() => {
+      useCalendarStore.getState().addEvent(makeCalendarEvent('later edit'));
+    });
+    expect(h.debouncedSaveCalendarData).not.toHaveBeenCalled();
+
+    // Recoverable: loading resolved and the error is surfaced.
+    expect(cap.current?.loading).toBe(false);
+    expect(cap.current?.cloudError).toBe(true);
+  });
+
+  // Bug 1 — the new-user path must NOT regress (still reset + startSync).
+  it('Bug 1 guard: a new user (all loads null) still resets + starts sync', async () => {
+    const X = { uid: 'user-X' };
+    h.fakeAuth.currentUser = X;
+    renderProvider();
+
+    // Stale in-memory data a correct reset must clear.
+    act(() => {
+      useCalendarStore.getState().addEvent(makeCalendarEvent('stale'));
+    });
+    expect(useCalendarStore.getState().events).toHaveLength(1);
+
+    await fire(X);
+
+    // Reset ran (stale cleared); no error surfaced.
+    expect(useCalendarStore.getState().events).toHaveLength(0);
+    expect(cap.current?.cloudError).toBe(false);
+    expect(cap.current?.loading).toBe(false);
+
+    // Sync started: an edit schedules exactly one debounced write.
+    act(() => {
+      useCalendarStore.getState().addEvent(makeCalendarEvent('fresh'));
+    });
+    expect(h.debouncedSaveCalendarData).toHaveBeenCalledTimes(1);
+  });
+
+  // Bug 2 — the happy path must still sign out + clear localStorage.
+  it('Bug 2 guard: logout with a successful flush signs out and clears localStorage', async () => {
+    const X = { uid: 'user-X' };
+    h.fakeAuth.currentUser = X;
+    renderProvider();
+    await fire(X);
+
+    const removeSpy = vi.spyOn(localStorage, 'removeItem');
+    vi.mocked(signOut).mockClear();
+
+    await act(async () => {
+      await cap.current?.logout();
+    });
+
+    // Flush succeeded → real sign-out + localStorage cleared.
+    expect(vi.mocked(signOut)).toHaveBeenCalledTimes(1);
+    expect(removeSpy).toHaveBeenCalledWith('workout-tracker-storage');
+    expect(removeSpy).toHaveBeenCalledWith('diet-tracker-storage');
+    expect(removeSpy).toHaveBeenCalledWith('calendar-storage');
+    // The non-debounced flush was actually issued before sign-out.
+    expect(h.saveWorkoutData).toHaveBeenCalledWith('user-X', expect.any(Object));
+    removeSpy.mockRestore();
+  });
+
+  // Bug 2 — a failed flush must NOT discard unsynced data (RED before fix).
+  it('Bug 2: a failed flush keeps the user signed in, restarts sync, and throws', async () => {
+    const X = { uid: 'user-X' };
+    h.fakeAuth.currentUser = X;
+    renderProvider();
+    await fire(X);
+
+    // The flush fails (offline).
+    h.saveWorkoutData.mockRejectedValueOnce(new Error('offline'));
+    const removeSpy = vi.spyOn(localStorage, 'removeItem');
+    vi.mocked(signOut).mockClear();
+
+    let err: unknown;
+    await act(async () => {
+      try {
+        await cap.current?.logout();
+      } catch (e) {
+        err = e;
+      }
+    });
+
+    // Error propagated to the awaiting UI.
+    expect(err).toBeInstanceOf(Error);
+    // Did NOT sign out and did NOT clear localStorage — unsynced data preserved.
+    expect(vi.mocked(signOut)).not.toHaveBeenCalled();
+    expect(removeSpy).not.toHaveBeenCalledWith('workout-tracker-storage');
+    expect(removeSpy).not.toHaveBeenCalledWith('diet-tracker-storage');
+    expect(removeSpy).not.toHaveBeenCalledWith('calendar-storage');
+
+    // Sync restarted → a later edit still schedules a debounced write.
+    h.debouncedSaveCalendarData.mockClear();
+    act(() => {
+      useCalendarStore.getState().addEvent(makeCalendarEvent('after failed logout'));
+    });
+    expect(h.debouncedSaveCalendarData).toHaveBeenCalledTimes(1);
+    removeSpy.mockRestore();
+  });
+
+  // Bug 3 — a failed cloud-data delete must not leave sync stopped (RED before fix).
+  it('Bug 3: a failed cloud-data delete restarts sync (never left permanently stopped)', async () => {
+    const X = { uid: 'user-X', email: 'x@example.com' };
+    h.fakeAuth.currentUser = X;
+    renderProvider();
+    await fire(X);
+
+    // The Firestore delete fails; the auth account still exists.
+    h.deleteUserCloudData.mockRejectedValueOnce(new Error('firestore down'));
+
+    let err: unknown;
+    await act(async () => {
+      try {
+        await cap.current?.deleteAccount('pw');
+      } catch (e) {
+        err = e;
+      }
+    });
+    expect(err).toBeInstanceOf(Error);
+
+    // The point of no return was never crossed.
+    expect(vi.mocked(deleteUser)).not.toHaveBeenCalled();
+
+    // Sync is running again (user still authenticated) → an edit schedules a write.
+    h.debouncedSaveCalendarData.mockClear();
+    act(() => {
+      useCalendarStore.getState().addEvent(makeCalendarEvent('still syncing'));
+    });
+    expect(h.debouncedSaveCalendarData).toHaveBeenCalledTimes(1);
+  });
+
+  // Invariant #5 guard — the startSync equality filter must reference every
+  // persisted slice of every store. Derived from each store's own
+  // getCloudSyncData() keys (the source of truth), so it also catches a slice
+  // added to a store but forgotten in the sync filter.
+  it('Invariant #5: startSync equality filter references every persisted slice', () => {
+    const src = authContextSource;
+    const startIdx = src.indexOf('const startSync');
+    const endIdx = src.indexOf('}, [stopSync]);', startIdx);
+    expect(startIdx).toBeGreaterThan(-1);
+    expect(endIdx).toBeGreaterThan(startIdx);
+    const startSyncSrc = src.slice(startIdx, endIdx);
+
+    const stores: Array<[string, string[]]> = [
+      ['workout', Object.keys(useStore.getState().getCloudSyncData())],
+      ['diet', Object.keys(useDietStore.getState().getCloudSyncData())],
+      ['calendar', Object.keys(useCalendarStore.getState().getCloudSyncData())],
+    ];
+
+    for (const [name, keys] of stores) {
+      for (const key of keys) {
+        const re = new RegExp(`state\\.${key}\\s*===\\s*prevState\\.${key}\\b`);
+        expect(
+          re.test(startSyncSrc),
+          `${name} persisted slice "${key}" is missing from the startSync equality check`,
+        ).toBe(true);
+      }
+    }
   });
 });
