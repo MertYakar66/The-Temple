@@ -36,20 +36,20 @@ export function ExerciseSelector({ onSelect, onClose }: ExerciseSelectorProps) {
   });
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <header className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3">
+    <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col">
+      <header className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Add Exercise</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Add Exercise</h2>
           <button
             onClick={onClose}
-            className="p-2 -mr-2 hover:bg-gray-100 rounded-full"
+            className="p-2 -mr-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-400"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             value={search}
@@ -68,7 +68,7 @@ export function ExerciseSelector({ onSelect, onClose }: ExerciseSelectorProps) {
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 selectedMuscle === muscle.id
                   ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               {muscle.label}
@@ -80,25 +80,25 @@ export function ExerciseSelector({ onSelect, onClose }: ExerciseSelectorProps) {
       <div className="flex-1 overflow-y-auto">
         {filteredExercises.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">No exercises found</p>
+            <p className="text-gray-500 dark:text-gray-400">No exercises found</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {filteredExercises.map((exercise) => (
               <button
                 key={exercise.id}
                 onClick={() => onSelect(exercise)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <div className="text-left">
-                  <p className="font-medium text-gray-900">{exercise.name}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-gray-900 dark:text-white">{exercise.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {exercise.muscleGroups
                       .map((mg) => mg.charAt(0).toUpperCase() + mg.slice(1))
                       .join(', ')}
                   </p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
+                <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
               </button>
             ))}
           </div>
