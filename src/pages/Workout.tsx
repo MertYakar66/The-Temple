@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Clock, Save, Play, Layers, Dumbbell, ChevronDown, ChevronRight, Edit2, Calendar } from 'lucide-react';
+import { Plus, X, Clock, Save, Play, Layers, Dumbbell, ChevronDown, ChevronRight, Edit2, Calendar, History } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { blockPrograms } from '../data/blockPrograms';
 import type { BlockProgram } from '../data/minMaxProgram';
@@ -309,7 +309,16 @@ export function Workout() {
   if (!currentSession) {
     return (
       <div className="px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Start Workout</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Start Workout</h1>
+          <button
+            onClick={() => navigate('/history')}
+            className="flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+          >
+            <History className="w-4 h-4" />
+            History
+          </button>
+        </div>
 
         {/* Name input modal */}
         {showNameInput && (

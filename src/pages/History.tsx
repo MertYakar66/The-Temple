@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
@@ -38,7 +39,7 @@ import {
   getTotalVolume,
 } from '../utils/workoutMetrics';
 import { kgToDisplay, getWeightUnit } from '../utils/weight';
-import { getDateStamp } from '../utils/date';
+import { getDateStamp, parseDateStamp } from '../utils/date';
 
 // Known display labels for the canonical mealTypes. Custom mealType strings
 // (anything not listed here) are humanized at render time via humanizeMealType.
@@ -64,6 +65,17 @@ function humanizeMealType(mt: MealType): string {
     .join(' ');
 }
 
+// Optional ?date=YYYY-MM-DD deep-link (e.g. from the Dashboard "Recent
+// Workouts" card) opens History on that day. Falls back to today for a
+// missing or malformed value.
+function getInitialSelectedDate(dateParam: string | null): Date {
+  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    const parsed = parseDateStamp(dateParam);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return new Date();
+}
+
 export function History() {
   const workoutSessions = useStore((state) => state.workoutSessions);
   const routines = useStore((state) => state.routines);
@@ -77,8 +89,11 @@ export function History() {
 
   const unitSystem = user?.unitSystem || 'metric';
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [searchParams] = useSearchParams();
+  const initialDate = getInitialSelectedDate(searchParams.get('date'));
+
+  const [currentMonth, setCurrentMonth] = useState(initialDate);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate);
   const [activeTab, setActiveTab] = useState<'workout' | 'diet'>('workout');
 
   const monthStart = startOfMonth(currentMonth);
@@ -647,16 +662,28 @@ function WorkoutCard({
 
       {expanded && !compact && (
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
+          {/* Session notes */}
+          {workout.notes && (
+            <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-800 dark:text-blue-200">
+              {workout.notes}
+            </div>
+          )}
           {workout.exercises.map((ex) => {
             // Find planned exercise from routine
             const plannedExercise = routine?.exercises.find(re => re.exerciseId === ex.exerciseId);
             const completedSets = ex.sets.filter(s => s.completed).length;
             const plannedSetCount = plannedExercise?.targetSets || ex.sets.length;
+            const hasSetNotes = ex.sets.some((s) => s.notes);
 
             return (
               <div key={ex.id} className="text-sm">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="font-medium text-gray-900 dark:text-white">{ex.exercise.name}</p>
+                  <Link
+                    to={`/exercises/${ex.exerciseId}`}
+                    className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                  >
+                    {ex.exercise.name}
+                  </Link>
                   {plannedExercise && (
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       completedSets >= plannedSetCount
@@ -667,6 +694,10 @@ function WorkoutCard({
                     </span>
                   )}
                 </div>
+                {/* Exercise notes (e.g. carried from the routine prescription) */}
+                {ex.notes && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic mb-1">{ex.notes}</p>
+                )}
                 <div className="flex flex-wrap gap-2 mt-1">
                   {ex.sets.map((set, index) => (
                     <span
@@ -678,6 +709,9 @@ function WorkoutCard({
                       }`}
                     >
                       {Math.round(kgToDisplay(set.weight, unitSystem) * 10) / 10}{weightUnit} × {set.reps}
+                      {set.rir != null && (
+                        <span className="ml-1 opacity-70">· {set.rir} RIR</span>
+                      )}
                       {plannedExercise && index < plannedSetCount && (
                         <span className="ml-1 opacity-60">
                           (target: {plannedExercise.targetReps})
@@ -686,6 +720,18 @@ function WorkoutCard({
                     </span>
                   ))}
                 </div>
+                {/* Per-set notes captured during logging */}
+                {hasSetNotes && (
+                  <div className="mt-1.5 space-y-0.5">
+                    {ex.sets.map((set, index) =>
+                      set.notes ? (
+                        <p key={set.id} className="text-xs text-gray-500 dark:text-gray-400 italic">
+                          <span className="not-italic text-gray-400 dark:text-gray-500">Set {index + 1}:</span> “{set.notes}”
+                        </p>
+                      ) : null
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

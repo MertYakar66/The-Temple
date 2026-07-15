@@ -21,6 +21,8 @@ import { useDietStore } from '../store/useDietStore';
 import { format, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { kgToDisplay, getWeightUnit } from '../utils/weight';
 import { getDateStamp } from '../utils/date';
+import { getCompletedSetCount, getTotalVolume } from '../utils/workoutMetrics';
+import { pluralize } from '../utils/pluralize';
 
 export function Dashboard() {
   const user = useStore((state) => state.user);
@@ -43,6 +45,7 @@ export function Dashboard() {
   const weeklyCount = getWeeklyWorkoutCount();
   const totalWorkouts = workoutSessions.length;
   const recentPRs = personalRecords.slice(-3).reverse();
+  const recentWorkouts = workoutSessions.slice(-3).reverse();
 
   // Calculate total volume this week
   const weeklyVolume = workoutSessions
@@ -193,6 +196,49 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Recent Workouts */}
+      {recentWorkouts.length > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900 dark:text-white">Recent Workouts</h2>
+            <Link
+              to="/history"
+              className="text-primary-600 dark:text-primary-400 text-sm font-medium flex items-center"
+            >
+              View all <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="space-y-1">
+            {recentWorkouts.map((ws) => {
+              const setCount = getCompletedSetCount(ws.exercises);
+              const volume = Math.round(kgToDisplay(getTotalVolume(ws.exercises), unitSystem));
+              return (
+                <Link
+                  key={ws.id}
+                  to={`/history?date=${ws.date}`}
+                  className="flex items-center justify-between py-2 -mx-2 px-2 rounded-lg border-b border-gray-100 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-white truncate">{ws.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {pluralize(ws.exercises.length, 'exercise')} &middot; {pluralize(setCount, 'set')}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-3">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{ws.date}</p>
+                    {volume > 0 && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        {volume.toLocaleString()} {weightUnit}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Recent PRs */}
       {recentPRs.length > 0 && (

@@ -18,6 +18,7 @@ import { Dumbbell } from 'lucide-react';
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
 const Workout = lazy(() => import('./pages/Workout').then((m) => ({ default: m.Workout })));
 const Exercises = lazy(() => import('./pages/Exercises').then((m) => ({ default: m.Exercises })));
+const ExerciseDetailRoute = lazy(() => import('./pages/ExerciseDetailRoute').then((m) => ({ default: m.ExerciseDetailRoute })));
 const Routines = lazy(() => import('./pages/Routines').then((m) => ({ default: m.Routines })));
 const RoutineEditor = lazy(() => import('./pages/RoutineEditor').then((m) => ({ default: m.RoutineEditor })));
 const RoutineDetail = lazy(() => import('./pages/RoutineDetail').then((m) => ({ default: m.RoutineDetail })));
@@ -98,6 +99,7 @@ function AppRoutes() {
         <Route path="/diet" element={<Diet />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/exercises" element={<Exercises />} />
+        <Route path="/exercises/:exerciseId" element={<ExerciseDetailRoute />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/history" element={<History />} />
         <Route path="/blocks" element={<Blocks />} />
