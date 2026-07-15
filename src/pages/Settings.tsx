@@ -97,6 +97,7 @@ export function Settings() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [logoutError, setLogoutError] = useState('');
   const [verificationSent, setVerificationSent] = useState(false);
   const [verificationLoading, setVerificationLoading] = useState(false);
   const [showReauthForPassword, setShowReauthForPassword] = useState(false);
@@ -134,11 +135,20 @@ export function Settings() {
   };
 
   const handleLogout = async () => {
+    setLogoutError('');
     try {
       await logout();
       navigate('/login');
     } catch (error) {
+      // logout() throws (and keeps the user signed in with sync restarted) when
+      // the pre-sign-out flush fails — e.g. offline. Surface it so the button
+      // isn't a silent no-op and the user knows to retry.
       console.error('Failed to logout:', error);
+      setLogoutError(
+        error instanceof Error
+          ? error.message
+          : 'Could not sign out. Check your connection and try again.',
+      );
     }
   };
 
@@ -605,6 +615,12 @@ export function Settings() {
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
+
+            {logoutError && (
+              <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-sm text-red-600 dark:text-red-400">
+                {logoutError}
+              </div>
+            )}
 
             {/* Delete Account */}
             {isEmailProvider && (

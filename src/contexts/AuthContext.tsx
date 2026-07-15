@@ -24,6 +24,7 @@
  */
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { CloudOff } from 'lucide-react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -112,6 +113,40 @@ export function useAuth() {
 
 interface AuthProviderProps {
   children: ReactNode;
+}
+
+/**
+ * Blocking overlay shown when the last sign-in could not reach the cloud (a
+ * transient read failure, NOT a new user). Sync is off and the app is
+ * cloud-authoritative, so we do not let the user edit into a void that a later
+ * establish would silently overwrite — instead we surface the state and offer a
+ * retry. Retry reloads, which re-runs the establish chain from scratch.
+ */
+function CloudSyncErrorOverlay() {
+  return (
+    <div
+      role="alertdialog"
+      aria-label="Couldn't reach the cloud"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/70 p-6 backdrop-blur-sm"
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-gray-800">
+        <CloudOff className="mx-auto mb-3 h-12 w-12 text-red-500" />
+        <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-white">
+          Couldn't reach the cloud
+        </h2>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">
+          We couldn't load your data this time. Your saved data is safe — check your
+          connection and try again.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="w-full rounded-lg bg-primary-600 py-3 font-medium text-white transition-colors hover:bg-primary-700"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -231,6 +266,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         useStore.getState().resetStore();
         useDietStore.getState().resetStore();
         useCalendarStore.getState().resetStore();
+        setCloudError(false);
         setLoading(false);
         return;
       }
@@ -483,6 +519,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   return (
     <AuthContext.Provider value={value}>
       {children}
+      {cloudError && <CloudSyncErrorOverlay />}
     </AuthContext.Provider>
   );
 }

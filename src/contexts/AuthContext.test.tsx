@@ -68,7 +68,7 @@ vi.mock('../lib/siriToken', () => ({ revokeSiriToken: h.revokeSiriToken }));
 
 // Imported after the mocks so the mocked modules are wired in.
 import { StrictMode, act, useEffect } from 'react';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, screen } from '@testing-library/react';
 import { signOut, deleteUser } from 'firebase/auth';
 import { AuthProvider, useAuth } from './AuthContext';
 // Raw source text of AuthContext (Vite `?raw`) — used by the invariant-#5
@@ -394,6 +394,36 @@ describe('AuthContext — data-loss hardening (auth-sync-integrity)', () => {
     // Recoverable: loading resolved and the error is surfaced.
     expect(cap.current?.loading).toBe(false);
     expect(cap.current?.cloudError).toBe(true);
+  });
+
+  // Bug 1 — cloudError must be surfaced to the user with a retry (not a dead flag).
+  it('Bug 1 UI: shows a blocking cloud-error overlay with Retry when a load fails', async () => {
+    const X = { uid: 'user-X' };
+    h.fakeAuth.currentUser = X;
+    h.loadWorkoutData.mockRejectedValueOnce(new Error('network down'));
+    renderProvider();
+
+    // No overlay before the (failing) establish.
+    expect(screen.queryByText(/couldn't reach the cloud/i)).toBeNull();
+
+    await fire(X);
+
+    // Load failed → cloudError → the overlay + a Retry control are shown.
+    expect(cap.current?.cloudError).toBe(true);
+    expect(screen.queryByText(/couldn't reach the cloud/i)).not.toBeNull();
+    expect(screen.getByRole('button', { name: /retry/i })).toBeTruthy();
+  });
+
+  // The overlay must NOT appear on a healthy sign-in.
+  it('Bug 1 UI: no cloud-error overlay after a successful establish', async () => {
+    const X = { uid: 'user-X' };
+    h.fakeAuth.currentUser = X;
+    h.loadCalendarData.mockResolvedValue({ events: [] });
+    renderProvider();
+    await fire(X);
+
+    expect(cap.current?.cloudError).toBe(false);
+    expect(screen.queryByText(/couldn't reach the cloud/i)).toBeNull();
   });
 
   // Bug 1 — the new-user path must NOT regress (still reset + startSync).
