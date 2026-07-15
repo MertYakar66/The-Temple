@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
@@ -38,7 +39,6 @@ import {
   getTotalVolume,
 } from '../utils/workoutMetrics';
 import { kgToDisplay, getWeightUnit } from '../utils/weight';
-import { useSearchParams } from 'react-router-dom';
 import { parseDateStamp } from '../utils/date';
 
 // Known display labels for the canonical mealTypes. Custom mealType strings
@@ -655,7 +655,12 @@ function WorkoutCard({
             return (
               <div key={ex.id} className="text-sm">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="font-medium text-gray-900 dark:text-white">{ex.exercise.name}</p>
+                  <Link
+                    to={`/exercises/${ex.exerciseId}`}
+                    className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                  >
+                    {ex.exercise.name}
+                  </Link>
                   {plannedExercise && (
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       completedSets >= plannedSetCount

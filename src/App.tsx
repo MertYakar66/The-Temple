@@ -6,6 +6,7 @@ import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { Workout } from './pages/Workout';
 import { Exercises } from './pages/Exercises';
+import { ExerciseDetailRoute } from './pages/ExerciseDetailRoute';
 import { Routines } from './pages/Routines';
 import { RoutineEditor } from './pages/RoutineEditor';
 import { RoutineDetail } from './pages/RoutineDetail';
@@ -90,6 +91,7 @@ function AppRoutes() {
         <Route path="/diet" element={<Diet />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/exercises" element={<Exercises />} />
+        <Route path="/exercises/:exerciseId" element={<ExerciseDetailRoute />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/history" element={<History />} />
         <Route path="/blocks" element={<Blocks />} />
