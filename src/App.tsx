@@ -1,43 +1,50 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/layout/Layout';
+// Eager — the auth/onboarding shell a logged-out or brand-new user sees first.
 import { Onboarding } from './pages/Onboarding';
-import { Dashboard } from './pages/Dashboard';
-import { Workout } from './pages/Workout';
-import { Exercises } from './pages/Exercises';
-import { Routines } from './pages/Routines';
-import { RoutineEditor } from './pages/RoutineEditor';
-import { RoutineDetail } from './pages/RoutineDetail';
-import { Progress } from './pages/Progress';
-import { History } from './pages/History';
-import { Settings } from './pages/Settings';
-import { WorkoutTemplates } from './pages/WorkoutTemplates';
-import { Blocks } from './pages/Blocks';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
-// Diet Module
-import { Diet } from './pages/Diet';
-import { DietLog } from './pages/DietLog';
-import { DietMeals } from './pages/DietMeals';
-import { DietMealEditor } from './pages/DietMealEditor';
-import { DietWeekly } from './pages/DietWeekly';
-import { DietSettings } from './pages/DietSettings';
-import { DietFoodNew } from './pages/DietFoodNew';
-import { DietRecipeEditor } from './pages/DietRecipeEditor';
-import { TDEECalculator } from './pages/TDEECalculator';
-// Calendar Module
-import { Calendar } from './pages/Calendar';
-import { CalendarEventEditor } from './pages/CalendarEventEditor';
-import { CalendarEventDetail } from './pages/CalendarEventDetail';
-import { CalendarManage } from './pages/CalendarManage';
-import { CalendarSearch } from './pages/CalendarSearch';
-import { CalendarSettings as CalendarSettingsPage } from './pages/CalendarSettings';
-import { CalendarInvitations } from './pages/CalendarInvitations';
-import { SiriSetup } from './pages/SiriSetup';
-// Components
+// Components (part of the shell, rendered on every authenticated route)
 import { PRCelebration } from './components/PRCelebration';
 import { Dumbbell } from 'lucide-react';
+
+// Lazy-loaded authenticated route tree — split out of the initial bundle so a
+// logged-out visitor hitting /login doesn't download the whole app (incl.
+// recharts + firebase) before seeing the form. These pages use named exports,
+// so each import is mapped to a `default` for React.lazy.
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
+const Workout = lazy(() => import('./pages/Workout').then((m) => ({ default: m.Workout })));
+const Exercises = lazy(() => import('./pages/Exercises').then((m) => ({ default: m.Exercises })));
+const Routines = lazy(() => import('./pages/Routines').then((m) => ({ default: m.Routines })));
+const RoutineEditor = lazy(() => import('./pages/RoutineEditor').then((m) => ({ default: m.RoutineEditor })));
+const RoutineDetail = lazy(() => import('./pages/RoutineDetail').then((m) => ({ default: m.RoutineDetail })));
+const Progress = lazy(() => import('./pages/Progress').then((m) => ({ default: m.Progress })));
+const History = lazy(() => import('./pages/History').then((m) => ({ default: m.History })));
+const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })));
+const WorkoutTemplates = lazy(() => import('./pages/WorkoutTemplates').then((m) => ({ default: m.WorkoutTemplates })));
+const Blocks = lazy(() => import('./pages/Blocks').then((m) => ({ default: m.Blocks })));
+// Diet Module
+const Diet = lazy(() => import('./pages/Diet').then((m) => ({ default: m.Diet })));
+const DietLog = lazy(() => import('./pages/DietLog').then((m) => ({ default: m.DietLog })));
+const DietMeals = lazy(() => import('./pages/DietMeals').then((m) => ({ default: m.DietMeals })));
+const DietMealEditor = lazy(() => import('./pages/DietMealEditor').then((m) => ({ default: m.DietMealEditor })));
+const DietWeekly = lazy(() => import('./pages/DietWeekly').then((m) => ({ default: m.DietWeekly })));
+const DietSettings = lazy(() => import('./pages/DietSettings').then((m) => ({ default: m.DietSettings })));
+const DietFoodNew = lazy(() => import('./pages/DietFoodNew').then((m) => ({ default: m.DietFoodNew })));
+const DietRecipeEditor = lazy(() => import('./pages/DietRecipeEditor').then((m) => ({ default: m.DietRecipeEditor })));
+const TDEECalculator = lazy(() => import('./pages/TDEECalculator').then((m) => ({ default: m.TDEECalculator })));
+// Calendar Module
+const Calendar = lazy(() => import('./pages/Calendar').then((m) => ({ default: m.Calendar })));
+const CalendarEventEditor = lazy(() => import('./pages/CalendarEventEditor').then((m) => ({ default: m.CalendarEventEditor })));
+const CalendarEventDetail = lazy(() => import('./pages/CalendarEventDetail').then((m) => ({ default: m.CalendarEventDetail })));
+const CalendarManage = lazy(() => import('./pages/CalendarManage').then((m) => ({ default: m.CalendarManage })));
+const CalendarSearch = lazy(() => import('./pages/CalendarSearch').then((m) => ({ default: m.CalendarSearch })));
+const CalendarSettingsPage = lazy(() => import('./pages/CalendarSettings').then((m) => ({ default: m.CalendarSettings })));
+const CalendarInvitations = lazy(() => import('./pages/CalendarInvitations').then((m) => ({ default: m.CalendarInvitations })));
+const SiriSetup = lazy(() => import('./pages/SiriSetup').then((m) => ({ default: m.SiriSetup })));
 
 function LoadingScreen() {
   return (
@@ -82,6 +89,7 @@ function AppRoutes() {
   }
 
   return (
+    <Suspense fallback={<LoadingScreen />}>
     <Routes>
       {/* Main app routes with layout */}
       <Route element={<Layout />}>
@@ -136,6 +144,7 @@ function AppRoutes() {
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 
