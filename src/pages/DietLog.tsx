@@ -32,6 +32,10 @@ export function DietLog() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [servings, setServings] = useState(1);
+  // Raw text backing the servings <input> so it can hold transient empty/partial
+  // values ('', '0', '0.', '.5') while typing; the numeric `servings` (used by
+  // the macro preview) is only committed on blur / +/- / log.
+  const [servingsInput, setServingsInput] = useState('1');
   const [activeTab, setActiveTab] = useState<FoodTab>('recent');
 
   const allFoods = getAllFoods();
@@ -58,17 +62,37 @@ export function DietLog() {
 
   const filteredFoods = getFilteredFoods();
 
+  // Coerce a raw servings string to a valid number: NaN or sub-minimum → 0.25.
+  const clampServings = (raw: string) => {
+    const parsed = parseFloat(raw);
+    return Number.isNaN(parsed) || parsed < 0.25 ? 0.25 : parsed;
+  };
+
+  // On blur, settle the visible field back to a valid, clamped value.
+  const commitServings = () => {
+    const next = clampServings(servingsInput);
+    setServings(next);
+    setServingsInput(String(next));
+  };
+
   const handleLogFood = () => {
     if (!selectedFood) return;
+
+    // Clamp at commit time so entry creation / macro math never receive NaN or
+    // an empty string; a sub-minimum or empty value logs as 0.25.
+    const finalServings = clampServings(servingsInput);
 
     logFood({
       date: logDate,
       mealType: mealParam,
       type: 'food',
       foodId: selectedFood.id,
-      servings,
+      servings: finalServings,
     });
 
+    // Reset the form to its default clean state.
+    setServings(1);
+    setServingsInput('1');
     navigate('/diet');
   };
 
@@ -114,20 +138,29 @@ export function DietLog() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Servings</label>
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setServings(Math.max(0.25, servings - 0.25))}
+                onClick={() => {
+                  const next = Math.max(0.25, clampServings(servingsInput) - 0.25);
+                  setServings(next);
+                  setServingsInput(String(next));
+                }}
                 className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full text-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white"
               >
                 -
               </button>
               <input
                 type="number"
-                value={servings}
-                onChange={(e) => setServings(Math.max(0.25, parseFloat(e.target.value) || 0.25))}
+                value={servingsInput}
+                onChange={(e) => setServingsInput(e.target.value)}
+                onBlur={commitServings}
                 className="w-20 text-center text-2xl font-bold border-0 focus:ring-0 bg-transparent text-gray-900 dark:text-white"
                 step="0.25"
               />
               <button
-                onClick={() => setServings(servings + 0.25)}
+                onClick={() => {
+                  const next = clampServings(servingsInput) + 0.25;
+                  setServings(next);
+                  setServingsInput(String(next));
+                }}
                 className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full text-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white"
               >
                 +
