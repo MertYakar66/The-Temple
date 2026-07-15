@@ -38,6 +38,8 @@ import {
   getTotalVolume,
 } from '../utils/workoutMetrics';
 import { kgToDisplay, getWeightUnit } from '../utils/weight';
+import { useSearchParams } from 'react-router-dom';
+import { parseDateStamp } from '../utils/date';
 
 // Known display labels for the canonical mealTypes. Custom mealType strings
 // (anything not listed here) are humanized at render time via humanizeMealType.
@@ -63,6 +65,17 @@ function humanizeMealType(mt: MealType): string {
     .join(' ');
 }
 
+// Optional ?date=YYYY-MM-DD deep-link (e.g. from the Dashboard "Recent
+// Workouts" card) opens History on that day. Falls back to today for a
+// missing or malformed value.
+function getInitialSelectedDate(dateParam: string | null): Date {
+  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    const parsed = parseDateStamp(dateParam);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return new Date();
+}
+
 export function History() {
   const workoutSessions = useStore((state) => state.workoutSessions);
   const routines = useStore((state) => state.routines);
@@ -75,8 +88,11 @@ export function History() {
 
   const unitSystem = user?.unitSystem || 'metric';
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [searchParams] = useSearchParams();
+  const initialDate = getInitialSelectedDate(searchParams.get('date'));
+
+  const [currentMonth, setCurrentMonth] = useState(initialDate);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate);
   const [activeTab, setActiveTab] = useState<'workout' | 'diet'>('workout');
 
   const monthStart = startOfMonth(currentMonth);
