@@ -16,7 +16,7 @@ export default defineConfig({
           if (
             id.includes('node_modules/recharts') ||
             id.includes('node_modules/d3-') ||
-            id.includes('node_modules/victory-vroom')
+            id.includes('node_modules/victory-vendor')
           ) {
             return 'recharts';
           }

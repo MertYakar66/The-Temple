@@ -82,6 +82,19 @@ function countUserDataDocs(usersData) {
     return { parents, docs };
 }
 
+// Decide the final on-disk fate of a just-written backup file. A zero-doc
+// backup is quarantined under an `.INVALID` suffix so it can never be mistaken
+// for a valid recovery point; a real backup keeps its plain `*.json` name.
+// Returns the final path and whether the backup is trustworthy.
+function finalizeBackup(filepath, docs) {
+    if (docs === 0) {
+        const invalidPath = `${filepath}.INVALID`;
+        fs.renameSync(filepath, invalidPath);
+        return { path: invalidPath, valid: false };
+    }
+    return { path: filepath, valid: true };
+}
+
 async function runBackup() {
     console.log('🔥 Starting Firestore backup...\n');
 
@@ -138,22 +151,27 @@ async function runBackup() {
         const fileSizeKB = (fs.statSync(filepath).size / 1024).toFixed(1);
         const { parents, docs } = countUserDataDocs(backup.collections.users);
 
-        console.log(`\n📊 Captured ${parents} user parent ref(s), ${docs} user data document(s).`);
-        console.log(`   📁 File: ${filepath}`);
-        console.log(`   📊 Size: ${fileSizeKB} KB`);
-        console.log(`   🕐 Time: ${backup.metadata.createdAt}`);
-
         // A backup with zero user data documents is almost certainly broken —
         // this is exactly the failure the old script hid behind an
-        // unconditional success message. Fail loudly so an empty backup is
-        // never mistaken for a valid recovery point.
-        if (docs === 0) {
-            console.error('\n❌ Backup captured 0 user data documents — treating as FAILED.');
-            console.error('   The file above was written for inspection but must NOT be trusted as');
-            console.error('   a recovery point. Check the service account / project and that data');
-            console.error('   still lives under users/{uid}/data/*.');
+        // unconditional success message. Quarantine the written file under an
+        // unmistakably-invalid name and fail loudly, so an empty backup is
+        // never mistaken for a valid recovery point — a plain `*.json` is left
+        // behind ONLY on success.
+        const { path: finalPath, valid } = finalizeBackup(filepath, docs);
+        console.log(`\n📊 Captured ${parents} user parent ref(s), ${docs} user data document(s).`);
+
+        if (!valid) {
+            console.error('❌ Backup captured 0 user data documents — treating as FAILED.');
+            console.error(`   Quarantined as: ${finalPath}`);
+            console.error('   Kept for inspection but must NOT be trusted as a recovery point.');
+            console.error('   Check the service account / project and that data still lives');
+            console.error('   under users/{uid}/data/*.');
             process.exit(1);
         }
+
+        console.log(`   📁 File: ${finalPath}`);
+        console.log(`   📊 Size: ${fileSizeKB} KB`);
+        console.log(`   🕐 Time: ${backup.metadata.createdAt}`);
 
         console.log('\n✅ Backup saved successfully!');
     } catch (error) {
@@ -164,7 +182,7 @@ async function runBackup() {
     process.exit(0);
 }
 
-module.exports = { backupCollection, backupSubcollections, countUserDataDocs, runBackup };
+module.exports = { backupCollection, backupSubcollections, countUserDataDocs, finalizeBackup, runBackup };
 
 // Only run the backup when invoked directly (node scripts/backup.cjs), so the
 // functions above can be imported by the unit test without side effects.
