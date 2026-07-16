@@ -24,6 +24,7 @@
  */
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { CloudOff } from 'lucide-react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -62,6 +63,11 @@ import { resolveAuthAction } from './authSession';
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
+  // True when the last sign-in could not reach the cloud (a transient read
+  // failure, NOT a new user). The stores keep their localStorage-hydrated
+  // last-known state and are NOT synced; the UI can surface a retry. Cleared
+  // on the next successful establish.
+  cloudError: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -74,6 +80,27 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+// Bounded so an offline logout flush can't hang forever waiting on Firestore;
+// a timeout is treated as a flush failure (user stays signed in, can retry).
+const LOGOUT_FLUSH_TIMEOUT_MS = 10_000;
+
+/** Reject if `promise` has not settled within `ms`. Bounds the logout flush. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
@@ -88,9 +115,44 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Blocking overlay shown when the last sign-in could not reach the cloud (a
+ * transient read failure, NOT a new user). Sync is off and the app is
+ * cloud-authoritative, so we do not let the user edit into a void that a later
+ * establish would silently overwrite — instead we surface the state and offer a
+ * retry. Retry reloads, which re-runs the establish chain from scratch.
+ */
+function CloudSyncErrorOverlay() {
+  return (
+    <div
+      role="alertdialog"
+      aria-label="Couldn't reach the cloud"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/70 p-6 backdrop-blur-sm"
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-gray-800">
+        <CloudOff className="mx-auto mb-3 h-12 w-12 text-red-500" />
+        <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-white">
+          Couldn't reach the cloud
+        </h2>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">
+          We couldn't load your data this time. Your saved data is safe — check your
+          connection and try again.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="w-full rounded-lg bg-primary-600 py-3 font-medium text-white transition-colors hover:bg-primary-700"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cloudError, setCloudError] = useState(false);
   const unsubWorkoutRef = useRef<(() => void) | null>(null);
   const unsubDietRef = useRef<(() => void) | null>(null);
   const unsubCalendarRef = useRef<(() => void) | null>(null);
@@ -204,6 +266,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         useStore.getState().resetStore();
         useDietStore.getState().resetStore();
         useCalendarStore.getState().resetStore();
+        setCloudError(false);
         setLoading(false);
         return;
       }
@@ -243,8 +306,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
         dietData = results[1];
         calendarData = results[2];
       } catch (error) {
+        // A cloud-read FAILURE (transient/offline) is NOT a new user. Bail
+        // BEFORE the destructive phase: do not reset, do not hydrate, do not
+        // startSync, do not write. Otherwise the emptied stores would sync and
+        // permanently overwrite the real cloud data that merely failed to load
+        // — the exact clobber this guard prevents. The localStorage-hydrated
+        // last-known state stays intact and usable.
         if (signal.aborted) return;
+        // Only act if THIS chain still owns the session (never clobber a newer
+        // chain's ownership/controller refs).
+        if (establishedUidRef.current !== user.uid) return;
         console.error('Failed to load cloud data:', error);
+        // Release ownership so the next auth emission can re-establish (retry),
+        // and surface a recoverable error the UI can offer to retry.
+        establishedUidRef.current = null;
+        if (controllerRef.current === controller) {
+          controllerRef.current = null;
+        }
+        setCloudError(true);
+        setLoading(false);
+        return;
       }
 
       // Still the owning chain? A newer establish or a sign-out aborts this
@@ -254,6 +335,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (signal.aborted) return;
       if (establishedUidRef.current !== user.uid) return;
       if (auth.currentUser && auth.currentUser.uid !== user.uid) return;
+
+      // Load succeeded — clear any prior cloud-error state before hydrating.
+      setCloudError(false);
 
       // Destructive phase — reset + hydrate as one synchronous block. Nothing
       // (no user write, no other chain) can interleave between the stores
@@ -300,25 +384,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = async () => {
-    // Flush current state to Firestore before signing out
+    // Flush current state to Firestore before signing out. Logout is ATOMIC:
+    // we sign out + clear localStorage ONLY after the flush succeeds.
     const user = auth.currentUser;
     if (user) {
       stopSync();
       try {
-        await Promise.all([
-          saveWorkoutData(user.uid, useStore.getState().getCloudSyncData()),
-          saveDietData(user.uid, useDietStore.getState().getCloudSyncData()),
-          saveCalendarData(user.uid, useCalendarStore.getState().getCloudSyncData()),
-        ]);
+        await withTimeout(
+          Promise.all([
+            saveWorkoutData(user.uid, useStore.getState().getCloudSyncData()),
+            saveDietData(user.uid, useDietStore.getState().getCloudSyncData()),
+            saveCalendarData(user.uid, useCalendarStore.getState().getCloudSyncData()),
+          ]),
+          LOGOUT_FLUSH_TIMEOUT_MS,
+          'Logout flush',
+        );
       } catch (error) {
+        // Flush failed or timed out (likely offline). Do NOT sign out and do
+        // NOT clear localStorage — that would silently discard the unsynced
+        // edits. Restart sync so the session stays fully live, and surface the
+        // error so the awaiting UI keeps the user signed in and can retry.
         console.error('Failed to save data before logout:', error);
+        startSync(user.uid);
+        throw new Error(
+          'Could not save your data before signing out. Check your connection and try again.',
+          { cause: error },
+        );
       }
     }
     // Mark this as an in-app sign-out so the onAuthStateChanged null emission
     // is handled as a genuine sign-out, not ignored as a transient.
     intentionalSignOutRef.current = true;
     await signOut(auth);
-    // Clear persisted localStorage data on logout
+    // Clear persisted localStorage data on logout (only after a successful flush)
     localStorage.removeItem('workout-tracker-storage');
     localStorage.removeItem('diet-tracker-storage');
     localStorage.removeItem('calendar-storage');
@@ -362,23 +460,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const uid = user.uid;
 
-    // Stop syncing before deletion
+    // Stop syncing so no debounced write races the cloud-data delete. Sync must
+    // be running whenever the user is still authenticated, so ANY failure
+    // before the auth account is actually deleted restarts it before rethrowing
+    // — otherwise a failed deletion would leave the still-signed-in user with
+    // sync permanently stopped (edits silently not syncing until a reload).
     stopSync();
-
-    // Delete all user data: Firestore, Siri tokens, then the auth account
     try {
-      await revokeSiriToken(uid);
-    } catch {
-      // Siri token may not exist — continue
+      try {
+        await revokeSiriToken(uid);
+      } catch {
+        // Siri token may not exist — continue.
+      }
+      await deleteUserCloudData(uid);
+    } catch (error) {
+      // Cloud delete failed; the account still exists and the user is still
+      // signed in. Restart sync before surfacing the error.
+      startSync(uid);
+      throw error;
     }
-    await deleteUserCloudData(uid);
 
-    // Mark this as an in-app sign-out before the account deletion triggers
-    // the onAuthStateChanged null emission.
+    // Cloud data is gone; deleting the auth account is the point of no return.
+    // Mark this as an in-app sign-out before the deletion triggers the
+    // onAuthStateChanged null emission.
     intentionalSignOutRef.current = true;
-
-    // Delete the Firebase Auth account (point of no return)
-    await deleteUser(user);
+    try {
+      await deleteUser(user);
+    } catch (error) {
+      // The account was NOT deleted (e.g. Firebase requires-recent-login).
+      // Undo the sign-out intent and restart sync — the user remains
+      // authenticated, so sync must keep running.
+      intentionalSignOutRef.current = false;
+      startSync(uid);
+      throw error;
+    }
 
     // Clear local data
     localStorage.removeItem('workout-tracker-storage');
@@ -389,6 +504,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value: AuthContextType = {
     currentUser,
     loading,
+    cloudError,
     login,
     signup,
     logout,
@@ -403,6 +519,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   return (
     <AuthContext.Provider value={value}>
       {children}
+      {cloudError && <CloudSyncErrorOverlay />}
     </AuthContext.Provider>
   );
 }

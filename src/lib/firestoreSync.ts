@@ -8,6 +8,16 @@
  * editor code must emit `null`, not `undefined`, when the user clears
  * an optional field.
  *
+ * Error semantics (load-bearing — see docs/sync-model.md):
+ *   - `load*Data` returns `null` ONLY when there is no cloud doc yet (a
+ *     legitimate new user). A read FAILURE THROWS, so `AuthContext` can tell a
+ *     transient/offline error apart from "no doc" and avoid overwriting real
+ *     cloud data with empty state.
+ *   - `save*Data` PROPAGATES write errors. The debounced background path
+ *     swallows them (fire-and-forget, retries on the next change); the explicit
+ *     `AuthContext.logout` flush needs the rejection so it can keep the user
+ *     signed in rather than clearing localStorage over unsynced edits.
+ *
  * Writes are debounced 2 s per store. `AuthContext.logout` calls the
  * non-debounced `save*Data` functions to flush before sign-out — the
  * order matters because Firestore rules require auth.
@@ -27,26 +37,14 @@ type SyncData = Record<string, unknown>;
 // ---------- Workout Store ----------
 
 export async function loadWorkoutData(uid: string): Promise<SyncData | null> {
-  try {
-    const ref = doc(db, 'users', uid, 'data', 'workout');
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      return snap.data() as SyncData;
-    }
-    return null;
-  } catch (error) {
-    console.error('Failed to load workout data from Firestore:', error);
-    return null;
-  }
+  const ref = doc(db, 'users', uid, 'data', 'workout');
+  const snap = await getDoc(ref);
+  return snap.exists() ? (snap.data() as SyncData) : null;
 }
 
 export async function saveWorkoutData(uid: string, data: SyncData): Promise<void> {
-  try {
-    const ref = doc(db, 'users', uid, 'data', 'workout');
-    await setDoc(ref, data, { merge: true });
-  } catch (error) {
-    console.error('Failed to save workout data to Firestore:', error);
-  }
+  const ref = doc(db, 'users', uid, 'data', 'workout');
+  await setDoc(ref, data, { merge: true });
 }
 
 export function debouncedSaveWorkoutData(uid: string, data: SyncData): void {
@@ -54,33 +52,23 @@ export function debouncedSaveWorkoutData(uid: string, data: SyncData): void {
     clearTimeout(workoutSyncTimer);
   }
   workoutSyncTimer = setTimeout(() => {
-    saveWorkoutData(uid, data);
+    saveWorkoutData(uid, data).catch((error) => {
+      console.error('Failed to save workout data to Firestore:', error);
+    });
   }, SYNC_DEBOUNCE_MS);
 }
 
 // ---------- Diet Store ----------
 
 export async function loadDietData(uid: string): Promise<SyncData | null> {
-  try {
-    const ref = doc(db, 'users', uid, 'data', 'diet');
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      return snap.data() as SyncData;
-    }
-    return null;
-  } catch (error) {
-    console.error('Failed to load diet data from Firestore:', error);
-    return null;
-  }
+  const ref = doc(db, 'users', uid, 'data', 'diet');
+  const snap = await getDoc(ref);
+  return snap.exists() ? (snap.data() as SyncData) : null;
 }
 
 export async function saveDietData(uid: string, data: SyncData): Promise<void> {
-  try {
-    const ref = doc(db, 'users', uid, 'data', 'diet');
-    await setDoc(ref, data, { merge: true });
-  } catch (error) {
-    console.error('Failed to save diet data to Firestore:', error);
-  }
+  const ref = doc(db, 'users', uid, 'data', 'diet');
+  await setDoc(ref, data, { merge: true });
 }
 
 export function debouncedSaveDietData(uid: string, data: SyncData): void {
@@ -88,33 +76,23 @@ export function debouncedSaveDietData(uid: string, data: SyncData): void {
     clearTimeout(dietSyncTimer);
   }
   dietSyncTimer = setTimeout(() => {
-    saveDietData(uid, data);
+    saveDietData(uid, data).catch((error) => {
+      console.error('Failed to save diet data to Firestore:', error);
+    });
   }, SYNC_DEBOUNCE_MS);
 }
 
 // ---------- Calendar Store ----------
 
 export async function loadCalendarData(uid: string): Promise<SyncData | null> {
-  try {
-    const ref = doc(db, 'users', uid, 'data', 'calendar');
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      return snap.data() as SyncData;
-    }
-    return null;
-  } catch (error) {
-    console.error('Failed to load calendar data from Firestore:', error);
-    return null;
-  }
+  const ref = doc(db, 'users', uid, 'data', 'calendar');
+  const snap = await getDoc(ref);
+  return snap.exists() ? (snap.data() as SyncData) : null;
 }
 
 export async function saveCalendarData(uid: string, data: SyncData): Promise<void> {
-  try {
-    const ref = doc(db, 'users', uid, 'data', 'calendar');
-    await setDoc(ref, data, { merge: true });
-  } catch (error) {
-    console.error('Failed to save calendar data to Firestore:', error);
-  }
+  const ref = doc(db, 'users', uid, 'data', 'calendar');
+  await setDoc(ref, data, { merge: true });
 }
 
 export function debouncedSaveCalendarData(uid: string, data: SyncData): void {
@@ -122,7 +100,9 @@ export function debouncedSaveCalendarData(uid: string, data: SyncData): void {
     clearTimeout(calendarSyncTimer);
   }
   calendarSyncTimer = setTimeout(() => {
-    saveCalendarData(uid, data);
+    saveCalendarData(uid, data).catch((error) => {
+      console.error('Failed to save calendar data to Firestore:', error);
+    });
   }, SYNC_DEBOUNCE_MS);
 }
 
