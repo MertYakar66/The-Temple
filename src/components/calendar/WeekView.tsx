@@ -170,6 +170,16 @@ export function WeekView({ onSelectEvent, onSelectDate, onQuickCreate }: WeekVie
                   </button>
                 );
               })}
+              {/* Overflow cue — mirrors MonthView's "+N more"; taps open the day
+                  via the existing onSelectDate handler. */}
+              {d.allDay.length > 2 && (
+                <button
+                  onClick={() => onSelectDate(d.date)}
+                  className="w-full text-left text-[10px] text-gray-400 dark:text-gray-500 pl-1 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  +{d.allDay.length - 2} more
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Trophy,
   TrendingUp,
@@ -30,7 +30,7 @@ import {
 import { useStore } from '../store/useStore';
 import { useDietStore } from '../store/useDietStore';
 import { format, subDays, eachDayOfInterval, parseISO } from 'date-fns';
-import { isDateStampInRange } from '../utils/date';
+import { isDateStampInRange, parseDateStamp, getDateStamp } from '../utils/date';
 import { getCompletedSetCount, getTotalVolume } from '../utils/workoutMetrics';
 import { kgToDisplay, displayToKg, getWeightUnit } from '../utils/weight';
 import type { WeightEntry } from '../types';
@@ -49,7 +49,7 @@ export function Progress() {
   const deleteWeightEntry = useStore((state) => state.deleteWeightEntry);
   const user = useStore((state) => state.user);
 
-  const getDailyMacros = useDietStore((state) => state.getDailyMacros);
+  const foodLog = useDietStore((state) => state.foodLog);
   const dietSettings = useDietStore((state) => state.dietSettings);
 
   const unitSystem = user?.unitSystem || 'metric';
@@ -105,9 +105,12 @@ export function Progress() {
     }
   };
 
+  // Stable "today" so the memoized series below don't recompute every render
+  // (a fresh `new Date()` each render would invalidate every memo).
+  const today = useMemo(() => new Date(), []);
+
   // Calculate date range
-  const today = new Date();
-  const getRangeStart = () => {
+  const rangeStart = useMemo(() => {
     switch (timeRange) {
       case '7d':
         return subDays(today, 7);
@@ -115,14 +118,30 @@ export function Progress() {
         return subDays(today, 30);
       case '90d':
         return subDays(today, 90);
-      case 'all':
-        return new Date('2000-01-01');
+      case 'all': {
+        // Bound "all" to the earliest real data rather than a fixed year-2000
+        // floor — that floor grows the day range with wall-clock time (~9,600+
+        // days) and balloons the per-day scan for no reason. YYYY-MM-DD stamps
+        // compare lexicographically, so the min string is the earliest date.
+        let earliest: string | null = null;
+        const consider = (stamp: string) => {
+          if (earliest === null || stamp < earliest) earliest = stamp;
+        };
+        for (const ws of workoutSessions) consider(ws.date);
+        for (const e of foodLog) consider(e.date);
+        for (const w of weightEntries) consider(w.date);
+        if (!earliest) return today;
+        // Clamp to today so a stray future-dated entry can't make rangeStart
+        // exceed `today` (eachDayOfInterval throws when start > end).
+        const start = parseDateStamp(earliest);
+        return start > today ? today : start;
+      }
     }
-  };
+  }, [timeRange, today, workoutSessions, foodLog, weightEntries]);
 
-  const rangeStart = getRangeStart();
-  const filteredSessions = workoutSessions.filter((ws) =>
-    isDateStampInRange(ws.date, rangeStart, today)
+  const filteredSessions = useMemo(
+    () => workoutSessions.filter((ws) => isDateStampInRange(ws.date, rangeStart, today)),
+    [workoutSessions, rangeStart, today]
   );
 
   // Calculate workout stats
@@ -137,18 +156,22 @@ export function Progress() {
     0
   );
 
-  // Workout frequency data for chart
-  const workoutFrequencyData = (() => {
+  // Workout frequency data for chart — prebuild a per-day session count in a
+  // single pass, then O(1) lookup per day (was O(days × sessions) every render).
+  const workoutFrequencyData = useMemo(() => {
+    const countByDay = new Map<string, number>();
+    for (const ws of filteredSessions) {
+      countByDay.set(ws.date, (countByDay.get(ws.date) ?? 0) + 1);
+    }
     const days = eachDayOfInterval({ start: rangeStart, end: today });
     return days.map((day) => {
-      const dayStr = format(day, 'yyyy-MM-dd');
-      const count = filteredSessions.filter((ws) => ws.date === dayStr).length;
+      const dayStr = getDateStamp(day);
       return {
         date: format(day, 'MMM d'),
-        workouts: count,
+        workouts: countByDay.get(dayStr) ?? 0,
       };
     });
-  })();
+  }, [filteredSessions, rangeStart, today]);
 
   // Get unique exercises that have been logged
   const loggedExerciseIds = new Set(
@@ -166,13 +189,24 @@ export function Progress() {
     totalVolume: Math.round(kgToDisplay(entry.totalVolume, unitSystem)),
   }));
 
-  // Diet tracking data
-  const dietTrackingData = (() => {
+  // Diet tracking data — prebuild per-day calorie/protein totals from foodLog in
+  // a single pass and a workout-day set, then O(1) per day (was O(days × log),
+  // re-running on every render including weight-input keystrokes).
+  const dietTrackingData = useMemo(() => {
+    const macrosByDay = new Map<string, { calories: number; protein: number }>();
+    for (const entry of foodLog) {
+      const agg = macrosByDay.get(entry.date) ?? { calories: 0, protein: 0 };
+      agg.calories += entry.macros.calories;
+      agg.protein += entry.macros.protein;
+      macrosByDay.set(entry.date, agg);
+    }
+    const workoutDays = new Set(workoutSessions.map((ws) => ws.date));
+
     const days = eachDayOfInterval({ start: rangeStart, end: today });
     return days.map((day) => {
-      const dayStr = format(day, 'yyyy-MM-dd');
-      const macros = getDailyMacros(dayStr);
-      const hasWorkout = workoutSessions.some(ws => ws.date === dayStr);
+      const dayStr = getDateStamp(day);
+      const macros = macrosByDay.get(dayStr) ?? { calories: 0, protein: 0 };
+      const hasWorkout = workoutDays.has(dayStr);
       const targets = {
         calories: dietSettings.goals.dailyCalories + (hasWorkout ? dietSettings.goals.trainingDayCalorieAdjustment : 0),
         protein: dietSettings.goals.dailyProtein + (hasWorkout ? dietSettings.goals.trainingDayProteinAdjustment : 0),
@@ -186,7 +220,7 @@ export function Progress() {
         logged: macros.calories > 0,
       };
     });
-  })();
+  }, [foodLog, workoutSessions, rangeStart, today, dietSettings]);
 
   // Calculate diet stats
   const daysWithLogging = dietTrackingData.filter(d => d.logged).length;
@@ -199,13 +233,17 @@ export function Progress() {
   const proteinGoalDays = dietTrackingData.filter(d => d.logged && d.protein >= d.proteinTarget * 0.9).length;
 
   // Body weight tracking data (convert to display unit)
-  const bodyWeightData = weightEntries
-    .filter((entry: WeightEntry) => isDateStampInRange(entry.date, rangeStart, today))
-    .sort((a: WeightEntry, b: WeightEntry) => a.date.localeCompare(b.date))
-    .map((entry: WeightEntry) => ({
-      date: format(parseISO(entry.date), 'MMM d'),
-      weight: Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10,
-    }));
+  const bodyWeightData = useMemo(
+    () =>
+      weightEntries
+        .filter((entry: WeightEntry) => isDateStampInRange(entry.date, rangeStart, today))
+        .sort((a: WeightEntry, b: WeightEntry) => a.date.localeCompare(b.date))
+        .map((entry: WeightEntry) => ({
+          date: format(parseISO(entry.date), 'MMM d'),
+          weight: Math.round(kgToDisplay(entry.weight, unitSystem) * 10) / 10,
+        })),
+    [weightEntries, rangeStart, today, unitSystem]
+  );
 
   // Get latest weight (weightEntries is sorted newest-first)
   const latestWeightKg = weightEntries.length > 0 ? weightEntries[0]?.weight : null;

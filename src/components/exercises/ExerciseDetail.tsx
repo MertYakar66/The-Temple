@@ -1,23 +1,53 @@
-import { ChevronLeft, Target, Dumbbell, Info, Lightbulb } from 'lucide-react';
-import type { Exercise } from '../../types';
+import { useMemo, useState } from 'react';
+import {
+  ChevronLeft,
+  Target,
+  Dumbbell,
+  Info,
+  Lightbulb,
+  Activity,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+import { format } from 'date-fns';
+import type { Exercise, WorkoutSet } from '../../types';
 import { useStore } from '../../store/useStore';
 import { kgToDisplay, getWeightUnit } from '../../utils/weight';
+import { parseDateStamp } from '../../utils/date';
+import { getExerciseSetHistory } from '../../utils/workoutMetrics';
 
 interface ExerciseDetailProps {
   exercise: Exercise;
   onBack: () => void;
 }
 
+// How many recent sessions to show before the "Show all" toggle.
+const DEFAULT_VISIBLE_SESSIONS = 8;
+
 export function ExerciseDetail({ exercise, onBack }: ExerciseDetailProps) {
-  const getExerciseHistory = useStore((state) => state.getExerciseHistory);
+  const workoutSessions = useStore((state) => state.workoutSessions);
   const personalRecords = useStore((state) => state.personalRecords);
   const user = useStore((state) => state.user);
 
   const unitSystem = user?.unitSystem || 'metric';
   const weightUnit = getWeightUnit(unitSystem);
 
-  const history = getExerciseHistory(exercise.id);
+  const history = useMemo(
+    () => getExerciseSetHistory(workoutSessions, exercise.id),
+    [workoutSessions, exercise.id]
+  );
   const prs = personalRecords.filter((pr) => pr.exerciseId === exercise.id);
+
+  const [showAllSessions, setShowAllSessions] = useState(false);
+  const visibleHistory = showAllSessions
+    ? history
+    : history.slice(0, DEFAULT_VISIBLE_SESSIONS);
+
+  // Display helpers — weight is stored in kg; always convert for display.
+  const fmtWeight = (kg: number) =>
+    Math.round(kgToDisplay(kg, unitSystem) * 10) / 10;
+  const fmtSet = (set: WorkoutSet) =>
+    `${fmtWeight(set.weight)}${weightUnit} × ${set.reps}`;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -48,6 +78,114 @@ export function ExerciseDetail({ exercise, onBack }: ExerciseDetailProps) {
               </span>
             ))}
           </div>
+        </div>
+
+        {/* Personal Records */}
+        {prs.length > 0 && (
+          <div className="card">
+            <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Your Personal Records</h2>
+            <div className="space-y-2">
+              {prs.map((pr, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                >
+                  <span className="text-gray-900 dark:text-white font-medium">
+                    {Math.round(kgToDisplay(pr.weight, unitSystem) * 10) / 10} {weightUnit} x {pr.reps} reps
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{pr.date}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Training History */}
+        <div className="card">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+            <h2 className="font-semibold text-gray-900 dark:text-white">Training History</h2>
+          </div>
+
+          {history.length === 0 ? (
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              No logged sets yet. Completed sets from your workouts will show up here.
+            </p>
+          ) : (
+            <>
+              <div className="space-y-4">
+                {visibleHistory.map((entry) => {
+                  const notedSets = entry.sets.filter((s) => s.notes);
+                  return (
+                    <div
+                      key={entry.sessionId}
+                      className="pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0"
+                    >
+                      {/* Session header: date + best/volume summary */}
+                      <div className="flex items-baseline justify-between gap-2 mb-2">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {format(parseDateStamp(entry.date), 'MMM d')}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 text-right">
+                          {entry.bestSet && <>Best {fmtSet(entry.bestSet)} · </>}
+                          Vol {Math.round(kgToDisplay(entry.volume, unitSystem)).toLocaleString()} {weightUnit}
+                        </span>
+                      </div>
+
+                      {/* Per-set chips */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {entry.sets.map((set) => (
+                          <span
+                            key={set.id}
+                            className="px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                          >
+                            {fmtSet(set)}
+                            {/* rir 0 is valid (to failure); only hide when null/undefined */}
+                            {set.rir != null && (
+                              <span className="opacity-60"> · {set.rir} RIR</span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Optional per-set notes, small and muted */}
+                      {notedSets.length > 0 && (
+                        <div className="mt-1.5 space-y-0.5">
+                          {notedSets.map((set) => (
+                            <p
+                              key={`${set.id}-note`}
+                              className="text-xs text-gray-400 dark:text-gray-500"
+                            >
+                              {fmtSet(set)}: {set.notes}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {history.length > DEFAULT_VISIBLE_SESSIONS && (
+                <button
+                  onClick={() => setShowAllSessions((v) => !v)}
+                  className="mt-3 flex items-center gap-1 text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                >
+                  {showAllSessions ? (
+                    <>
+                      <ChevronUp className="w-4 h-4" />
+                      Show less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4" />
+                      Show all {history.length} sessions
+                    </>
+                  )}
+                </button>
+              )}
+            </>
+          )}
         </div>
 
         {/* Description */}
@@ -125,49 +263,6 @@ export function ExerciseDetail({ exercise, onBack }: ExerciseDetailProps) {
                 >
                   {variation}
                 </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Personal Records */}
-        {prs.length > 0 && (
-          <div className="card">
-            <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Your Personal Records</h2>
-            <div className="space-y-2">
-              {prs.map((pr, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                >
-                  <span className="text-gray-900 dark:text-white font-medium">
-                    {Math.round(kgToDisplay(pr.weight, unitSystem) * 10) / 10} {weightUnit} x {pr.reps} reps
-                  </span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{pr.date}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* History */}
-        {history.length > 0 && (
-          <div className="card">
-            <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Recent History</h2>
-            <div className="space-y-2">
-              {history.slice(-5).reverse().map((entry, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                >
-                  <div>
-                    <span className="text-gray-900 dark:text-white">Max: {Math.round(kgToDisplay(entry.maxWeight, unitSystem) * 10) / 10} {weightUnit}</span>
-                    <span className="text-gray-500 dark:text-gray-400 text-sm ml-2">
-                      (Vol: {Math.round(kgToDisplay(entry.totalVolume, unitSystem))} {weightUnit})
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{entry.date}</span>
-                </div>
               ))}
             </div>
           </div>
