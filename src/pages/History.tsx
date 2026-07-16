@@ -27,6 +27,7 @@ import {
   isSameDay,
   addMonths,
   subMonths,
+  subDays,
   startOfWeek,
   endOfWeek,
 } from 'date-fns';
@@ -76,6 +77,18 @@ function getInitialSelectedDate(dateParam: string | null): Date {
   return new Date();
 }
 
+// How many day-groups the "All Workouts" list reveals per "Show more" click.
+const DAYS_PER_PAGE = 15;
+
+// Human header for a day-group in the All Workouts list: "Today" / "Yesterday"
+// for the two most recent days, otherwise the full weekday-date. Parses the
+// stamp via parseDateStamp (never `new Date(str)`) to avoid UTC drift.
+function formatDayHeader(dateStamp: string, todayStamp: string, yesterdayStamp: string): string {
+  if (dateStamp === todayStamp) return 'Today';
+  if (dateStamp === yesterdayStamp) return 'Yesterday';
+  return format(parseDateStamp(dateStamp), 'EEEE, MMMM d');
+}
+
 export function History() {
   const workoutSessions = useStore((state) => state.workoutSessions);
   const routines = useStore((state) => state.routines);
@@ -95,6 +108,8 @@ export function History() {
   const [currentMonth, setCurrentMonth] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate);
   const [activeTab, setActiveTab] = useState<'workout' | 'diet'>('workout');
+  // "All Workouts" browse list: how many day-groups are currently revealed.
+  const [visibleDays, setVisibleDays] = useState(DAYS_PER_PAGE);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -114,6 +129,38 @@ export function History() {
     () => new Set(foodLog.map((e) => e.date)),
     [foodLog]
   );
+
+  // Group every workout by its date stamp for the "All Workouts" browse list:
+  // newest day first, and within a day newest session first (by startTime).
+  // Memoized so pagination / unrelated re-renders don't regroup the full
+  // history on every render.
+  const workoutsByDay = useMemo(() => {
+    const groups = new Map<string, WorkoutSession[]>();
+    for (const ws of workoutSessions) {
+      const bucket = groups.get(ws.date);
+      if (bucket) bucket.push(ws);
+      else groups.set(ws.date, [ws]);
+    }
+    return [...groups.keys()]
+      // `YYYY-MM-DD` stamps sort lexicographically == chronologically.
+      .sort((a, b) => b.localeCompare(a))
+      .map((date) => ({
+        date,
+        sessions: groups
+          .get(date)!
+          .slice()
+          // Newest session first; startTime is an ISO string when present,
+          // missing ones (empty) sort to the end of the day.
+          .sort((a, b) => (b.startTime ?? '').localeCompare(a.startTime ?? '')),
+      }));
+  }, [workoutSessions]);
+
+  const todayStamp = getDateStamp();
+  const yesterdayStamp = getDateStamp(subDays(new Date(), 1));
+  // Sessions hidden below the current page, for the "Show more (N …)" label.
+  const remainingWorkouts = workoutsByDay
+    .slice(visibleDays)
+    .reduce((sum, group) => sum + group.sessions.length, 0);
 
   const getWorkoutsForDate = (date: Date): WorkoutSession[] => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -480,30 +527,43 @@ export function History() {
         </div>
       )}
 
-      {/* Recent workouts */}
+      {/* All Workouts — browse every session, grouped by day, newest first.
+          The calendar above is the jump-to-a-specific-day control; this is the
+          scroll-and-browse-everything control. */}
       <div>
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Recent Workouts</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white mb-3">All Workouts</h2>
         {workoutSessions.length === 0 ? (
           <div className="card text-center py-8">
             <Dumbbell className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
             <p className="text-gray-500 dark:text-gray-400">No workout history yet</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {workoutSessions
-              .slice()
-              .reverse()
-              .slice(0, 5)
-              .map((workout) => (
-                <WorkoutCard
-                  key={workout.id}
-                  workout={workout}
-                  routines={routines}
-                  onDelete={() => deleteWorkoutSession(workout.id)}
-                  unitSystem={unitSystem}
-                  compact
-                />
-              ))}
+          <div className="space-y-6">
+            {workoutsByDay.slice(0, visibleDays).map(({ date, sessions }) => (
+              <div key={date} className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                  {formatDayHeader(date, todayStamp, yesterdayStamp)}
+                </h3>
+                {sessions.map((workout) => (
+                  <WorkoutCard
+                    key={workout.id}
+                    workout={workout}
+                    routines={routines}
+                    onDelete={() => deleteWorkoutSession(workout.id)}
+                    unitSystem={unitSystem}
+                  />
+                ))}
+              </div>
+            ))}
+
+            {workoutsByDay.length > visibleDays && (
+              <button
+                onClick={() => setVisibleDays((v) => v + DAYS_PER_PAGE)}
+                className="w-full py-3 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Show more ({remainingWorkouts} earlier workout{remainingWorkouts === 1 ? '' : 's'})
+              </button>
+            )}
           </div>
         )}
       </div>
