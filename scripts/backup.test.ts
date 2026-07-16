@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { createRequire } from 'module';
+import { mkdtempSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 // backup.cjs is a CommonJS Admin-SDK script. Load it through createRequire so
 // we get its raw module.exports. Its firebase-admin / service-account requires
 // are deferred into runBackup(), and runBackup() only runs when the file is
 // invoked directly, so importing it here has no side effects and needs no key.
 const requireCjs = createRequire(import.meta.url);
-const { backupSubcollections, countUserDataDocs } = requireCjs('./backup.cjs');
+const { backupSubcollections, countUserDataDocs, finalizeBackup } = requireCjs('./backup.cjs');
 
 // Minimal in-memory stand-in for the slice of the Admin SDK that
 // backupSubcollections touches. It exposes listDocuments() (NOT a collection
@@ -83,5 +86,37 @@ describe('backupSubcollections', () => {
     const { parents, docs } = countUserDataDocs(emptyUsers);
     expect(parents).toBe(1);
     expect(docs).toBe(0);
+  });
+});
+
+describe('finalizeBackup — quarantine empty backups', () => {
+  it('keeps a plain .json when the backup has documents', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'temple-backup-'));
+    const file = join(dir, '20260101_000000_backup.json');
+    writeFileSync(file, '{}', 'utf-8');
+
+    const res = finalizeBackup(file, 3);
+
+    expect(res).toEqual({ path: file, valid: true });
+    expect(existsSync(file)).toBe(true);
+    expect(existsSync(`${file}.INVALID`)).toBe(false);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('quarantines a zero-doc backup to .INVALID (no plain .json is left behind)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'temple-backup-'));
+    const file = join(dir, '20260101_000000_backup.json');
+    writeFileSync(file, '{}', 'utf-8');
+
+    const res = finalizeBackup(file, 0);
+
+    expect(res).toEqual({ path: `${file}.INVALID`, valid: false });
+    // The trustworthy-looking plain .json is gone; only the quarantined
+    // artifact remains for inspection.
+    expect(existsSync(file)).toBe(false);
+    expect(existsSync(`${file}.INVALID`)).toBe(true);
+
+    rmSync(dir, { recursive: true, force: true });
   });
 });
