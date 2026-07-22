@@ -491,21 +491,35 @@ export function Workout() {
         </div>
       ) : (
         <div className="space-y-4">
-          {currentSession.exercises.map((we) => (
-            <WorkoutExerciseCard
-              key={we.id}
-              workoutExercise={we}
-              onAddSet={() => addSetToExercise(we.id)}
-              onUpdateSet={(setId, updates) => updateSet(we.id, setId, updates)}
-              onRemoveSet={(setId) => removeSet(we.id, setId)}
-              onToggleSetComplete={(setId) => {
-                toggleSetComplete(we.id, setId);
-                setShowRestTimer(true);
-              }}
-              onRemove={() => removeExerciseFromSession(we.id)}
-              unitSystem={unitSystem}
-            />
-          ))}
+          {currentSession.exercises.map((we, idx) => {
+            // Same exercise can appear multiple times in one day (different
+            // intensities). Compute this instance's 1-based occurrence and the
+            // total count so each card tracks its own previous-workout history.
+            const sameExercise = currentSession.exercises.filter(
+              (e) => e.exerciseId === we.exerciseId
+            );
+            const occurrence =
+              currentSession.exercises
+                .slice(0, idx + 1)
+                .filter((e) => e.exerciseId === we.exerciseId).length;
+            return (
+              <WorkoutExerciseCard
+                key={we.id}
+                workoutExercise={we}
+                onAddSet={() => addSetToExercise(we.id)}
+                onUpdateSet={(setId, updates) => updateSet(we.id, setId, updates)}
+                onRemoveSet={(setId) => removeSet(we.id, setId)}
+                onToggleSetComplete={(setId) => {
+                  toggleSetComplete(we.id, setId);
+                  setShowRestTimer(true);
+                }}
+                onRemove={() => removeExerciseFromSession(we.id)}
+                unitSystem={unitSystem}
+                occurrence={occurrence}
+                instanceCount={sameExercise.length}
+              />
+            );
+          })}
         </div>
       )}
 

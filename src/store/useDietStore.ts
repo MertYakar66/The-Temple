@@ -1,6 +1,6 @@
 /**
  * useDietStore — foods/recipes/meals/log/streaks Zustand store.
- * Persisted under `diet-tracker-storage` at version 1.
+ * Persisted under `diet-tracker-storage` at version 2.
  *
  * Date math goes through parseDateStamp (input) + getDateStamp (output)
  * end-to-end. Local-aware on both sides — see docs/DATA_POLICY.md §2 and
@@ -11,6 +11,11 @@
  * persisted state via dietStoreMigrate. The reminder feature was removed
  * in Batch 3 (no notification-firing layer ever existed; the editor UI
  * was misleading).
+ *
+ * Persist version 2 adds the `activeDietId` slice (the user's chosen diet
+ * plan, see src/data/diets.ts). The field is additive — pre-v2 state lacks
+ * it and zustand's merge supplies the initializer default (null), so
+ * dietStoreMigrate needs no extra step for it.
  *
  * Tests: src/store/useDietStore.test.ts.
  */
@@ -69,6 +74,14 @@ interface DietState {
   // Diet Settings & Goals
   dietSettings: DietSettings;
   updateDietGoals: (goals: Partial<DietGoals>) => void;
+
+  // Active diet plan (curated multi-meal reference plan, see src/data/diets.ts)
+  activeDietId: string | null;
+  setActiveDiet: (id: string | null) => void;
+  logDietMeal: (
+    meal: { name: string; mealType: MealType; macros: Macros },
+    date: string,
+  ) => void;
 
   // Streaks
   streaks: DietStreak;
@@ -433,6 +446,44 @@ export const useDietStore = create<DietState>()(
         }));
       },
 
+      // Active diet plan
+      activeDietId: null,
+
+      setActiveDiet: (id) => {
+        set({ activeDietId: id });
+      },
+
+      // Log a diet-plan meal to the diary. Diet-plan meals don't map to saved
+      // Meal records, so we write a synthetic `type: 'meal'` entry carrying the
+      // plan's authored macros (mirrors logMeal, but the embedded meal has no
+      // saved id and an empty items list — Diet.tsx renders it by name + macros).
+      logDietMeal: (dietMeal, date) => {
+        const meal: Meal = {
+          id: uuidv4(),
+          name: dietMeal.name,
+          mealType: dietMeal.mealType,
+          items: [],
+          totalMacros: dietMeal.macros,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        const entry: FoodLogEntry = {
+          id: uuidv4(),
+          date,
+          timestamp: new Date().toISOString(),
+          mealType: dietMeal.mealType,
+          type: 'meal',
+          meal,
+          servings: 1,
+          macros: dietMeal.macros,
+        };
+
+        set((state) => ({ foodLog: [...state.foodLog, entry] }));
+
+        get().updateStreaks(date);
+      },
+
       // Streaks
       streaks: defaultStreaks,
 
@@ -542,6 +593,7 @@ export const useDietStore = create<DietState>()(
           recentFoodIds: (data.recentFoodIds as string[]) ?? get().recentFoodIds,
           dietSettings: (data.dietSettings as DietSettings) ?? get().dietSettings,
           streaks: (data.streaks as DietStreak) ?? get().streaks,
+          activeDietId: (data.activeDietId as string | null) ?? get().activeDietId,
         });
       },
 
@@ -555,6 +607,7 @@ export const useDietStore = create<DietState>()(
           recentFoodIds: state.recentFoodIds,
           dietSettings: state.dietSettings,
           streaks: state.streaks,
+          activeDietId: state.activeDietId,
         };
       },
 
@@ -568,12 +621,13 @@ export const useDietStore = create<DietState>()(
           recentFoodIds: [],
           dietSettings: defaultDietSettings,
           streaks: defaultStreaks,
+          activeDietId: null,
         });
       },
     }),
     {
       name: 'diet-tracker-storage',
-      version: 1,
+      version: 2,
       migrate: dietStoreMigrate,
     }
   )

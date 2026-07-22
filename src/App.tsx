@@ -31,6 +31,7 @@ const Blocks = lazy(() => import('./pages/Blocks').then((m) => ({ default: m.Blo
 const Diet = lazy(() => import('./pages/Diet').then((m) => ({ default: m.Diet })));
 const DietLog = lazy(() => import('./pages/DietLog').then((m) => ({ default: m.DietLog })));
 const DietMeals = lazy(() => import('./pages/DietMeals').then((m) => ({ default: m.DietMeals })));
+const DietPlanDetail = lazy(() => import('./pages/DietPlanDetail').then((m) => ({ default: m.DietPlanDetail })));
 const DietMealEditor = lazy(() => import('./pages/DietMealEditor').then((m) => ({ default: m.DietMealEditor })));
 const DietWeekly = lazy(() => import('./pages/DietWeekly').then((m) => ({ default: m.DietWeekly })));
 const DietSettings = lazy(() => import('./pages/DietSettings').then((m) => ({ default: m.DietSettings })));
@@ -128,6 +129,7 @@ function AppRoutes() {
       {/* Diet routes without bottom nav */}
       <Route path="/diet/log" element={<DietLog />} />
       <Route path="/diet/meals" element={<DietMeals />} />
+      <Route path="/diet/diets/:id" element={<DietPlanDetail />} />
       <Route path="/diet/meals/new" element={<DietMealEditor />} />
       <Route path="/diet/meals/:id/edit" element={<DietMealEditor />} />
       <Route path="/diet/weekly" element={<DietWeekly />} />

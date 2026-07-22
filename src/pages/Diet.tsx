@@ -7,6 +7,8 @@ import {
   ChevronRight,
   Trash2,
   Settings,
+  Target,
+  Utensils,
 } from 'lucide-react';
 import { useDietStore } from '../store/useDietStore';
 import type { MealType } from '../types';
@@ -149,6 +151,31 @@ export function Diet() {
             style={{ width: `${Math.min((dailyMacros.calories / targets.dailyCalories) * 100, 100)}%` }}
           />
         </div>
+      </div>
+
+      {/* Quick actions — entry points to the Meals page (Saved Meals,
+          Recipes, and goal-based Diet plans). */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link
+          to="/diet/meals?tab=diets"
+          className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm flex items-center gap-2 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+        >
+          <Target className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="font-medium leading-tight">Diets</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">Goal-based plans</p>
+          </div>
+        </Link>
+        <Link
+          to="/diet/meals"
+          className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm flex items-center gap-2 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+        >
+          <Utensils className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
+          <div className="min-w-0">
+            <p className="font-medium leading-tight">Meals</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">Saved meals & recipes</p>
+          </div>
+        </Link>
       </div>
 
       {/* Meal Sections */}
