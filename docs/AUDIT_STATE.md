@@ -114,6 +114,58 @@ merge to main. All five scope items landed with full Vitest coverage.
 - Persist `version` for `useDietStore` is now 1. Next persisted-shape change must bump to 2
   and chain the migrations.
 
+## Integration & hardening batch ✅ Merged
+
+A broad hardening pass — run as an autonomous session against a weakness map rather than under
+the planned Batch-4/5/6 naming — landed via a set of topic branches, integrated on
+`claude/integration-hardening` (`7c949b9`) and merged to `main` through `eceb6fd`. All the
+branches below are now merged and **pruned**; `main` is the single source of truth.
+
+**What landed (by area):**
+- **Build / perf:** `392bfac` lazy-load routes + split vendor chunks (recharts / firebase);
+  `84a36e1` memoize Progress derived series and bound the "all" range to real data; `a6c2b44`
+  correct the recharts chunk matcher. → **Retires the Batch-6 bundle-size side finding.**
+- **Backup / restore:** `2ea294f` capture user data in backup + real restore overwrite;
+  `a6c2b44` quarantine empty backups.
+- **Auth / sync integrity:** `fd30e17` close three silent data-loss paths in `AuthContext`;
+  `9763e0d` surface `cloudError` + logout failure in the UI.
+- **A11y / UX:** `bd95a3e` un-nest interactive controls in Workout/History accordions;
+  `669084d` Add-Exercise selector dark-mode variants; `afdee44` DietLog servings input holds
+  partial text and clamps on commit; `e77772f` `+N more` overflow for all-day events in the
+  calendar week view.
+- **Workout history UX:** `4f6c74c` reachable from Dashboard & Workout; `aade036` surface RIR +
+  notes in expanded cards; `98f4fe1` per-set exercise history + reachable detail route;
+  `da0abce` browsable day-by-day All-Workouts list.
+- **Also landed earlier in the same window:** the CI workflow (`.github/workflows/ci.yml`), the
+  README refresh, the Jeff Nippard PowerBuilding program (`f4f612d`), and Blocks per-workout
+  done-tracking (`f94ed99`).
+
+**Verification:** `lint` / `build` / `test` green on `main` after integration (120 tests).
+
+## Diet plans ✅ Merged
+
+**Merge:** `742fa97 Merge branch 'claude/diets-menu-d7x2' into main`.
+
+Goal-based Diet plans — curated multi-meal reference plans keyed by goal, seeded in
+`src/data/diets.ts` and surfaced through a new `DietPlanDetail` page (`/diet/diets/:id`) with an
+entry point on the Nutrition diary.
+
+- `6312a96` feat(diet): goal-based Diets menu with active plan + one-tap logging. Adds the
+  `activeDietId` persisted slice to `useDietStore` — **all five mirror places** (interface,
+  `resetStore`, `getCloudSyncData`, `loadFromCloud`, the `AuthContext.startSync` equality check)
+  plus a **persist `version` 1 → 2** bump (additive; `dietStoreMigrate` needs no extra step —
+  zustand's default merge supplies the `null` initializer for pre-v2 state). `logDietMeal` writes
+  a synthetic `type: 'meal'` food-log entry (no undefined, `getDateStamp` for the date — invariants
+  1/2/10 respected).
+- `d2d1ad4` fix(workout): separate previous-workout notes for repeated exercises.
+  `getLastWorkoutForExercise` gained an `occurrence` param; read-only, no persisted-shape change.
+- `277a65b` fix(diet): add Diets/Meals entry point on the Nutrition diary.
+
+**App.tsx merge note:** the branch predated route code-splitting, so its eager `DietPlanDetail`
+import conflicted; resolved in favour of `main`'s lazy route tree (lazy import + the
+`/diet/diets/:id` route). Adversarially verified (5-place rule, invariants, conflict completeness)
+before the push — no findings.
+
 ## Batch 4 — Calendar recurrence ⏳ Pending
 
 **Branch (planned):** `claude/audit-batch4-recurrence`.
@@ -149,9 +201,10 @@ deploy.
 **Branch (planned):** `claude/audit-batch6-polish`.
 
 **Scope:** TBD. Will sweep up flagged side findings from earlier batches:
-- `useStore.startWorkout` undefined `routineId`,
-- `Settings.tsx` data-export filename,
-- bundle-size warning (1.4 MB; manualChunks),
+- `useStore.startWorkout` undefined `routineId` — still open,
+- `Settings.tsx` data-export filename (`:221`, banned `toISOString().split('T')[0]`) — still open,
+- ~~bundle-size warning (1.4 MB; manualChunks)~~ — ✅ done in the integration & hardening batch
+  (`392bfac` lazy routes + vendor chunking),
 - whatever else gets flagged on the way through.
 
 ## Cross-cutting blocker — AuthContext race ✅ Resolved

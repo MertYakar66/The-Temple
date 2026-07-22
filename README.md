@@ -20,11 +20,11 @@ The app is organized into three modules — Workout, Diet, and Calendar — plus
 
 Log each training session set by set — exercise, weight, reps, and rest. Save the routines you come back to, and start a session from one in a tap. TheTemple watches for personal records as you train and celebrates them the moment you hit one. Body weight gets its own tracker, with progress charts that show the trend over weeks and months.
 
-For structured training, the app includes the Jeff Nippard "Min Max" program — a twelve-week block plan you can follow exactly, or customize week by week to match your own equipment and schedule.
+For structured training, the app includes two Jeff Nippard block programs — the twelve-week "Min Max" plan and a "PowerBuilding" plan — that you can follow exactly, or customize week by week to match your own equipment and schedule, ticking off each workout as you go. Every past session stays browsable day by day in a full workout history, right down to the notes and effort on a single set.
 
 ### Diet
 
-Log meals with full calorie and macro tracking. Build a personal library of custom foods, recipes, and reusable saved meals, so logging the things you eat often takes seconds rather than minutes. Set daily macro goals — with separate targets for training days — keep a logging streak going, and size up your calorie needs with the built-in TDEE calculator.
+Log meals with full calorie and macro tracking. Build a personal library of custom foods, recipes, and reusable saved meals, so logging the things you eat often takes seconds rather than minutes. Set daily macro goals — with separate targets for training days — keep a logging streak going, and size up your calorie needs with the built-in TDEE calculator. Prefer a ready-made plan? Pick a goal-based diet from the built-in menu, set it as your active plan, and log its meals to the diary with a single tap.
 
 ### Calendar
 

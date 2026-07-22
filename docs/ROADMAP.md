@@ -20,8 +20,13 @@ What comes next, in what order, and why. Companion to `AUDIT_STATE.md` (per-batc
 2. **AuthContext race fix.** ✅ Done (`claude/fix-authcontext-race-8mq2`). Promoted the e2e
    harness from "decoration" to a real gate: the fixme'd spec is switched back on and
    `playwright.config.ts` reverted to the dev server.
-3. **Batch 4 — Calendar recurrence.** Vitest-first against `src/utils/calendar.ts`. Lands the
-   shared expansion logic that Batch 5 will reuse.
+2a. **Integration & hardening batch + Diet plans.** ✅ Done (merged through `eceb6fd` and
+   `742fa97`; all feature branches pruned). Route code-splitting (retires the bundle-size item),
+   backup/restore recovery, AuthContext data-loss closures, a11y/perf/UX polish, the
+   workout-history UX, and the goal-based Diet plans feature. Ran as a topic-branch hardening
+   session, not under the Batch-4/5/6 naming — so the audit batches below are unaffected.
+3. **Batch 4 — Calendar recurrence.** ⏳ Still pending. Vitest-first against
+   `src/utils/calendar.ts`. Lands the shared expansion logic that Batch 5 will reuse.
 4. **Batch 5 — Cloud Functions Siri TZ + server-side recurrence expansion.** Reuses Batch 4's
    recurrence work (consider extracting to a shared `lib/` if duplication grows).
 5. **Batch 6 — Polish.** Sweeps up flagged side findings.
@@ -54,7 +59,8 @@ features ship as the owner has new needs, not on a roadmap. Likely follow-ups wh
 
 - Functions emulator for integration coverage of the Cloud Functions (CI already runs the
   `functions/` build + test on every PR — see `.github/workflows/ci.yml`).
-- Bundle splitting (current bundle is 1.4 MB; Vite warns).
+- ~~Bundle splitting (1.4 MB; Vite warns)~~ — ✅ done (route code-splitting + vendor chunking,
+  `392bfac`).
 - Native push for invitation delivery (currently in-app only).
 - Onboarding flow polish.
 

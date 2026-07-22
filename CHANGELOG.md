@@ -8,6 +8,47 @@ rather than by version — there are no semver tags. Newest first.
 
 ---
 
+## Integration & hardening batch + Diet plans — branch consolidation
+
+A broad hardening pass plus the goal-based Diet-plans feature landed and **all outstanding
+feature branches were merged into `main` and pruned** (repo went from 11 branches to just
+`main`). Merged through `eceb6fd` (hardening) and `742fa97` (Diet plans).
+
+**Integration & hardening** (topic branches, integrated on `claude/integration-hardening`
+`7c949b9`, merged via `eceb6fd`):
+- `392bfac` `perf(build)` lazy-load routes + split vendor chunks (recharts / firebase) — retires
+  the long-standing 1.4 MB bundle-size finding. `a6c2b44` corrects the recharts chunk matcher.
+- `84a36e1` `perf(progress)` memoize derived series; bound the "all" range to real data.
+- `2ea294f` `fix(scripts)` capture user data in backup + real restore overwrite; `a6c2b44`
+  quarantine empty backups.
+- `fd30e17` `fix(auth)` close three silent data-loss paths in `AuthContext`; `9763e0d` surface
+  `cloudError` + logout failure in the UI.
+- `bd95a3e` `fix(a11y)` un-nest interactive controls in Workout/History accordions.
+- `afdee44` `fix(diet)` DietLog servings input holds partial text, clamps on commit.
+- `e77772f` `fix(calendar)` `+N more` overflow for all-day events in week view.
+- `669084d` `style(workout)` dark-mode variants for the Add-Exercise selector.
+- Workout history UX: `4f6c74c` reachable from Dashboard & Workout, `aade036` RIR + notes in
+  expanded cards, `98f4fe1` per-set exercise history + detail route, `da0abce` browsable
+  day-by-day All-Workouts list.
+- Earlier in the same window: CI workflow (`.github/workflows/ci.yml`), README refresh, the
+  Jeff Nippard PowerBuilding program (`f4f612d`), Blocks per-workout done-tracking (`f94ed99`).
+
+**Diet plans** (`claude/diets-menu-d7x2`, merged `742fa97`):
+- `6312a96` `feat(diet)` goal-based Diets menu with active plan + one-tap logging. New
+  `activeDietId` persisted slice on `useDietStore` — all five mirror places + persist `version`
+  1 → 2 (additive migration). New `src/data/diets.ts` seed + `DietPlanDetail` page
+  (`/diet/diets/:id`).
+- `d2d1ad4` `fix(workout)` separate previous-workout notes for repeated exercises.
+- `277a65b` `fix(diet)` add a Diets/Meals entry point on the Nutrition diary.
+- The `App.tsx` conflict (branch predated route code-splitting) was resolved in favour of `main`'s
+  lazy route tree. Merge adversarially verified against the 5-place rule + hard invariants — no
+  findings. Gate green: lint / build / 120 tests.
+
+Still pending after this: Batch 4 (calendar recurrence engine) and Batch 5 (Cloud Functions Siri
+TZ + server-side recurrence expansion — `functions/` untouched). See `docs/AUDIT_STATE.md`.
+
+---
+
 ## AuthContext cloud-sync race fix — `claude/fix-authcontext-race-8mq2`
 
 Standalone fix for audit finding C-1 — the cancellation-unsafe `onAuthStateChanged`

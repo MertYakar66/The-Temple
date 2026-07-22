@@ -10,9 +10,11 @@ TheTemple — a personal fitness and life-management progressive web app. Live a
 
 Three product modules + one integration:
 - **Workout** — sessions, sets/reps/weight, routines, PRs, weight history, exercise goals,
-  Jeff Nippard "Min Max" 12-week block program with per-week customizations.
+  per-set exercise history, a browsable day-by-day workout history, and the Jeff Nippard
+  "Min Max" 12-week + "PowerBuilding" block programs (per-week customizations, per-workout
+  done-tracking).
 - **Diet** — foods, recipes, saved meals, daily food log, macro goals, training-day adjustments,
-  streaks, TDEE calculator.
+  streaks, TDEE calculator, and goal-based Diet plans (active-plan pick + one-tap logging).
 - **Calendar** — events, multiple calendars, day/week/month/upcoming views, recurrence,
   invitations, Google Places autocomplete.
 - **Siri** — Apple Shortcuts hit Firebase Cloud Functions for hands-free daily briefings,
@@ -74,8 +76,28 @@ A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
   per-chain `AbortController` cancels superseded chains, and `resetStore`+`loadFromCloud`
   are fused after the await. The e2e harness is unblocked. See
   `docs/plans/fix-authcontext-race.md`.
-- **Batches 4–6.** ⏳ Pending. Calendar recurrence; Cloud Functions Siri TZ + server-side
-  recurrence expansion; polish.
+- **Integration & hardening batch.** ✅ Merged (`eceb6fd` and the merges below it). A broad
+  hardening pass landed via topic branches, now all merged into `main` and pruned: route
+  code-splitting + vendor chunking (`392bfac`, retires the 1.4 MB bundle finding), Progress
+  memoization (`84a36e1`), backup/restore recovery (`2ea294f`, `a6c2b44`), Workout/History
+  a11y (`bd95a3e`), DietLog servings input (`afdee44`), week-view all-day overflow
+  (`e77772f`), Add-Exercise dark mode (`669084d`), three AuthContext data-loss closures +
+  cloud-error surfacing (`fd30e17`, `9763e0d`), and the workout-history UX / per-set history
+  / All-Workouts list (`4f6c74c`, `aade036`, `98f4fe1`, `da0abce`). Plus a CI workflow, the
+  README refresh, the PowerBuilding program, and Blocks per-workout done-tracking.
+- **Diet plans.** ✅ Merged (`742fa97`, `claude/diets-menu-d7x2`). Goal-based Diet plans
+  (`src/data/diets.ts`, `DietPlanDetail`) with an `activeDietId` persisted slice (store
+  version 1→2, all 5 mirror places) and one-tap logging. Plus a workout previous-notes fix
+  for repeated exercises.
+- **Batch 4 — Calendar recurrence.** ⏳ Pending. The recurrence engine in
+  `src/utils/calendar.ts` (exceptions, weekly `daysOfWeek`, monthly nth-weekday) is untouched;
+  the week-view overflow fix above was UI, not the engine.
+- **Batch 5 — Cloud Functions Siri TZ + recurrence expansion.** ⏳ Pending. `functions/` is
+  untouched — the `todayDateString` UTC fallback and lack of server-side recurrence expansion
+  both remain. See "Known risks".
+- **Batch 6 — Polish.** Two side findings still open: `useStore.startWorkout` undefined
+  `routineId`, and the `Settings.tsx` data-export filename banned date pattern. The bundle-size
+  item is done (route code-splitting).
 
 ## Known risks
 
@@ -85,18 +107,24 @@ A multi-batch audit is mid-flight. See `AUDIT_STATE.md` for per-batch detail.
 - **Cloud Functions don't expand recurrence (active).** Stored recurring events are read raw,
   not expanded. Siri speaks the original master event date instead of today's occurrence.
   Batch 5 territory.
-- **`useDietStore` uses banned date pattern in two places** (`updateStreaks`,
-  `getWeeklyStats`). Batch 3 territory.
+- **`Settings.tsx` data-export filename uses the banned `toISOString().split('T')[0]`**
+  (`src/pages/Settings.tsx:221`) — UTC-derived date in the export filename. Batch 6 side finding.
+- **`useStore.startWorkout` leaves `currentSession.routineId = undefined`** when started
+  without a routine. Same class as Batch 1; Batch 6 side finding.
+- *(Resolved — no longer a risk)* The `useDietStore` banned-date-pattern in `updateStreaks` /
+  `getWeeklyStats` was fixed in Batch 3 (`d960249`); only a cautionary comment remains.
 - **Single-user product.** Test users live in the production Firebase project (no separate
   staging). The `e2e-test@thetemple.test` user was created against prod. Be aware when running
   destructive scripts.
 
 ## Where to start
 
-Audit Batches 1–3 and the AuthContext cloud-sync race are landed. The recommended next task
-is **audit Batch 4 — Calendar recurrence** — the recurrence engine in `src/utils/calendar.ts`
-(exception handling, weekly `daysOfWeek`, monthly "nth weekday"). See `ROADMAP.md` for
-sequencing and `AUDIT_STATE.md` for the Batch 4 scope.
+Audit Batches 1–3, the AuthContext cloud-sync race, the integration & hardening batch, and the
+Diet-plans feature are all landed; `main` is clean (all feature branches merged and pruned).
+The remaining audit work is **Batch 4 — Calendar recurrence** (the recurrence engine in
+`src/utils/calendar.ts` — exception handling, weekly `daysOfWeek`, monthly "nth weekday") and
+**Batch 5 — Cloud Functions Siri TZ + server-side recurrence expansion** (`functions/` is
+untouched). See `ROADMAP.md` for sequencing and `AUDIT_STATE.md` for scope.
 
 ## When to update this file
 

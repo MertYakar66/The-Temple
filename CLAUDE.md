@@ -11,9 +11,12 @@ TheTemple is a personal fitness/life PWA. Live at https://thetemple.web.app.
 Mobile-first. Three product modules + one integration:
 
 - **Workout** — sessions, sets/reps/weight, routines, PRs, weight history,
-  exercise goals, the Jeff Nippard "Min Max" Block program (12-week, customizable).
+  exercise goals, per-set exercise history, a browsable day-by-day workout
+  history, and the Jeff Nippard Block programs ("Min Max" 12-week + "PowerBuilding",
+  both customizable with per-workout done-tracking).
 - **Diet** — foods, recipes, saved meals, daily food log, macro goals, streaks,
-  TDEE calculator.
+  TDEE calculator, and goal-based Diet plans (curated reference plans with an
+  active-plan pick + one-tap logging; seeded in `src/data/diets.ts`).
 - **Calendar** — events, multiple calendars, day/week/month/upcoming views,
   recurrence, invitations, Google Places autocomplete.
 - **Siri** — Apple Shortcuts hit Firebase Cloud Functions that read the user's
@@ -57,7 +60,7 @@ One line per load-bearing module:
 - **`src/store/useStore.ts`** (~950 lines) — Workout state: sessions, sets/reps,
   routines, PRs, weight history, the Min Max Block program.
 - **`src/store/useDietStore.ts`** — Diet: foods, recipes, meals, food log, macro
-  goals, streaks, TDEE.
+  goals, streaks, TDEE, active Diet plan (`activeDietId`, persist v2).
 - **`src/store/useCalendarStore.ts`** — Calendar: events, multi-calendar,
   recurrence, invitations. Soft-delete via `isDeleted`.
 - **`src/contexts/AuthContext.tsx`** — Auth + cloud-sync wiring.
@@ -129,8 +132,12 @@ security, Siri, or backups.
 - **Date stamps are `YYYY-MM-DD` strings**, via `getDateStamp()` /
   `parseDateStamp()` in `src/utils/date.ts`.
 - **Ephemeral UI state is not synced** — see hard invariant #5 below.
-- **Min Max Block program** — the Jeff Nippard 12-week customizable program,
-  seeded in `src/data/minMaxProgram.ts`.
+- **Block programs** — the Jeff Nippard 12-week "Min Max" (seeded in
+  `src/data/minMaxProgram.ts`) and "PowerBuilding" programs, both customizable,
+  with per-workout done-tracking.
+- **Goal-based Diet plans** — curated reference plans seeded in
+  `src/data/diets.ts`; the user's pick lives in the `activeDietId` persisted
+  slice of `useDietStore` (one-tap logging via `logDietMeal`).
 
 ## Hard invariants — the 10 gotchas
 
@@ -199,9 +206,24 @@ project's one critical blocker — is **fixed**: `onAuthStateChanged` is
 cancellation-safe (`resolveAuthAction` classifies each emission, a per-chain
 `AbortController` cancels superseded chains, `resetStore`+`loadFromCloud` are
 fused after the await). Design: `docs/plans/fix-authcontext-race.md`; flow:
-`docs/sync-model.md`. Remaining audit work — Batches 4–6 (calendar recurrence,
-Siri Cloud Functions TZ + recurrence expansion, polish) — is tracked in
-`docs/AUDIT_STATE.md`; pending, not blocking.
+`docs/sync-model.md`.
+
+A broad **integration & hardening batch** has since landed on `main` (route
+code-splitting + vendor chunking, Progress memoization, backup/restore recovery,
+Workout/History a11y, DietLog servings input, week-view all-day overflow,
+Add-Exercise dark mode, three AuthContext data-loss closures + cloud-error
+surfacing, and the workout-history UX / All-Workouts list). This retired the
+Batch-6 bundle-size finding. The Diet-plans feature (goal-based plans +
+`activeDietId` slice) also landed. All feature branches are merged and pruned —
+`main` is the single source of truth.
+
+**Still genuinely pending:** the Siri **Cloud Functions** work (Batch 5 — the
+`todayDateString` UTC fallback in `functions/src/index.ts` and server-side
+recurrence expansion; `functions/` is untouched) and the **calendar recurrence
+engine** hardening (Batch 4 — `src/utils/calendar.ts`). Two Batch-6 side findings
+remain open: `useStore.startWorkout` undefined `routineId`, and the
+`Settings.tsx` data-export filename's banned `toISOString().split('T')[0]`.
+Tracked in `docs/AUDIT_STATE.md`; pending, not blocking.
 
 ## Repo conventions
 
@@ -209,7 +231,7 @@ Siri Cloud Functions TZ + recurrence expansion, polish) — is tracked in
   module-specific components in
   `src/components/{workout,calendar,blocks,onboarding,exercises,layout}/`.
 - Default seed data in `src/data/` (exercises, foods, default routines, the
-  Min Max program).
+  Min Max + PowerBuilding programs, and the goal-based Diet plans in `diets.ts`).
 - Unit tests are colocated `*.test.ts` next to the file they test (Vitest);
   setup in `src/test/setup.ts`. End-to-end tests live under `tests/e2e/`
   (Playwright); the one e2e spec is active (it needs `.env.test` + network) —

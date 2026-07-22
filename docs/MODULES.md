@@ -19,10 +19,11 @@ RoutineGroupEditModal}.tsx`, `components/blocks/{BlockExerciseEditModal,BlockDay
   `currentSession` is the in-progress session; `workoutSessions` is the completed history.
 - `Routine` — template for a session. Optional `program` field groups routines (e.g., "PPL" or
   "Min Max"). `dayOfWeek: number[]` for scheduled days (0=Sun..6=Sat).
-- `Block` — Jeff Nippard "Min Max" 12-week program in `src/data/minMaxProgram.ts`. Default program
-  is read-only data, but users can override per-week via `BlockCustomizations.weekOverrides`
-  keyed `${blockIdx}-${weekIdx}`. `getBlockWeekDays(blockIdx, weekIdx)` returns override or
-  falls back to default.
+- `Block` — Jeff Nippard block programs: the "Min Max" 12-week (`src/data/minMaxProgram.ts`) and a
+  "PowerBuilding" program. Default program data is read-only, but users can override per-week via
+  `BlockCustomizations.weekOverrides` keyed `${blockIdx}-${weekIdx}`. `getBlockWeekDays(blockIdx,
+  weekIdx)` returns override or falls back to default. Per-workout done-tracking marks individual
+  block workouts complete.
 - `PersonalRecord` keyed by `(exerciseId, reps)`. `checkAndUpdatePR` fires on workout end.
 - `newPRs` is a buffer for the celebration modal (`<PRCelebration />` mounted in App.tsx). Cleared
   by `clearNewPRs()`. Not synced (ephemeral).
@@ -37,8 +38,8 @@ the old one. `updateWeightEntry` if the user changes the date also dedupes.
 
 ## Diet
 
-**Pages:** `Diet`, `DietLog`, `DietMeals`, `DietMealNew`, `DietWeekly`, `DietSettings`,
-`DietFoodNew`, `DietRecipeEditor`, `TDEECalculator`.
+**Pages:** `Diet`, `DietLog`, `DietMeals`, `DietMealEditor`, `DietPlanDetail`, `DietWeekly`,
+`DietSettings`, `DietFoodNew`, `DietRecipeEditor`, `TDEECalculator`.
 
 **Store:** `useDietStore`.
 
@@ -53,6 +54,12 @@ the old one. `updateWeightEntry` if the user changes the date also dedupes.
   `getTargetMacrosForDate(date, isTrainingDay)`.
 - `DietStreak` — protein hit + logging streaks, computed via `updateStreaks(date)`.
 - `recentFoodIds` — MRU list to surface recently used foods in pickers.
+- **Diet plans** — curated goal-based reference plans seeded in `src/data/diets.ts`, browsed at
+  `/diet/diets/:id` (`DietPlanDetail`). The user's chosen plan is the `activeDietId` persisted
+  slice (persist **version 2**; additive over v1). `logDietMeal(meal, date)` one-tap-logs a
+  plan meal as a synthetic `type: 'meal'` food-log entry (no saved `Meal` id; empty items). As a
+  persisted slice, `activeDietId` lives in all five mirror places — remember the
+  `AuthContext.startSync` diet equality check if you touch it.
 
 **TDEE calculator** at `/tdee-calculator` is a Mifflin-St Jeor estimator, lives standalone.
 
